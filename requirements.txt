@@ -1,6 +1,5 @@
-pyTelegramBotAPI==4.23.0
-requests
-gtts
+pyTelegramBotAPI
 flask
 gunicorn
-pyttsx3
+redis
+requests
