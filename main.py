@@ -59,6 +59,7 @@ def generate_response(chat_id, user_input):
         },
         timeout=60
     )
+    
     if r.status_code == 200:
     reply = r.json()["choices"][0]["message"]["content"].strip()
     memory[chat_id] = history + "\nUsuario: " + user_input + "\nKeter: " + reply
