@@ -10,7 +10,7 @@ from flask import Flask
 app = Flask(__name__)
 
 # TU TOKEN DE TELEGRAM
-BOT_TOKEN = os.environ.get('BOT_TOKEN', 'TU_TOKEN_AQUI')  # En Railway lo configuras como variable
+BOT_TOKEN = os.environ.get('BOT_TOKEN')  # En Railway lo configuras como variable
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # Hugging Face Llama uncensored
