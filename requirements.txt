@@ -3,3 +3,4 @@ requests
 gtts
 flask
 gunicorn
+pyttsx3
