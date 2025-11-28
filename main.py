@@ -50,11 +50,11 @@ def generate_response(chat_id, user_input):
                 "Content-Type": "application/json"
             },
             json={
-                "model": "llama-3.1-70b-versatile",
-                "messages": messages,
-                "temperature": 0.8,
-                "max_tokens": 1500
-            },
+    "model": "llama-3.3-70b-versatile",    # ← FUNCIONA HOY 100%
+    "messages": messages,
+    "temperature": 0.8,
+    "max_tokens": 1500
+},
             timeout=50
         )
 
