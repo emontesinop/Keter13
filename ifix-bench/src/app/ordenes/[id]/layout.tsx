@@ -14,6 +14,7 @@ export default async function OrderLayout({ children, params }: { children: Reac
     safety = getSafety();
   } catch {}
   const entrada = o.checklist.filter((c) => c.fase === "ENTRADA").length;
+  const salida = o.checklist.filter((c) => c.fase === "SALIDA").length;
   const litio = splitList(o.estadoFisico).includes("bateria_hinchada");
   const base = `/ordenes/${o.id}`;
   return (
@@ -53,6 +54,8 @@ export default async function OrderLayout({ children, params }: { children: Reac
           { href: `${base}/diagnostico`, label: "Diagnóstico", badge: o.diagnostics.length + o.dcReadings.length ? String(o.diagnostics.length + o.dcReadings.length) : undefined },
           { href: `${base}/mediciones`, label: "Mediciones", badge: o.measurements.length + o.shortHunts.length ? String(o.measurements.length + o.shortHunts.length) : undefined },
           { href: `${base}/reparacion`, label: "Reparación", badge: o.partUsages.length ? String(o.partUsages.length) : undefined },
+          { href: `${base}/ia`, label: "IA" },
+          { href: `${base}/entrega`, label: "Entrega", badge: salida ? `${salida}` : undefined },
         ]}
       />
       {children}

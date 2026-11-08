@@ -85,13 +85,17 @@ export async function createOrder(fd: FormData) {
 /** Actualiza solo los campos presentes en el formulario (permite formularios parciales). */
 export async function updateOrder(id: string, fd: FormData) {
   const has = (k: string) => fd.has(k);
-  const textFields = ["imei", "serie", "codigoDesbloqueo", "estadoFisicoNota", "boardviewPath", "diagnosticoFinal", "causaRaiz", "notas"] as const;
+  const textFields = ["imei", "serie", "codigoDesbloqueo", "estadoFisicoNota", "boardviewPath", "diagnosticoFinal", "causaRaiz", "notas", "notaEntrega", "recibidoPor"] as const;
   const data: Prisma.OrderUpdateInput = {};
   for (const k of textFields) if (has(k)) data[k] = str(fd, k);
   if (str(fd, "modelo")) data.modelo = str(fd, "modelo")!;
   if (str(fd, "fallaReportada")) data.fallaReportada = str(fd, "fallaReportada")!;
   if (has("presupuesto")) data.presupuesto = num(fd, "presupuesto");
   if (has("costoFinal")) data.costoFinal = num(fd, "costoFinal");
+  if (has("garantiaDias")) {
+    const g = num(fd, "garantiaDias");
+    data.garantiaDias = g == null ? null : Math.max(0, Math.round(g));
+  }
   // Los ChipPicker envían un campo oculto "<nombre>__present" para poder vaciar la lista.
   if (has("sintomas__present")) data.sintomas = list(fd, "sintomas");
   if (has("estadoFisico__present")) data.estadoFisico = list(fd, "estadoFisico");

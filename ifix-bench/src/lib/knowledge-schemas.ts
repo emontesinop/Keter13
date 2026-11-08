@@ -10,7 +10,7 @@ export const ModelSchema = z.object({
   biometria: z.enum(["face_id", "touch_id"]),
   pantalla: z.enum(["LCD", "OLED"]),
   familia: z.string(),
-});
+}).strict();
 export const ModelsFile = z.object({ estado: estadoArchivo, modelos: z.array(ModelSchema).min(1) });
 
 export const ChecklistItem = z.object({
@@ -18,7 +18,7 @@ export const ChecklistItem = z.object({
   label: z.string(),
   ayuda: z.string().optional(),
   solo_biometria: z.enum(["face_id", "touch_id"]).optional(),
-});
+}).strict();
 export const ChecklistFile = z.object({
   estado: estadoArchivo,
   grupos: z.array(z.object({ id: z.string(), titulo: z.string(), items: z.array(ChecklistItem) })),
@@ -26,12 +26,12 @@ export const ChecklistFile = z.object({
 
 export const PhysicalFile = z.object({
   estado: estadoArchivo,
-  opciones: z.array(z.object({ key: z.string(), label: z.string(), aviso: z.string().optional() })),
+  opciones: z.array(z.object({ key: z.string(), label: z.string(), aviso: z.string().optional() }).strict()),
 });
 
 export const SymptomsFile = z.object({
   estado: estadoArchivo,
-  sintomas: z.array(z.object({ key: z.string(), label: z.string(), arbol: z.string().optional() })),
+  sintomas: z.array(z.object({ key: z.string(), label: z.string(), arbol: z.string().optional() }).strict()),
 });
 
 export const SafetyFile = z.object({
@@ -156,7 +156,7 @@ export const Tornillo = z.object({
   ubicacion: z.string(),
   cantidad: z.number().nullable().optional(),
   largo: z.string().nullable().optional(),
-});
+}).strict();
 
 export const GuideFile = z.object({
   id: z.string(),
@@ -191,6 +191,27 @@ export const GuideFile = z.object({
 export type ReferenceLine = z.infer<typeof ReferenceLinesFile>["lineas"][number];
 export type ShortFlow = z.infer<typeof ShortFlowFile>;
 export type Guide = z.infer<typeof GuideFile>;
+export const ProgrammingFile = z.object({
+  estado: estadoArchivo,
+  aviso_legal: z.string(),
+  herramientas: z.array(z.object({ id: z.string(), label: z.string() })),
+  piezas: z.array(
+    z.object({
+      id: z.string(),
+      nombre: z.string(),
+      familias: z.array(z.string()).default([]),
+      modelos: z.array(z.string()).default([]),
+      requiere: z.string(),
+      mensaje: z.string(),
+      pasos: z.array(z.string()),
+      herramientas: z.array(z.string()).default([]),
+      notas: z.string().optional(),
+      verificado: z.boolean().default(false),
+    }),
+  ),
+});
+export type Programming = z.infer<typeof ProgrammingFile>;
+
 export type Model = z.infer<typeof ModelSchema>;
 export type Checklist = z.infer<typeof ChecklistFile>;
 export type Safety = z.infer<typeof SafetyFile>;

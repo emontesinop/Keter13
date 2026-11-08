@@ -14,6 +14,7 @@ import {
   ReferenceLinesFile,
   ShortFlowFile,
   GuideFile,
+  ProgrammingFile,
   type Tree,
   type Guide,
 } from "./knowledge-schemas";
@@ -58,6 +59,13 @@ export const getSafety = () => load("safety.yaml", SafetyFile).avisos;
 export const getDcPatterns = () => load("dc-consumption.yaml", DcFile);
 
 export const getReferenceLines = () => load("reference-lines.yaml", ReferenceLinesFile);
+export const getProgramming = () => load("programming.yaml", ProgrammingFile);
+
+/** Piezas que aplican a un modelo (por familia o id). */
+export function programmingForModel(modelo: string) {
+  const m = getModel(modelo);
+  return getProgramming().piezas.filter((p) => p.modelos.includes(modelo) || (m && p.familias.includes(m.familia)));
+}
 export const getShortFlow = () => load("short-circuit.yaml", ShortFlowFile);
 
 function listYaml(sub: string): string[] {
@@ -203,6 +211,17 @@ export function validateKnowledge(): { file: string; ok: boolean; problems: stri
       for (const s of p.seguridad ?? []) if (!safetyIds.has(s)) problems.push(`${p.id}: aviso "${s}" no existe`);
     }
     return { problems, pendientes: f.pasos.filter((p) => !p.verificado).length };
+  });
+  check("programming.yaml", () => {
+    const f = getProgramming();
+    const tools = new Set(f.herramientas.map((h) => h.id));
+    const fams = new Set(getModels().map((m) => m.familia));
+    const problems: string[] = [];
+    for (const p of f.piezas) {
+      for (const h of p.herramientas) if (!tools.has(h)) problems.push(`${p.id}: herramienta "${h}" no existe`);
+      for (const fam of p.familias) if (!fams.has(fam)) problems.push(`${p.id}: familia "${fam}" no existe en models.yaml`);
+    }
+    return { problems, pendientes: f.piezas.filter((p) => !p.verificado).length };
   });
   const modelIds = (() => {
     try {

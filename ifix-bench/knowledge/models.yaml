@@ -12,7 +12,7 @@ modelos:
   - { id: iphone-11, nombre: iPhone 11, anio: 2019, conector: Lightning, biometria: face_id, pantalla: LCD, familia: "11" }
   - { id: iphone-11-pro, nombre: iPhone 11 Pro, anio: 2019, conector: Lightning, biometria: face_id, pantalla: OLED, familia: "11" }
   - { id: iphone-11-pro-max, nombre: iPhone 11 Pro Max, anio: 2019, conector: Lightning, biometria: face_id, pantalla: OLED, familia: "11" }
-  - { id: iphone-se-2020, nombre: iPhone SE (2.ª gen, 2020), anio: 2020, conector: Lightning, biometria: touch_id, pantalla: LCD, familia: "se" }
+  - { id: iphone-se-2020, nombre: "iPhone SE (2.ª gen, 2020)", anio: 2020, conector: Lightning, biometria: touch_id, pantalla: LCD, familia: "se" }
   - { id: iphone-12-mini, nombre: iPhone 12 mini, anio: 2020, conector: Lightning, biometria: face_id, pantalla: OLED, familia: "12" }
   - { id: iphone-12, nombre: iPhone 12, anio: 2020, conector: Lightning, biometria: face_id, pantalla: OLED, familia: "12" }
   - { id: iphone-12-pro, nombre: iPhone 12 Pro, anio: 2020, conector: Lightning, biometria: face_id, pantalla: OLED, familia: "12" }
@@ -21,7 +21,7 @@ modelos:
   - { id: iphone-13, nombre: iPhone 13, anio: 2021, conector: Lightning, biometria: face_id, pantalla: OLED, familia: "13" }
   - { id: iphone-13-pro, nombre: iPhone 13 Pro, anio: 2021, conector: Lightning, biometria: face_id, pantalla: OLED, familia: "13" }
   - { id: iphone-13-pro-max, nombre: iPhone 13 Pro Max, anio: 2021, conector: Lightning, biometria: face_id, pantalla: OLED, familia: "13" }
-  - { id: iphone-se-2022, nombre: iPhone SE (3.ª gen, 2022), anio: 2022, conector: Lightning, biometria: touch_id, pantalla: LCD, familia: "se" }
+  - { id: iphone-se-2022, nombre: "iPhone SE (3.ª gen, 2022)", anio: 2022, conector: Lightning, biometria: touch_id, pantalla: LCD, familia: "se" }
   - { id: iphone-14, nombre: iPhone 14, anio: 2022, conector: Lightning, biometria: face_id, pantalla: OLED, familia: "14" }
   - { id: iphone-14-plus, nombre: iPhone 14 Plus, anio: 2022, conector: Lightning, biometria: face_id, pantalla: OLED, familia: "14" }
   - { id: iphone-14-pro, nombre: iPhone 14 Pro, anio: 2022, conector: Lightning, biometria: face_id, pantalla: OLED, familia: "14" }

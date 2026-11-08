@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, ClipboardList, Cpu, FileStack, History, Home, Package, PlusCircle, Settings, Stethoscope } from "lucide-react";
+import { BookOpen, Binary, ClipboardList, Cpu, FileStack, History, Home, Package, PlusCircle, Settings, Stethoscope } from "lucide-react";
 import { cn } from "@/lib/format";
 
 const items = [
@@ -11,6 +11,7 @@ const items = [
   { href: "/diagnostico", label: "Diagnóstico", icon: Stethoscope },
   { href: "/placa", label: "Placa", icon: Cpu },
   { href: "/guias", label: "Guías", icon: BookOpen },
+  { href: "/programacion", label: "Programar", icon: Binary },
   { href: "/inventario", label: "Inventario", icon: Package },
   { href: "/historial", label: "Historial", icon: History },
   { href: "/esquematicos", label: "Esquemas", icon: FileStack },

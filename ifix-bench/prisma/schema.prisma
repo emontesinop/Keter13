@@ -49,6 +49,8 @@ model Order {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   deliveredAt       DateTime?
+  notaEntrega       String? // observaciones que se imprimen en la nota de entrega
+  recibidoPor       String? // quién recoge el equipo
 
   photos            Photo[]
   checklist         ChecklistResult[]
@@ -58,6 +60,8 @@ model Order {
   shortHunts        ShortHunt[]
   partUsages        PartUsage[]
   guideProgress     GuideProgress[]
+  aiAnalyses        AiAnalysis[]
+  chatMessages      ChatMessage[]
 
   @@index([modelo])
   @@index([estado])
@@ -205,4 +209,29 @@ model Document {
   tamano    Int?
   nota      String?
   createdAt DateTime @default(now())
+}
+
+// ─── Fase 3 ─────────────────────────────────────────────────────────────────
+
+model AiAnalysis {
+  id        String   @id @default(cuid())
+  orderId   String?
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  photoId   String?
+  tipoFoto  String // PLACA | CARCASA | PANTALLA | OTRO
+  pregunta  String?
+  resultado String // JSON validado (ver src/lib/ai.ts)
+  modelo    String
+  createdAt DateTime @default(now())
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  rol       String // user | assistant
+  contenido String
+  createdAt DateTime @default(now())
+
+  @@index([orderId, createdAt])
 }

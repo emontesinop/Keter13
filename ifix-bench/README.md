@@ -79,6 +79,22 @@ Comprobar los YAML de conocimiento: `npm run lint:knowledge`.
 - **6 árboles nuevos**: se reinicia en bucle, sin touch, sin audio, sin señal, Face ID, se calienta.
 - Moneda por defecto: **USD**.
 
-## Próxima fase
-- Fase 3: análisis de fotos y chat con Claude, programación de piezas, checklist de salida y nota
-  de entrega en PDF.
+## Fase 3 (lista)
+
+- **Análisis de fotos con IA** (pestaña IA de la orden): elige una foto de la orden o toma una nueva;
+  la imagen se reduce en el navegador y Claude devuelve hallazgos estructurados (corrosión, quemado,
+  faltante, flex roto, pieza no original…) con severidad, confianza, ubicación y recomendaciones.
+  Se guardan en la orden y entran al contexto del chat.
+- **Chat de diagnóstico** con el contexto completo de la orden (modelo, síntomas, checklist, recorrido
+  del diagnóstico, consumo DC, mediciones vs. tus referencias, cortos, piezas y casos parecidos del
+  historial). Respuesta en streaming; la conversación se guarda por orden.
+- **API key**: Ajustes → Análisis con IA. Sin key el módulo se desactiva y todo lo demás funciona.
+  Modelo: Claude Opus 5.5 (`claude-opus-5-5`), con *fallback* del lado del servidor activado: si un
+  filtro de seguridad rechaza una consulta legítima, la API la reintenta con otro modelo.
+- **Programación de piezas** (`knowledge/programming.yaml`): batería, True Tone, Face ID, cámaras y
+  Touch ID por modelo, mensaje que aparece si no se programa y pasos generales. Sin ningún contenido
+  para saltar iCloud, operador o cuentas.
+- **Entrega**: checklist de salida con el resultado de entrada al lado, resumen antes/después
+  (reparado, empeoró, sigue fallando), alerta si algo que funcionaba ahora falla, fotos de salida,
+  garantía (días por defecto y condiciones en Ajustes) y **nota de entrega en PDF** imprimible.
+  Una orden con bloqueo de iCloud sin prueba de propiedad no se puede entregar.

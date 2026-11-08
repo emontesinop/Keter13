@@ -8,6 +8,8 @@ export const SETTING_DEFAULTS = {
   moneda: "USD",
   garantia_dias: "90",
   anthropic_api_key: "",
+  condiciones_garantia:
+    "La garantía cubre únicamente la pieza reemplazada y la mano de obra del trabajo indicado. No cubre golpes, humedad, pantallas rotas, manipulación por terceros ni fallas distintas a la reparada. Presente esta nota para hacer válida la garantía.",
 } as const;
 export type SettingKey = keyof typeof SETTING_DEFAULTS;
 

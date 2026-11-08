@@ -27,6 +27,7 @@ Comprobar todo desde la terminal: `npm run lint:knowledge`
 | `reference-lines.yaml` | Líneas de placa; aquí van TUS voltajes nominales y límites de inyección |
 | `short-circuit.yaml` | Pasos del flujo de localización de cortos |
 | `guides/*.yaml` | Guías de reparación paso a paso |
+| `programming.yaml` | Qué piezas requieren programación por modelo (familia), mensajes y pasos |
 
 ## Formato de un árbol de diagnóstico
 
@@ -82,4 +83,5 @@ pasos:
     verificado: false
 ```
 
-Consejo: si un texto contiene dos puntos (`:`), ponlo entre comillas.
+Consejo: si un texto contiene dos puntos (`:`), o una coma dentro de `{ ... }`, ponlo entre comillas.
+Ejemplo: `{ key: x, label: "Imagen (manchas, líneas)" }`. El validador avisa si se te olvida.

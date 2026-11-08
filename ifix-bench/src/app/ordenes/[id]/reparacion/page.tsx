@@ -5,7 +5,7 @@ import { PartPicker } from "@/components/PartPicker";
 import { KnowledgeErrorBox, VerifyBadge } from "@/components/ui";
 import { db } from "@/lib/db";
 import { guidesForModel } from "@/lib/guides";
-import { getGuides } from "@/lib/knowledge";
+import { getGuides, programmingForModel } from "@/lib/knowledge";
 import { getOrder } from "@/lib/orders";
 import { getSettings } from "@/lib/settings";
 import { fmtTime, money, splitList } from "@/lib/format";
@@ -22,6 +22,10 @@ export default async function OrderRepair({ params }: { params: Promise<{ id: st
   } catch (e) {
     return <KnowledgeErrorBox error={e} />;
   }
+  let progParts: { nombre: string }[] = [];
+  try {
+    progParts = programmingForModel(o.modelo);
+  } catch {}
   const progress = Object.fromEntries(o.guideProgress.map((g) => [g.guiaId, g]));
   const otherInProgress = o.guideProgress.filter((g) => !guides.some((x) => x.id === g.guiaId));
   const partsCost = o.partUsages.reduce((a, u) => a + (u.costoUnit ?? 0) * u.cantidad, 0);
@@ -72,6 +76,14 @@ export default async function OrderRepair({ params }: { params: Promise<{ id: st
           </Link>
         ))}
       </section>
+
+      {progParts.length > 0 && (
+        <section className="card space-y-2 border-bench-info">
+          <h2 className="h3">Piezas que pueden requerir programación en este modelo</h2>
+          <p>{progParts.map((p) => p.nombre).join(" · ")}</p>
+          <Link href={`/programacion?modelo=${o.modelo}`} className="font-semibold text-bench-info underline">Ver guía de programación →</Link>
+        </section>
+      )}
 
       <section className="space-y-3">
         <h2 className="h2">Piezas usadas</h2>

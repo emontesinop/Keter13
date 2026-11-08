@@ -8,7 +8,7 @@ grupos:
       - { key: face_id, label: Face ID, solo_biometria: face_id, ayuda: "Ajustes → Face ID y código → Configurar apariencia. Anota si sale 'Face ID no disponible'." }
       - { key: touch_id, label: Touch ID / botón de inicio, solo_biometria: touch_id, ayuda: "Registrar una huella y probar el botón." }
       - { key: true_tone, label: True Tone, ayuda: "Centro de control → mantener brillo. Si falta el botón True Tone, anótalo." }
-      - { key: pantalla_imagen, label: Imagen (manchas, líneas, quemado), ayuda: "Fondo blanco, negro, rojo, verde y azul." }
+      - { key: pantalla_imagen, label: "Imagen (manchas, líneas, quemado)", ayuda: "Fondo blanco, negro, rojo, verde y azul." }
       - { key: touch, label: Touch en toda la superficie, ayuda: "Arrastrar un ícono por todas las esquinas." }
       - { key: mensaje_pieza, label: Mensajes de pieza desconocida, ayuda: "Ajustes → General → Información → Piezas e historial de servicio." }
   - id: camaras
