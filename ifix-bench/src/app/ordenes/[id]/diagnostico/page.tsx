@@ -6,7 +6,7 @@ import { getDcPatterns, getSymptoms, getTrees } from "@/lib/knowledge";
 import { getOrder } from "@/lib/orders";
 import { nodeTitle, parsePath } from "@/lib/path-summary";
 import { dateTime, splitList } from "@/lib/format";
-import { dcHistoryByPattern } from "@/lib/similar";
+import { dcHistoryByPattern, similarOrders } from "@/lib/similar";
 import { modelNameMap } from "@/lib/order-helpers";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +23,7 @@ export default async function OrderDiagnostics({ params, searchParams }: { param
   const history = await dcHistoryByPattern(o.modelo, o.id);
   const patterns = new Set(o.dcReadings.map((r) => r.patron));
   const suggestions = [...patterns].flatMap((p) => (history[p] ?? []).map((c) => ({ ...c, patron: p })));
+  const similar = await similarOrders(o, [...patterns]);
 
   return (
     <div className="space-y-6">
@@ -64,6 +65,20 @@ export default async function OrderDiagnostics({ params, searchParams }: { param
                 En <b>{names[c.modelo] ?? c.modelo}</b> con “{dc.patrones.find((p) => p.id === c.patron)?.nombre}”
                 {c.mA != null ? ` (${c.mA} mA)` : ""}, fue <b className="text-bench-accent">{c.causaRaiz}</b> ·{" "}
                 <Link href={`/ordenes/${c.orderId}`} className="font-mono text-bench-info underline">{c.codigo}</Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {similar.length > 0 && (
+        <section className="card space-y-2 border-bench-info">
+          <h2 className="h2">Órdenes parecidas</h2>
+          <ul className="space-y-1 text-lg">
+            {similar.map((c) => (
+              <li key={c.id}>
+                <Link href={`/ordenes/${c.id}`} className="font-mono text-bench-info underline">{c.codigo}</Link> · {names[c.modelo] ?? c.modelo} · en común:{" "}
+                {c.comunes.map((k) => symptoms.find((s) => s.key === k)?.label ?? k).join(", ")} → <b className="text-bench-accent">{c.causaRaiz}</b>
               </li>
             ))}
           </ul>

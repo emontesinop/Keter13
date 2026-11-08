@@ -6,6 +6,9 @@ import { SubmitButton } from "@/components/SubmitButton";
 import { CopyButton } from "@/components/CopyButton";
 import { getModels, getPhysical, getSafety, getSymptoms } from "@/lib/knowledge";
 import { getOrder } from "@/lib/orders";
+import { docTypeLabel, documentsForModel } from "@/lib/documents";
+import { DocLink } from "@/components/DocLink";
+import Link from "next/link";
 import { getSettings } from "@/lib/settings";
 import { dateTime, money, splitList } from "@/lib/format";
 
@@ -31,6 +34,7 @@ export default async function OrderSummary({ params }: { params: Promise<{ id: s
   const update = updateOrder.bind(null, o.id);
   const icloud = updateIcloud.bind(null, o.id);
   const del = deleteOrder.bind(null, o.id);
+  const docs = await documentsForModel(o.modelo);
 
   return (
     <div className="space-y-6">
@@ -64,6 +68,18 @@ export default async function OrderSummary({ params }: { params: Promise<{ id: s
           />
           <Row k="Notas" v={o.notas} />
         </dl>
+      </section>
+
+      <section className="panel space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="h2">Esquemáticos del modelo</h2>
+          <Link href={`/esquematicos?modelo=${o.modelo}`} className="text-bench-info underline">Biblioteca →</Link>
+        </div>
+        {docs.length === 0 ? (
+          <p className="muted">No tienes archivos para este modelo. Añádelos en la biblioteca de esquemáticos.</p>
+        ) : (
+          docs.map((d) => <DocLink key={d.id} d={d} typeLabel={docTypeLabel(d.tipo)} />)
+        )}
       </section>
 
       <section className="panel space-y-3">

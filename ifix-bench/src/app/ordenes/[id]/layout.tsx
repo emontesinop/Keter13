@@ -51,6 +51,8 @@ export default async function OrderLayout({ children, params }: { children: Reac
           { href: base, label: "Resumen" },
           { href: `${base}/checklist`, label: "Checklist", badge: entrada ? String(entrada) : undefined },
           { href: `${base}/diagnostico`, label: "Diagnóstico", badge: o.diagnostics.length + o.dcReadings.length ? String(o.diagnostics.length + o.dcReadings.length) : undefined },
+          { href: `${base}/mediciones`, label: "Mediciones", badge: o.measurements.length + o.shortHunts.length ? String(o.measurements.length + o.shortHunts.length) : undefined },
+          { href: `${base}/reparacion`, label: "Reparación", badge: o.partUsages.length ? String(o.partUsages.length) : undefined },
         ]}
       />
       {children}

@@ -24,6 +24,9 @@ Comprobar todo desde la terminal: `npm run lint:knowledge`
 | `safety.yaml` | Avisos de seguridad (ESD, litio, inyección, calor) |
 | `dc-consumption.yaml` | Patrones de consumo en fuente DC → causas probables |
 | `diagnostics/*.yaml` | Árboles de decisión |
+| `reference-lines.yaml` | Líneas de placa; aquí van TUS voltajes nominales y límites de inyección |
+| `short-circuit.yaml` | Pasos del flujo de localización de cortos |
+| `guides/*.yaml` | Guías de reparación paso a paso |
 
 ## Formato de un árbol de diagnóstico
 
@@ -48,9 +51,35 @@ nodos:
         siguiente: n2         # otro nodo de este árbol
       - texto: Va a otro árbol
         arbol: no-enciende    # salta a otro árbol
+        nodo: n6              # (opcional) a un nodo concreto de ese árbol
   c1:
     tipo: conclusion
     titulo: ...
     causas: [ ... ]
     acciones: [ ... ]
 ```
+
+## Formato de una guía
+
+```yaml
+id: bateria-iphone-12        # igual al nombre del archivo
+titulo: Cambio de batería
+modelos: [iphone-12, iphone-12-pro]   # ids de models.yaml, o [todos]
+estado: verificar
+tiempo_estimado_min: 45
+herramientas: [Pentalobe P2, ...]
+seguridad: [litio, esd]      # ids de safety.yaml
+pasos:
+  - titulo: ...
+    texto: ...
+    tornillos:
+      - { tipo: Pentalobe P2, ubicacion: "...", cantidad: 2, largo: "" }
+    advertencias: ["texto libre"]
+    seguridad: [calor]
+    temperatura: "..."
+    checks: [Batería desconectada]
+    tiempo_min: 3
+    verificado: false
+```
+
+Consejo: si un texto contiene dos puntos (`:`), ponlo entre comillas.

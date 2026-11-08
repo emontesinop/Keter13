@@ -9,7 +9,9 @@ import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { CHECK_RESULTS, ICLOUD_BLOCKED_STATES, ORDER_STATES, PHOTO_STAGES, type OrderState } from "@/lib/constants";
 import { setSetting, SETTING_DEFAULTS, type SettingKey } from "@/lib/settings";
-import { UPLOAD_DIR } from "@/lib/paths";
+import { LIBRARY_DIR, UPLOAD_DIR } from "@/lib/paths";
+import { getReferenceLines } from "@/lib/knowledge";
+import { toCanonical } from "@/lib/measure";
 
 const str = (fd: FormData, k: string) => {
   const v = fd.get(k);
@@ -259,5 +261,234 @@ export async function saveSettings(fd: FormData) {
   const apiKey = fd.get("anthropic_api_key");
   if (typeof apiKey === "string" && apiKey.trim() !== "") await setSetting("anthropic_api_key", apiKey.trim());
   if (fd.get("borrar_api_key") === "on") await setSetting("anthropic_api_key", "");
+  revalidatePath("/", "layout");
+}
+
+// ═══ Fase 2 ═════════════════════════════════════════════════════════════════
+
+// ─── Mediciones ─────────────────────────────────────────────────────────────
+
+export async function addMeasurement(input: {
+  orderId: string | null;
+  modelo: string;
+  linea: string;
+  modo: string;
+  valor: number;
+  unidad: string;
+  placaBuena: boolean;
+  nota: string | null;
+}): Promise<ActionResult> {
+  if (!input.modelo || !input.linea.trim()) return { ok: false, error: "Falta modelo o línea." };
+  if (!Number.isFinite(input.valor)) return { ok: false, error: "Valor inválido." };
+  let c;
+  try {
+    c = toCanonical(input.modo, input.valor, input.unidad);
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+  await db.measurement.create({
+    data: { ...input, linea: input.linea.trim(), valor: c.valor, unidad: c.unidad },
+  });
+  if (input.orderId) revalidatePath(`/ordenes/${input.orderId}`, "layout");
+  revalidatePath("/placa", "layout");
+  return { ok: true };
+}
+
+export async function deleteMeasurement(id: string) {
+  const m = await db.measurement.delete({ where: { id } });
+  if (m.orderId) revalidatePath(`/ordenes/${m.orderId}`, "layout");
+  revalidatePath("/placa", "layout");
+}
+
+// ─── Cortocircuitos ─────────────────────────────────────────────────────────
+
+export async function createShortHunt(fd: FormData) {
+  const linea = str(fd, "linea") ?? str(fd, "linea_libre");
+  if (!linea) throw new Error("Indica la línea en corto.");
+  const orderId = str(fd, "orderId");
+  const h = await db.shortHunt.create({ data: { linea, orderId, resistencia: num(fd, "resistencia") } });
+  if (orderId) revalidatePath(`/ordenes/${orderId}`, "layout");
+  redirect(`/placa/cortos/${h.id}`);
+}
+
+export async function updateShortHunt(
+  id: string,
+  patch: {
+    resistencia?: number | null;
+    voltajeInyectado?: number | null;
+    corrienteMax?: number | null;
+    metodo?: string[];
+    pasosHechos?: string[];
+    componenteHallado?: string | null;
+    resuelto?: boolean;
+    notas?: string | null;
+  },
+): Promise<ActionResult> {
+  const h = await db.shortHunt.findUniqueOrThrow({ where: { id } });
+  if (patch.voltajeInyectado != null || patch.corrienteMax != null) {
+    const line = getReferenceLines().lineas.find((l) => l.id === h.linea);
+    const v = patch.voltajeInyectado ?? h.voltajeInyectado;
+    const a = patch.corrienteMax ?? h.corrienteMax;
+    if (line?.inyeccion_max_v != null && v != null && v > line.inyeccion_max_v)
+      return { ok: false, error: `Voltaje ${v} V por encima de TU límite para ${line.nombre} (${line.inyeccion_max_v} V). No se guardó.` };
+    if (line?.inyeccion_max_a != null && a != null && a > line.inyeccion_max_a)
+      return { ok: false, error: `Corriente ${a} A por encima de TU límite para ${line.nombre} (${line.inyeccion_max_a} A). No se guardó.` };
+  }
+  const { metodo, pasosHechos, ...rest } = patch;
+  await db.shortHunt.update({
+    where: { id },
+    data: {
+      ...rest,
+      ...(metodo ? { metodo: metodo.join(",") } : {}),
+      ...(pasosHechos ? { pasosHechos: JSON.stringify(pasosHechos) } : {}),
+    },
+  });
+  if (h.orderId) revalidatePath(`/ordenes/${h.orderId}`, "layout");
+  revalidatePath(`/placa/cortos/${id}`);
+  return { ok: true };
+}
+
+export async function deleteShortHunt(id: string) {
+  const h = await db.shortHunt.delete({ where: { id } });
+  if (h.orderId) revalidatePath(`/ordenes/${h.orderId}`, "layout");
+  revalidatePath("/placa", "layout");
+}
+
+// ─── Inventario ─────────────────────────────────────────────────────────────
+
+function partData(fd: FormData) {
+  const nombre = str(fd, "nombre");
+  if (!nombre) throw new Error("El nombre es obligatorio.");
+  return {
+    nombre,
+    sku: str(fd, "sku"),
+    categoria: str(fd, "categoria") ?? "OTRO",
+    modelos: list(fd, "modelos"),
+    calidad: str(fd, "calidad"),
+    stockMinimo: Math.max(0, Math.round(num(fd, "stockMinimo") ?? 0)),
+    costo: num(fd, "costo"),
+    precioVenta: num(fd, "precioVenta"),
+    proveedor: str(fd, "proveedor"),
+    ubicacion: str(fd, "ubicacion"),
+    notas: str(fd, "notas"),
+  };
+}
+
+export async function createPart(fd: FormData) {
+  await db.part.create({ data: { ...partData(fd), stock: Math.max(0, Math.round(num(fd, "stock") ?? 0)) } });
+  revalidatePath("/inventario");
+  redirect("/inventario");
+}
+
+export async function updatePart(id: string, fd: FormData) {
+  await db.part.update({ where: { id }, data: partData(fd) });
+  revalidatePath("/inventario", "layout");
+  redirect("/inventario");
+}
+
+export async function adjustStock(id: string, delta: number): Promise<ActionResult> {
+  const p = await db.part.findUniqueOrThrow({ where: { id } });
+  if (p.stock + delta < 0) return { ok: false, error: "El stock no puede quedar negativo." };
+  await db.part.update({ where: { id }, data: { stock: { increment: delta } } });
+  revalidatePath("/inventario", "layout");
+  return { ok: true };
+}
+
+export async function deletePart(id: string): Promise<ActionResult> {
+  const used = await db.partUsage.count({ where: { partId: id } });
+  if (used) return { ok: false, error: `Esta pieza se usó en ${used} orden(es); no se puede borrar. Deja el stock en 0.` };
+  await db.part.delete({ where: { id } });
+  revalidatePath("/inventario", "layout");
+  return { ok: true };
+}
+
+/** Usa una pieza en una orden y descuenta el stock en la misma transacción. */
+export async function usePart(orderId: string, partId: string, cantidad: number): Promise<ActionResult> {
+  if (!Number.isInteger(cantidad) || cantidad < 1) return { ok: false, error: "Cantidad inválida." };
+  try {
+    await db.$transaction(async (tx) => {
+      const res = await tx.part.updateMany({ where: { id: partId, stock: { gte: cantidad } }, data: { stock: { decrement: cantidad } } });
+      if (res.count === 0) throw new Error("Stock insuficiente.");
+      const p = await tx.part.findUniqueOrThrow({ where: { id: partId } });
+      await tx.partUsage.create({ data: { orderId, partId, cantidad, costoUnit: p.costo } });
+    });
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+  revalidatePath(`/ordenes/${orderId}`, "layout");
+  revalidatePath("/inventario", "layout");
+  return { ok: true };
+}
+
+/** Quita la pieza de la orden y devuelve las unidades al stock. */
+export async function removePartUsage(id: string) {
+  const u = await db.$transaction(async (tx) => {
+    const u = await tx.partUsage.delete({ where: { id } });
+    await tx.part.update({ where: { id: u.partId }, data: { stock: { increment: u.cantidad } } });
+    return u;
+  });
+  revalidatePath(`/ordenes/${u.orderId}`, "layout");
+  revalidatePath("/inventario", "layout");
+}
+
+// ─── Guías ──────────────────────────────────────────────────────────────────
+
+export async function saveGuideProgress(
+  orderId: string,
+  guiaId: string,
+  data: { pasosHechos: number[]; checks: Record<string, boolean>; segundos: number; terminada: boolean },
+) {
+  const payload = {
+    pasosHechos: JSON.stringify(data.pasosHechos),
+    checks: JSON.stringify(data.checks),
+    segundos: Math.max(0, Math.round(data.segundos)),
+    terminada: data.terminada,
+  };
+  await db.guideProgress.upsert({
+    where: { orderId_guiaId: { orderId, guiaId } },
+    create: { orderId, guiaId, ...payload },
+    update: payload,
+  });
+  const o = await db.order.findUnique({ where: { id: orderId } });
+  if (o && ["RECIBIDO", "DIAGNOSTICO", "ESPERA_APROBACION", "ESPERA_PIEZA"].includes(o.estado) && !(o.icloudBloqueado && !o.pruebaVerificada)) {
+    await db.order.update({ where: { id: orderId }, data: { estado: "REPARANDO" } });
+  }
+  revalidatePath(`/ordenes/${orderId}`, "layout");
+}
+
+// ─── Biblioteca de esquemáticos (archivos propios) ──────────────────────────
+
+export async function addDocument(fd: FormData) {
+  const file = fd.get("archivo");
+  const rutaLocal = str(fd, "rutaLocal");
+  const hasFile = file instanceof File && file.size > 0;
+  if (!hasFile && !rutaLocal) throw new Error("Sube un archivo o indica una ruta local.");
+  let archivo: string | null = null;
+  let tamano: number | null = null;
+  if (hasFile) {
+    await mkdir(LIBRARY_DIR, { recursive: true });
+    const ext = extname(file.name).toLowerCase().replace(/[^a-z0-9.]/g, "").slice(0, 10);
+    archivo = `${randomUUID()}${ext}`;
+    await writeFile(join(LIBRARY_DIR, archivo), Buffer.from(await file.arrayBuffer()));
+    tamano = file.size;
+  }
+  await db.document.create({
+    data: {
+      nombre: str(fd, "nombre") ?? (hasFile ? file.name : rutaLocal!),
+      tipo: str(fd, "tipo") ?? "OTRO",
+      modelos: list(fd, "modelos"),
+      archivo,
+      rutaLocal,
+      tamano,
+      nota: str(fd, "nota"),
+    },
+  });
+  revalidatePath("/", "layout");
+  redirect("/esquematicos");
+}
+
+export async function deleteDocument(id: string) {
+  const d = await db.document.delete({ where: { id } });
+  if (d.archivo) await unlink(join(LIBRARY_DIR, d.archivo)).catch(() => {});
   revalidatePath("/", "layout");
 }

@@ -52,7 +52,7 @@ export function DiagnosticWizard({
       if (!opt) return;
       const nextStep: PathStep | null = opt.arbol
         ? trees[opt.arbol]
-          ? { arbol: opt.arbol, nodo: trees[opt.arbol].inicio }
+          ? { arbol: opt.arbol, nodo: opt.nodo && trees[opt.arbol].nodos[opt.nodo] ? opt.nodo : trees[opt.arbol].inicio }
           : null
         : opt.siguiente
           ? { arbol: cur.arbol, nodo: opt.siguiente }
@@ -216,7 +216,9 @@ export function DiagnosticWizard({
               Continuar con: {trees[goTo.arbol!].titulo} →
             </Link>
           ) : goTo.modulo === "cortos" ? (
-            <p className="text-lg">Siguiente paso: <b>localización de cortocircuitos</b> (módulo de la Fase 2).</p>
+            <Link href={`/placa${orderId ? `?orden=${orderId}` : ""}`} className="btn-secondary btn-xl w-full">
+              Ir a localización de cortocircuitos →
+            </Link>
           ) : null}
         </div>
       )}

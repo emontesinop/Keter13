@@ -1,0 +1,77 @@
+id: sin-senal
+titulo: Sin señal / sin servicio
+descripcion: Sin servicio, buscando, IMEI desconocido o Wi-Fi/Bluetooth sin funcionar.
+estado: verificar
+inicio: n1
+nodos:
+  n1:
+    tipo: pregunta
+    titulo: ¿Qué ves?
+    instruccion: Revisa Ajustes → General → Información (IMEI, firmware del módem) y el indicador de señal.
+    herramienta: visual
+    verificado: false
+    opciones:
+      - { texto: "Sin servicio / Buscando, IMEI visible", siguiente: n2 }
+      - { texto: "IMEI vacío o firmware del módem vacío", siguiente: c_baseband }
+      - { texto: "Wi-Fi o Bluetooth en gris / no encienden", siguiente: c_wifi }
+      - { texto: "Señal débil o intermitente", siguiente: n3 }
+  n2:
+    tipo: pregunta
+    titulo: SIM y operador
+    instruccion: >-
+      Prueba con otra SIM que funcione y revisa la bandeja y el lector. Pregunta al cliente si el
+      equipo está bloqueado a un operador o reportado.
+    herramienta: visual
+    verificado: false
+    opciones:
+      - { texto: "Con otra SIM funciona", siguiente: c_sim }
+      - { texto: "El equipo está bloqueado por operador o reportado", siguiente: c_operador }
+      - { texto: "Ninguna SIM funciona", siguiente: n3 }
+  n3:
+    tipo: pregunta
+    titulo: Antenas
+    instruccion: >-
+      Revisa los cables coaxiales y flexores de antena, sus conectores y los contactos de antena del
+      marco. Busca corrosión o golpes.
+    herramienta: microscopio
+    seguridad: [esd, litio]
+    verificado: false
+    opciones:
+      - { texto: "Cable o contacto dañado", siguiente: c_antena }
+      - { texto: "Todo bien", siguiente: c_rf }
+  c_sim:
+    tipo: conclusion
+    titulo: SIM del cliente
+    causas: [SIM dañada o desactivada.]
+    acciones: [Pide al cliente que cambie la SIM con su operador.]
+  c_operador:
+    tipo: conclusion
+    titulo: Bloqueo de operador / reporte
+    causas: [El equipo está bloqueado por el operador o reportado.]
+    acciones:
+      - "iFix Bench no incluye ningún método para eliminar bloqueos de operador. El cliente debe gestionarlo con su operador."
+      - Anótalo en la orden y no lo cobres como reparación.
+  c_antena:
+    tipo: conclusion
+    titulo: Antena o cable coaxial
+    causas: [Cable coaxial, flex de antena o contacto del marco dañado.]
+    acciones: [Reemplaza el cable o flex y limpia los contactos.]
+  c_rf:
+    tipo: conclusion
+    titulo: Sección de radiofrecuencia
+    causas: [Componentes de RF, amplificadores o filtros dañados en la placa.]
+    acciones: [Revisa alimentaciones de la sección de RF con tu esquemático.]
+  c_baseband:
+    tipo: conclusion
+    titulo: Módem / banda base
+    causas:
+      - Módem sin alimentación o sin comunicación con el procesador.
+      - En placas sándwich, mala unión entre capas.
+    acciones:
+      - Revisa alimentaciones del módem con tu esquemático.
+      - Revisa la unión entre capas si hubo golpe o caída.
+  c_wifi:
+    tipo: conclusion
+    titulo: Wi-Fi / Bluetooth
+    causas: [Módulo Wi-Fi/Bluetooth o su alimentación dañados; unión entre capas.]
+    acciones: [Mide alimentaciones del módulo con tu esquemático; revisa la unión de capas.]

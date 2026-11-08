@@ -83,6 +83,7 @@ export const Opcion = z.object({
   texto: z.string(),
   siguiente: z.string().optional(),
   arbol: z.string().optional(),
+  nodo: z.string().optional(), // nodo dentro del otro árbol (con "arbol")
 });
 
 export const Nodo = z.object({
@@ -110,6 +111,86 @@ export const TreeFile = z.object({
   nodos: z.record(Nodo),
 });
 
+const optNum = z
+  .union([z.number(), z.string(), z.null()])
+  .optional()
+  .transform((v) => (v === "" || v == null ? null : typeof v === "number" ? v : Number.isFinite(Number(v)) ? Number(v) : null));
+
+export const ReferenceLinesFile = z.object({
+  estado: estadoArchivo,
+  lineas: z.array(
+    z.object({
+      id: z.string(),
+      nombre: z.string(),
+      grupo: z.string().default("Otras"),
+      descripcion: z.string().optional(),
+      donde_medir: z.string().optional(),
+      voltaje_nominal: optNum,
+      inyeccion_max_v: optNum,
+      inyeccion_max_a: optNum,
+      alias: z.record(z.string()).nullable().optional(),
+    }),
+  ),
+});
+
+export const ShortFlowFile = z.object({
+  estado: estadoArchivo,
+  metodos: z.array(z.object({ id: z.string(), label: z.string() })),
+  pasos: z.array(
+    z.object({
+      id: z.string(),
+      titulo: z.string(),
+      herramienta: Herramienta.optional(),
+      texto: z.string(),
+      seguridad: z.array(z.string()).optional(),
+      metodo: z.string().optional(),
+      registra_medicion: z.boolean().optional(),
+      pide_inyeccion: z.boolean().optional(),
+      verificado: z.boolean().default(false),
+    }),
+  ),
+});
+
+export const Tornillo = z.object({
+  tipo: z.string(),
+  ubicacion: z.string(),
+  cantidad: z.number().nullable().optional(),
+  largo: z.string().nullable().optional(),
+});
+
+export const GuideFile = z.object({
+  id: z.string(),
+  titulo: z.string(),
+  tipo: z.enum(["modular", "placa"]).default("modular"),
+  categoria_pieza: z.string().optional(),
+  modelos: z.array(z.string()).min(1),
+  estado: estadoArchivo,
+  tiempo_estimado_min: z.number().optional(),
+  dificultad: z.string().optional(),
+  herramientas: z.array(z.string()).default([]),
+  seguridad: z.array(z.string()).default([]),
+  notas: z.string().optional(),
+  pasos: z
+    .array(
+      z.object({
+        titulo: z.string(),
+        texto: z.string(),
+        tornillos: z.array(Tornillo).optional(),
+        advertencias: z.array(z.string()).optional(),
+        seguridad: z.array(z.string()).optional(),
+        temperatura: z.string().optional(),
+        checks: z.array(z.string()).optional(),
+        tiempo_min: z.number().optional(),
+        imagen: z.string().optional(),
+        verificado: z.boolean().default(false),
+      }),
+    )
+    .min(1),
+});
+
+export type ReferenceLine = z.infer<typeof ReferenceLinesFile>["lineas"][number];
+export type ShortFlow = z.infer<typeof ShortFlowFile>;
+export type Guide = z.infer<typeof GuideFile>;
 export type Model = z.infer<typeof ModelSchema>;
 export type Checklist = z.infer<typeof ChecklistFile>;
 export type Safety = z.infer<typeof SafetyFile>;

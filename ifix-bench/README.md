@@ -31,6 +31,7 @@ En la tablet, “Añadir a pantalla de inicio” la deja como una app a pantalla
 |---|---|
 | Base de datos (órdenes, clientes, mediciones, ajustes) | `data/ifix.db` |
 | Fotos | `data/uploads/<orden>/` |
+| Tus esquemáticos / boardviews subidos | `data/library/` |
 | Base de conocimiento editable | `knowledge/` (ver `knowledge/README.md`) |
 
 **Copia de seguridad:** copia la carpeta `data/` con la app detenida.
@@ -57,8 +58,27 @@ Comprobar los YAML de conocimiento: `npm run lint:knowledge`.
 - **Ajustes**: datos del taller, moneda, garantía, API key de Claude (para la Fase 3) y estado de
   validación de cada archivo de conocimiento.
 
-## Próximas fases
-- Fase 2: localización de cortocircuitos y registro de modo diodo por línea, guías paso a paso con
-  modo manos libres, inventario, historial con búsqueda por modelo y síntoma, más árboles.
+## Fase 2 (lista)
+
+- **Placa → Localizar cortocircuito**: flujo guiado de 10 pasos (preparar, medir, inspeccionar,
+  inyectar con límite, térmica, colofonia, alcohol, aislar, reemplazar, verificar). Si llenas
+  `inyeccion_max_v` / `inyeccion_max_a` de una línea en `knowledge/reference-lines.yaml`, la app
+  **bloquea** registrar una inyección por encima de tu límite.
+- **Mediciones por línea** (modo diodo, resistencia, voltaje) con conversión de unidades. Las que marcas
+  como “placa buena” forman tus **valores de referencia** (Placa → Valores de referencia) y cada
+  medición nueva se compara en vivo (diferencia en %; se resalta por encima de ±10 %, umbral orientativo).
+- **Guías paso a paso** (`knowledge/guides/`): tornillos, advertencias, temperaturas, checklist por paso,
+  cronómetro y progreso guardado por orden. **Modo manos libres**: paso a pantalla completa, avanzar
+  tocando la pantalla (izquierda = atrás) o con la barra espaciadora, pantalla siempre encendida.
+- **Inventario**: stock, mínimo, costo, precio, proveedor, ubicación y modelos compatibles. Usar una
+  pieza en una orden descuenta el stock (y quitarla lo devuelve). Muestra costo de piezas y margen.
+- **Historial**: búsqueda por modelo (o familia), síntomas, patrón de consumo DC y texto, con resumen
+  “la última vez fue…” y causas más frecuentes. Cada orden muestra órdenes parecidas.
+- **Biblioteca de esquemáticos**: sube TUS archivos (o enlaza su ruta) y asígnalos a modelos; cada orden
+  muestra los de su modelo. La app no incluye esquemáticos con copyright.
+- **6 árboles nuevos**: se reinicia en bucle, sin touch, sin audio, sin señal, Face ID, se calienta.
+- Moneda por defecto: **USD**.
+
+## Próxima fase
 - Fase 3: análisis de fotos y chat con Claude, programación de piezas, checklist de salida y nota
   de entrega en PDF.

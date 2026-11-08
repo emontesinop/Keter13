@@ -55,7 +55,7 @@ export default async function DiagnosticIndex({ searchParams }: { searchParams: 
         <div className="panel">
           <p className="font-semibold">Síntomas sin árbol todavía</p>
           <p className="muted text-base">
-            {sinArbol.map((s) => s.label).join(" · ")}. Puedes crearlos tú en <code>knowledge/diagnostics/</code> (se añadirán más en la Fase 2).
+            {sinArbol.map((s) => s.label).join(" · ")}. Puedes crearlos tú en <code>knowledge/diagnostics/</code>.
           </p>
         </div>
       )}

@@ -36,3 +36,15 @@ export const TOOLS: Record<string, { label: string; emoji: string }> = {
 };
 
 export const PHOTO_STAGES = ["ENTRADA", "PROCESO", "SALIDA", "IA"] as const;
+
+export const PART_CATEGORIES = [
+  { id: "PANTALLA", label: "Pantalla" },
+  { id: "BATERIA", label: "Batería" },
+  { id: "FLEX", label: "Flex / puerto" },
+  { id: "CAMARA", label: "Cámara" },
+  { id: "CARCASA", label: "Carcasa / tapa" },
+  { id: "COMPONENTE", label: "Componente de placa" },
+  { id: "CONSUMIBLE", label: "Consumible" },
+  { id: "OTRO", label: "Otro" },
+] as const;
+export const partCategoryLabel = (id: string) => PART_CATEGORIES.find((c) => c.id === id)?.label ?? id;

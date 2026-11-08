@@ -12,6 +12,10 @@ export const getOrder = cache(async (id: string) => {
       checklist: true,
       diagnostics: { orderBy: { createdAt: "desc" } },
       dcReadings: { orderBy: { createdAt: "desc" } },
+      measurements: { orderBy: { createdAt: "desc" } },
+      shortHunts: { orderBy: { updatedAt: "desc" } },
+      partUsages: { include: { part: true }, orderBy: { createdAt: "desc" } },
+      guideProgress: true,
     },
   });
   if (!o) notFound();

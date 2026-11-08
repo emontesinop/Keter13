@@ -44,7 +44,7 @@ export function DcConsumption({
       const q = new URLSearchParams({ ...(orderId ? { orden: orderId } : {}), ...(s.nodo ? { nodo: s.nodo } : {}) });
       return { href: `/diagnostico/${s.arbol}?${q}`, label: "Seguir con el árbol de diagnóstico →" };
     }
-    if (s.modulo === "cortos") return { href: null, label: "Siguiente: localización de cortocircuitos (Fase 2)" };
+    if (s.modulo === "cortos") return { href: `/placa${orderId ? `?orden=${orderId}` : ""}`, label: "Localizar el cortocircuito →" };
     return null;
   };
   const next = dest(p?.siguiente);

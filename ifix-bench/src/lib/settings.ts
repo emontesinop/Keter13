@@ -5,7 +5,7 @@ export const SETTING_DEFAULTS = {
   nombre_taller: "iFix Bench",
   telefono_taller: "",
   direccion_taller: "",
-  moneda: "MXN",
+  moneda: "USD",
   garantia_dias: "90",
   anthropic_api_key: "",
 } as const;

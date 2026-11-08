@@ -11,7 +11,11 @@ import {
   SafetyFile,
   SymptomsFile,
   TreeFile,
+  ReferenceLinesFile,
+  ShortFlowFile,
+  GuideFile,
   type Tree,
+  type Guide,
 } from "./knowledge-schemas";
 
 export const KNOWLEDGE_DIR = join(process.cwd(), "knowledge");
@@ -52,6 +56,38 @@ export const getPhysical = () => load("physical.yaml", PhysicalFile).opciones;
 export const getSymptoms = () => load("symptoms.yaml", SymptomsFile).sintomas;
 export const getSafety = () => load("safety.yaml", SafetyFile).avisos;
 export const getDcPatterns = () => load("dc-consumption.yaml", DcFile);
+
+export const getReferenceLines = () => load("reference-lines.yaml", ReferenceLinesFile);
+export const getShortFlow = () => load("short-circuit.yaml", ShortFlowFile);
+
+function listYaml(sub: string): string[] {
+  const dir = join(KNOWLEDGE_DIR, sub);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((f) => f.endsWith(".yaml") || f.endsWith(".yml"))
+    .map((f) => f.replace(/\.ya?ml$/, ""))
+    .sort();
+}
+
+export const listGuideIds = () => listYaml("guides");
+
+export function getGuide(id: string): Guide | null {
+  if (!/^[a-z0-9-]+$/.test(id)) return null;
+  const file = ["yaml", "yml"].map((e) => `guides/${id}.${e}`).find((f) => existsSync(join(KNOWLEDGE_DIR, f)));
+  return file ? load(file, GuideFile) : null;
+}
+
+export function getGuides(): Guide[] {
+  return listGuideIds()
+    .map((id) => {
+      try {
+        return getGuide(id);
+      } catch {
+        return null;
+      }
+    })
+    .filter((g): g is Guide => g !== null);
+}
 
 export function listTreeIds(): string[] {
   const dir = join(KNOWLEDGE_DIR, "diagnostics");
@@ -141,12 +177,48 @@ export function validateKnowledge(): { file: string; ok: boolean; problems: stri
         for (const o of n.opciones ?? []) {
           if (o.siguiente && !t.nodos[o.siguiente]) problems.push(`${nid}: "${o.texto}" apunta a nodo inexistente "${o.siguiente}"`);
           if (o.arbol && !treeIds.has(o.arbol)) problems.push(`${nid}: "${o.texto}" apunta a árbol inexistente "${o.arbol}"`);
+          if (o.arbol && o.nodo && treeIds.has(o.arbol)) {
+            try {
+              if (!getTree(o.arbol)?.nodos[o.nodo]) problems.push(`${nid}: "${o.texto}" apunta a nodo inexistente "${o.arbol}:${o.nodo}"`);
+            } catch {}
+          }
           if (!o.siguiente && !o.arbol) problems.push(`${nid}: "${o.texto}" no tiene destino`);
         }
         for (const s of n.seguridad ?? []) if (!safetyIds.has(s)) problems.push(`${nid}: aviso "${s}" no existe`);
       }
       const pendientes = Object.values(t.nodos).filter((n) => !n.verificado && n.tipo !== "conclusion").length;
       return { problems, pendientes };
+    });
+  }
+  check("reference-lines.yaml", () => {
+    const ids = getReferenceLines().lineas.map((l) => l.id);
+    return { problems: ids.filter((k, i) => ids.indexOf(k) !== i).map((k) => `id duplicado: ${k}`) };
+  });
+  check("short-circuit.yaml", () => {
+    const f = getShortFlow();
+    const metodos = new Set(f.metodos.map((m) => m.id));
+    const problems: string[] = [];
+    for (const p of f.pasos) {
+      if (p.metodo && !metodos.has(p.metodo)) problems.push(`${p.id}: método "${p.metodo}" no existe`);
+      for (const s of p.seguridad ?? []) if (!safetyIds.has(s)) problems.push(`${p.id}: aviso "${s}" no existe`);
+    }
+    return { problems, pendientes: f.pasos.filter((p) => !p.verificado).length };
+  });
+  const modelIds = (() => {
+    try {
+      return new Set(getModels().map((m) => m.id));
+    } catch {
+      return new Set<string>();
+    }
+  })();
+  for (const id of listGuideIds()) {
+    check(`guides/${id}.yaml`, () => {
+      const g = getGuide(id)!;
+      const problems: string[] = [];
+      if (g.id !== id) problems.push(`id "${g.id}" no coincide con el nombre del archivo`);
+      for (const m of g.modelos) if (m !== "todos" && !modelIds.has(m)) problems.push(`modelo desconocido: ${m}`);
+      for (const s of [...g.seguridad, ...g.pasos.flatMap((p) => p.seguridad ?? [])]) if (!safetyIds.has(s)) problems.push(`aviso "${s}" no existe`);
+      return { problems: [...new Set(problems)], pendientes: g.pasos.filter((p) => !p.verificado).length };
     });
   }
   return report;

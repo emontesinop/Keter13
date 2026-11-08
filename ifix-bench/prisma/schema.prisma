@@ -54,6 +54,10 @@ model Order {
   checklist         ChecklistResult[]
   diagnostics       DiagnosticSession[]
   dcReadings        DcReading[]
+  measurements      Measurement[]
+  shortHunts        ShortHunt[]
+  partUsages        PartUsage[]
+  guideProgress     GuideProgress[]
 
   @@index([modelo])
   @@index([estado])
@@ -108,4 +112,97 @@ model DcReading {
 model Setting {
   key   String @id
   value String
+}
+
+// ─── Fase 2 ─────────────────────────────────────────────────────────────────
+
+/// Mediciones por línea. Las marcadas placaBuena forman tus valores de referencia.
+model Measurement {
+  id         String   @id @default(cuid())
+  orderId    String?
+  order      Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  modelo     String
+  linea      String // clave de knowledge/reference-lines.yaml o texto libre
+  modo       String // DIODO | RESISTENCIA | VOLTAJE
+  valor      Float
+  unidad     String // V | mV | Ω | kΩ
+  placaBuena Boolean  @default(false)
+  nota       String?
+  createdAt  DateTime @default(now())
+
+  @@index([modelo, linea, modo])
+}
+
+model ShortHunt {
+  id                String   @id @default(cuid())
+  orderId           String?
+  order             Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  linea             String
+  resistencia       Float? // Ω a tierra
+  voltajeInyectado  Float?
+  corrienteMax      Float? // A
+  metodo            String   @default("") // claves separadas por coma
+  componenteHallado String?
+  resuelto          Boolean  @default(false)
+  pasosHechos       String   @default("[]") // JSON con ids de pasos del flujo
+  notas             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Part {
+  id          String      @id @default(cuid())
+  nombre      String
+  sku         String?
+  categoria   String // PANTALLA | BATERIA | FLEX | CAMARA | CARCASA | COMPONENTE | CONSUMIBLE | OTRO
+  modelos     String      @default("") // ids de modelos separados por coma
+  calidad     String? // Original, OEM, Compatible…
+  stock       Int         @default(0)
+  stockMinimo Int         @default(0)
+  costo       Float?
+  precioVenta Float?
+  proveedor   String?
+  ubicacion   String?
+  notas       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  usages      PartUsage[]
+}
+
+model PartUsage {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  partId    String
+  part      Part     @relation(fields: [partId], references: [id], onDelete: Restrict)
+  cantidad  Int      @default(1)
+  costoUnit Float?
+  createdAt DateTime @default(now())
+}
+
+model GuideProgress {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  guiaId      String
+  pasosHechos String   @default("[]") // JSON: índices de pasos completados
+  checks      String   @default("{}") // JSON: { "paso-check": true }
+  segundos    Int      @default(0)
+  terminada   Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+
+  @@unique([orderId, guiaId])
+}
+
+/// Biblioteca de archivos propios del técnico (esquemáticos, boardviews, datasheets).
+model Document {
+  id        String   @id @default(cuid())
+  nombre    String
+  tipo      String // ESQUEMATICO | BOARDVIEW | DATASHEET | OTRO
+  modelos   String   @default("") // ids separados por coma (vacío = todos)
+  archivo   String? // relativo a data/library (si se subió)
+  rutaLocal String? // o ruta a un archivo que ya tienes en el disco
+  tamano    Int?
+  nota      String?
+  createdAt DateTime @default(now())
 }
