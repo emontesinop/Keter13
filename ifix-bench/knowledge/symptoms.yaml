@@ -1,0 +1,18 @@
+# Síntomas que se pueden marcar en una orden. "arbol" abre ese árbol de
+# diagnostics/ (si existe). Los síntomas sin árbol todavía aparecen sin botón.
+estado: verificar
+sintomas:
+  - { key: no_enciende, label: No enciende, arbol: no-enciende }
+  - { key: bootloop, label: Se reinicia en bucle }
+  - { key: no_carga, label: No carga, arbol: no-carga }
+  - { key: sin_imagen, label: Sin imagen, arbol: sin-imagen }
+  - { key: sin_touch, label: Sin touch }
+  - { key: sin_audio, label: Sin audio }
+  - { key: sin_senal, label: Sin señal / sin servicio }
+  - { key: faceid, label: Face ID no disponible }
+  - { key: calienta, label: Se calienta }
+  - { key: bateria, label: Batería dura poco }
+  - { key: camara, label: Falla de cámara }
+  - { key: pantalla_rota, label: Pantalla rota }
+  - { key: liquido, label: Mojado / líquido }
+  - { key: otro, label: Otro }

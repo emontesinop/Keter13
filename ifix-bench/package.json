@@ -1,0 +1,38 @@
+{
+  "name": "ifix-bench",
+  "version": "0.1.0",
+  "private": true,
+  "description": "iFix Bench — asistente de taller para reparación de iPhone",
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "dev": "node scripts/setup.mjs && next dev -H 0.0.0.0 -p 3000",
+    "build": "next build",
+    "start": "node scripts/setup.mjs && next start -H 0.0.0.0 -p 3000",
+    "bench": "node scripts/setup.mjs && next build && next start -H 0.0.0.0 -p 3000",
+    "lint:knowledge": "tsx scripts/check-knowledge.ts",
+    "typecheck": "tsc --noEmit",
+    "db:studio": "prisma studio",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "@prisma/client": "6.19.3",
+    "lucide-react": "0.468.0",
+    "next": "15.5.29",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "server-only": "^0.0.1",
+    "yaml": "2.6.1",
+    "zod": "3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "@types/react": "19.1.10",
+    "@types/react-dom": "19.1.7",
+    "autoprefixer": "10.4.20",
+    "postcss": "8.4.49",
+    "prisma": "6.19.3",
+    "tailwindcss": "3.4.19",
+    "tsx": "4.19.2",
+    "typescript": "5.7.2"
+  }
+}

@@ -1,0 +1,64 @@
+# Patrones de consumo en la fuente DC (conectada al conector de batería).
+# Las causas son orientativas: la app además muestra lo que encontraste tú en casos
+# anteriores del mismo modelo y patrón (historial).
+estado: verificar
+como_conectar: >-
+  Conecta la fuente DC al conector de batería de la placa con un cable/adaptador de fuente
+  (respeta polaridad). Ajusta el voltaje nominal de batería y limita la corriente. Observa el
+  amperaje primero SIN pulsar encendido y luego al pulsar encendido.
+campos_usuario:
+  - "Voltaje que usas para la prueba: ______"
+  - "Límite de corriente que usas: ______"
+patrones:
+  - id: cero
+    nombre: 0 mA (sin ninguna reacción)
+    descripcion: Al conectar y al pulsar encendido el amperímetro no se mueve.
+    causas:
+      - Línea principal de batería abierta (conector de batería dañado, filtro o pista abierta).
+      - Problema con la señal del botón de encendido (flex, conector o línea).
+      - PMU que no arranca (alimentación, cristal/reloj, señales de arranque).
+      - En placas sándwich (X en adelante), mala unión entre capas.
+    siguiente: { arbol: no-enciende, nodo: n4 }
+  - id: fijo_sin_pulsar
+    nombre: Consumo fijo sin pulsar encendido
+    descripcion: Apenas conectas, hay consumo constante aunque el equipo esté "apagado".
+    causas:
+      - Fuga en una línea principal (condensador o componente con fuga).
+      - Componente conectado directo a la línea principal dañado (por ejemplo, IC de carga, audio, retroiluminación).
+      - Líquido/corrosión creando caminos de fuga.
+    siguiente: { arbol: no-enciende, nodo: n5 }
+  - id: corto_directo
+    nombre: Corto directo (llega al límite de corriente)
+    descripcion: Al conectar, la fuente llega al límite de corriente y el voltaje cae.
+    causas:
+      - Condensador en corto en la línea principal.
+      - IC en corto en la línea principal.
+      - Restos de líquido o soldadura uniendo pistas.
+    siguiente: { modulo: cortos }
+  - id: sube_y_cae
+    nombre: Sube y se cae (tras pulsar encendido)
+    descripcion: Al pulsar encendido el consumo sube, se mantiene un momento y vuelve a 0 o a reposo.
+    causas:
+      - El arranque se detiene en una fase (NAND, RAM, CPU).
+      - Una línea secundaria (generada por la PMU) en corto o con fuga.
+      - Falla de software o firmware (probar restaurar en modo DFU antes de tocar la placa).
+    siguiente: { arbol: no-enciende, nodo: n6 }
+  - id: se_queda_fijo
+    nombre: Sube y se queda fijo (sin imagen)
+    descripcion: Al pulsar, el consumo sube y se queda estable, pero no hay imagen.
+    causas:
+      - El equipo arranca pero falla la pantalla o su alimentación (ir a "Sin imagen").
+      - "Arranque detenido en una fase concreta: anota el valor exacto para compararlo con tus casos."
+    siguiente: { arbol: sin-imagen, nodo: n1 }
+  - id: ciclico
+    nombre: Sube y baja en ciclos (se reinicia)
+    descripcion: El consumo sube, cae y vuelve a empezar de forma repetida.
+    causas:
+      - Reinicio en bucle por un sensor o periférico que no responde (revisa el registro de pánicos si se puede leer).
+      - Flexor o componente dañado que el sistema detecta al arrancar.
+      - NAND o software dañado.
+  - id: normal_apagado
+    nombre: Consumo normal en reposo, arranca normal
+    descripcion: El consumo se comporta como en una placa buena.
+    causas:
+      - "La placa podría estar bien: revisa batería, flex de botón, pantalla o conector de batería."

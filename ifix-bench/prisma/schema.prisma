@@ -1,0 +1,111 @@
+// iFix Bench — modelo de datos (SQLite local)
+// Los valores de "estado", "etapa", etc. se validan en src/lib/constants.ts
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  nombre    String
+  telefono  String?
+  email     String?
+  notas     String?
+  createdAt DateTime @default(now())
+  orders    Order[]
+
+  @@index([telefono])
+}
+
+model Order {
+  id                String   @id @default(cuid())
+  codigo            String   @unique // IFB-2026-0001
+  customerId        String
+  customer          Customer @relation(fields: [customerId], references: [id])
+  modelo            String // clave de knowledge/models.yaml
+  imei              String?
+  serie             String?
+  codigoDesbloqueo  String? // código del equipo que deja el cliente (opcional)
+  fallaReportada    String
+  sintomas          String   @default("") // claves separadas por coma
+  estadoFisico      String   @default("") // claves separadas por coma
+  estadoFisicoNota  String?
+  presupuesto       Float?
+  costoFinal        Float?
+  estado            String   @default("RECIBIDO")
+  icloudBloqueado   Boolean  @default(false)
+  pruebaPropiedad   String? // descripción de la prueba (factura, caja, etc.)
+  pruebaVerificada  Boolean  @default(false)
+  garantiaDias      Int?
+  boardviewPath     String? // ruta a un archivo local del técnico
+  diagnosticoFinal  String?
+  causaRaiz         String? // ej. "U2 / Tristar"
+  notas             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  deliveredAt       DateTime?
+
+  photos            Photo[]
+  checklist         ChecklistResult[]
+  diagnostics       DiagnosticSession[]
+  dcReadings        DcReading[]
+
+  @@index([modelo])
+  @@index([estado])
+}
+
+model Photo {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  etapa     String // ENTRADA | PROCESO | SALIDA | IA
+  ruta      String // relativa a data/uploads
+  nota      String?
+  createdAt DateTime @default(now())
+}
+
+model ChecklistResult {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fase      String // ENTRADA | SALIDA
+  itemKey   String
+  resultado String // OK | FALLA | NO_PROBADO | NA
+  nota      String?
+  updatedAt DateTime @updatedAt
+
+  @@unique([orderId, fase, itemKey])
+}
+
+model DiagnosticSession {
+  id         String   @id @default(cuid())
+  orderId    String?
+  order      Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  arbol      String
+  ruta       String // JSON: [{nodo, opcion, valor, nota}]
+  conclusion String? // id del nodo de conclusión
+  resumen    String?
+  createdAt  DateTime @default(now())
+}
+
+model DcReading {
+  id        String   @id @default(cuid())
+  orderId   String?
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  patron    String // clave de knowledge/dc-consumption.yaml
+  voltaje   Float?
+  mA        Float?
+  momento   String? // "al conectar" | "al pulsar encendido" | ...
+  nota      String?
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  key   String @id
+  value String
+}

@@ -1,0 +1,29 @@
+
+> ifix-bench@0.1.0 start
+> node scripts/setup.mjs && next start -H 0.0.0.0 -p 3000
+
+▶ iFix Bench: preparando base de datos local…
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": SQLite database "ifix.db" at "file:../data/ifix.db"
+
+SQLite database ifix.db created at file:../data/ifix.db
+
+1 migration found in prisma/migrations
+
+Applying migration `20261108045237_init`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20261108045237_init/
+    └─ migration.sql
+      
+All migrations have been successfully applied.
+✔ Base de datos lista en data/ifix.db
+   ▲ Next.js 15.5.29
+   - Local:        http://localhost:3000
+   - Network:      http://0.0.0.0:3000
+
+ ✓ Starting...
+ ✓ Ready in 376ms
