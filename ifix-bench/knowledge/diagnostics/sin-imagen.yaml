@@ -1,0 +1,112 @@
+id: sin-imagen
+titulo: Sin imagen
+descripcion: El equipo parece encender (vibra, suena o lo detecta la PC) pero la pantalla queda negra.
+estado: verificar
+inicio: n1
+nodos:
+  n1:
+    tipo: pregunta
+    titulo: ¿Enciende realmente?
+    instruccion: >-
+      Comprueba señales de vida: vibración al conectar el cargador, sonido, detección en la PC
+      o consumo normal en la fuente DC.
+    herramienta: pc
+    verificado: false
+    opciones:
+      - { texto: "Sí, hay señales de vida", siguiente: n2 }
+      - { texto: "No hay ninguna señal", arbol: no-enciende }
+  n2:
+    tipo: pregunta
+    titulo: Pantalla conocida buena
+    instruccion: Conecta una pantalla conocida buena (sin cerrar el equipo).
+    herramienta: visual
+    seguridad: [esd, litio]
+    verificado: false
+    opciones:
+      - { texto: "Con la pantalla buena hay imagen", siguiente: c_pantalla }
+      - { texto: "Sigue sin imagen", siguiente: n3 }
+  n3:
+    tipo: pregunta
+    titulo: Conector de pantalla en la placa
+    instruccion: >-
+      Revisa el conector de pantalla con microscopio: pines doblados o quemados y componentes
+      alrededor (filtros, bobinas, diodos).
+    herramienta: microscopio
+    verificado: false
+    opciones:
+      - { texto: "Daño visible en conector o componentes", siguiente: c_conector }
+      - { texto: "Todo se ve bien", siguiente: n4 }
+  n4:
+    tipo: pregunta
+    titulo: ¿LCD u OLED?
+    instruccion: >-
+      Modelos LCD: 8, 8 Plus, XR, 11, SE (2020/2022). El resto son OLED.
+    herramienta: ninguna
+    verificado: false
+    opciones:
+      - { texto: "LCD", siguiente: n5 }
+      - { texto: "OLED", siguiente: n6 }
+  n5:
+    tipo: pregunta
+    titulo: Prueba de retroiluminación
+    instruccion: >-
+      Ilumina la pantalla con una linterna en ángulo. Si ves la imagen tenue, la falla está
+      en la retroiluminación.
+    herramienta: visual
+    verificado: false
+    opciones:
+      - { texto: "Se ve imagen tenue", siguiente: c_backlight }
+      - { texto: "No se ve nada", siguiente: n6 }
+  n6:
+    tipo: medicion
+    titulo: Líneas del conector de pantalla
+    instruccion: >-
+      Mide en modo diodo los pines del conector de pantalla y compáralos con tu placa buena
+      del mismo modelo. Registra los que salgan distintos.
+    herramienta: multimetro
+    medir: Modo diodo en los pines del conector de pantalla
+    valor_esperado: ""
+    verificado: false
+    opciones:
+      - { texto: "Hay pines fuera de valor", siguiente: c_lineas_pantalla }
+      - { texto: "Todo similar a la placa buena", siguiente: c_avanzado }
+  c_pantalla:
+    tipo: conclusion
+    titulo: Pantalla dañada
+    causas: [La pantalla original está dañada.]
+    acciones:
+      - Reemplaza la pantalla.
+      - Revisa la programación de True Tone (sección Programación de piezas).
+  c_conector:
+    tipo: conclusion
+    titulo: Conector o componentes de pantalla dañados
+    causas:
+      - Pines del conector doblados o quemados.
+      - Filtros o bobinas cercanas dañados (frecuente al conectar una pantalla con el equipo alimentado).
+    acciones:
+      - Reemplaza el conector o los componentes dañados.
+      - Desconecta siempre la batería antes de conectar o desconectar la pantalla.
+  c_backlight:
+    tipo: conclusion
+    titulo: Retroiluminación (LCD)
+    causas:
+      - Circuito de retroiluminación dañado (IC, bobina, diodo o filtro).
+    acciones:
+      - Mide en modo diodo las líneas de retroiluminación y compáralas con tu placa buena.
+  c_lineas_pantalla:
+    tipo: conclusion
+    titulo: Líneas de pantalla dañadas
+    causas:
+      - Filtros o componentes de las líneas de pantalla dañados.
+      - Alimentación de la pantalla ausente.
+    acciones:
+      - Sigue con el esquemático la línea que salió fuera de valor.
+  c_avanzado:
+    tipo: conclusion
+    titulo: Falla avanzada
+    causas:
+      - Falta alguna alimentación o señal de pantalla generada en la placa.
+      - Falla de software o de la sección del procesador.
+    acciones:
+      - Intenta restaurar en DFU.
+      - Mide las alimentaciones de pantalla con el equipo encendido.

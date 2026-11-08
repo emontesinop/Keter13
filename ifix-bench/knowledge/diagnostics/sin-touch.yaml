@@ -1,0 +1,89 @@
+id: sin-touch
+titulo: Sin touch
+descripcion: El touch no responde, responde por zonas o toca solo (touch fantasma).
+estado: verificar
+inicio: n1
+nodos:
+  n1:
+    tipo: pregunta
+    titulo: ¿Qué hace el touch?
+    instruccion: Prueba arrastrar un ícono por toda la pantalla.
+    herramienta: visual
+    verificado: false
+    opciones:
+      - { texto: "No responde en ninguna parte", siguiente: n2 }
+      - { texto: "Falla por zonas", siguiente: n2 }
+      - { texto: "Toca solo (touch fantasma)", siguiente: n5 }
+  n2:
+    tipo: pregunta
+    titulo: Pantalla conocida buena
+    instruccion: Conecta una pantalla conocida buena (desconecta la batería antes).
+    herramienta: visual
+    seguridad: [esd, litio]
+    verificado: false
+    opciones:
+      - { texto: "Con la pantalla buena funciona", siguiente: c_pantalla }
+      - { texto: "Sigue sin touch", siguiente: n3 }
+  n3:
+    tipo: pregunta
+    titulo: Conector de pantalla
+    instruccion: Revisa el conector de pantalla y sus componentes con microscopio.
+    herramienta: microscopio
+    verificado: false
+    opciones:
+      - { texto: "Daño visible", siguiente: c_conector }
+      - { texto: "Todo bien", siguiente: n4 }
+  n4:
+    tipo: medicion
+    titulo: Líneas de touch
+    instruccion: Mide en modo diodo los pines de touch del conector y compáralos con tu placa buena.
+    herramienta: multimetro
+    medir: Modo diodo en los pines de touch del conector de pantalla
+    valor_esperado: ""
+    verificado: false
+    opciones:
+      - { texto: "Pines fuera de valor", siguiente: c_lineas }
+      - { texto: "Todo similar a la placa buena", siguiente: c_avanzado }
+  n5:
+    tipo: pregunta
+    titulo: Touch fantasma
+    instruccion: >-
+      Comprueba si la pantalla es no original, si el cristal está presionado (batería hinchada,
+      carcasa doblada) o si ocurre solo cargando con cierto cargador.
+    herramienta: visual
+    seguridad: [litio]
+    verificado: false
+    opciones:
+      - { texto: "Solo con cierto cargador", siguiente: c_cargador }
+      - { texto: "Batería hinchada / presión sobre la pantalla", siguiente: c_presion }
+      - { texto: "Ocurre siempre", siguiente: n2 }
+  c_pantalla:
+    tipo: conclusion
+    titulo: Pantalla / digitalizador
+    causas: [Digitalizador dañado o pantalla no original de baja calidad.]
+    acciones: [Reemplaza la pantalla; transfiere True Tone si aplica.]
+  c_conector:
+    tipo: conclusion
+    titulo: Conector de pantalla dañado
+    causas: [Pines o componentes de filtrado dañados.]
+    acciones: [Repara el conector o los componentes dañados.]
+  c_lineas:
+    tipo: conclusion
+    titulo: Líneas de touch dañadas
+    causas: [Filtros o alimentación de touch dañados en la placa.]
+    acciones: [Sigue la línea fuera de valor con tu esquemático.]
+  c_avanzado:
+    tipo: conclusion
+    titulo: Falla avanzada
+    causas: [Falta alimentación o señal del touch generada en la placa.]
+    acciones: [Mide alimentaciones de touch con el equipo encendido.]
+  c_cargador:
+    tipo: conclusion
+    titulo: Interferencia del cargador
+    causas: [Cargador no certificado o con ruido.]
+    acciones: [Prueba con cargador original; informa al cliente.]
+  c_presion:
+    tipo: conclusion
+    titulo: Presión sobre la pantalla
+    causas: [Batería hinchada o carcasa doblada que presiona el digitalizador.]
+    acciones: [Reemplaza la batería con precauciones de litio; revisa la carcasa.]

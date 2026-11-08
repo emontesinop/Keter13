@@ -1,0 +1,64 @@
+id: faceid
+titulo: Face ID no disponible
+descripcion: Mensaje "Face ID no disponible" o no permite configurarlo.
+estado: verificar
+inicio: n1
+nodos:
+  n1:
+    tipo: pregunta
+    titulo: ¿Cuándo empezó?
+    instruccion: Pregunta al cliente y revisa el historial de la orden.
+    herramienta: ninguna
+    verificado: false
+    opciones:
+      - { texto: "Tras cambio de pantalla o apertura", siguiente: n2 }
+      - { texto: "Tras golpe o líquido", siguiente: n3 }
+      - { texto: "Sin motivo aparente", siguiente: n3 }
+  n2:
+    tipo: pregunta
+    titulo: Flex de sensores frontal
+    instruccion: >-
+      Revisa el flex de sensores frontal (auricular/proximidad) y su conector: roturas, pistas
+      dañadas o mal transferido. Prueba el sensor de proximidad en una llamada.
+    herramienta: microscopio
+    seguridad: [esd]
+    verificado: false
+    opciones:
+      - { texto: "Flex dañado o proximidad no funciona", siguiente: c_flex_frontal }
+      - { texto: "Flex bien", siguiente: n3 }
+  n3:
+    tipo: pregunta
+    titulo: Cámara frontal y TrueDepth
+    instruccion: >-
+      Comprueba si la cámara frontal funciona y si los Animoji siguen tu cara. Revisa los conectores
+      del módulo TrueDepth en la placa.
+    herramienta: visual
+    verificado: false
+    opciones:
+      - { texto: "Cámara frontal tampoco funciona", siguiente: c_conector }
+      - { texto: "Cámara funciona, Animoji no sigue la cara", siguiente: c_truedepth }
+      - { texto: "Todo funciona pero Face ID no", siguiente: c_proyector }
+  c_flex_frontal:
+    tipo: conclusion
+    titulo: Flex de sensores frontal
+    causas: [Flex de sensores dañado durante el cambio de pantalla.]
+    acciones:
+      - Repara o transfiere el componente según tu modelo (requiere programación en muchos modelos).
+      - Ver Programación de piezas → Face ID.
+  c_conector:
+    tipo: conclusion
+    titulo: Conector o alimentación del módulo frontal
+    causas: [Conector dañado o alimentación del módulo frontal ausente.]
+    acciones: [Revisa conector y alimentaciones con tu esquemático.]
+  c_truedepth:
+    tipo: conclusion
+    titulo: Componentes TrueDepth
+    causas: [Cámara infrarroja o iluminador dañados.]
+    acciones: [Evalúa la reparación del módulo según tu equipo y modelo. Ver Programación de piezas.]
+  c_proyector:
+    tipo: conclusion
+    titulo: Proyector de puntos
+    causas: [Proyector de puntos dañado (golpe, líquido o calor).]
+    acciones:
+      - Evalúa si tienes el procedimiento y el equipo para su reparación; si no, informa al cliente.
+      - El módulo está emparejado con la placa; ver Programación de piezas → Face ID.

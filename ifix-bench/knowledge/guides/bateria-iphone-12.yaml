@@ -1,0 +1,93 @@
+id: bateria-iphone-12
+titulo: Cambio de batería
+tipo: modular
+categoria_pieza: BATERIA
+modelos: [iphone-12, iphone-12-pro]
+estado: verificar
+tiempo_estimado_min: 45
+dificultad: Media
+herramientas:
+  - Destornillador Pentalobe P2
+  - Destornillador tri-point Y000
+  - Destornillador Phillips #000
+  - Ventosa y púas de apertura
+  - Placa calefactora o iOpener
+  - Pinzas antiestáticas
+  - Junta adhesiva nueva para pantalla
+seguridad: [litio, esd, calor]
+notas: >-
+  Guía genérica para la familia iPhone 12 / 12 Pro. Revisa cada paso con tu experiencia
+  y completa largos de tornillos y temperaturas reales. Ver Programación de piezas para
+  conservar la salud de batería visible.
+pasos:
+  - titulo: Apagar y anotar
+    texto: Apaga el equipo. Confirma que el checklist de entrada está hecho y tienes fotos de entrada.
+    checks: [Equipo apagado, Checklist de entrada completo]
+    tiempo_min: 1
+    verificado: false
+  - titulo: Retirar tornillos inferiores
+    texto: Retira los dos tornillos a los lados del puerto de carga.
+    tornillos:
+      - { tipo: Pentalobe P2, ubicacion: "A ambos lados del puerto de carga", cantidad: 2, largo: "" }
+    tiempo_min: 1
+    verificado: false
+  - titulo: Calentar y abrir la pantalla
+    texto: >-
+      Calienta el borde inferior para ablandar el adhesivo. Levanta con la ventosa e inserta una púa.
+      Recorre los bordes cortando el adhesivo sin entrar más de lo necesario (cables cerca de los bordes).
+      La pantalla abre como un libro hacia el lado derecho; no la separes del todo todavía.
+    temperatura: "Placa / iOpener orientativo 60–80 °C (verificar)"
+    advertencias:
+      - No metas la púa profundo en la parte superior ni en el lado de los flexores de pantalla.
+      - Si la batería está hinchada, no presiones el cristal ni apliques calor prolongado.
+    seguridad: [calor, litio]
+    tiempo_min: 8
+    verificado: false
+  - titulo: Desconectar batería primero
+    texto: >-
+      Retira el soporte metálico que cubre los conectores de batería y pantalla. Desconecta la
+      BATERÍA antes que cualquier otro conector.
+    tornillos:
+      - { tipo: Tri-point Y000, ubicacion: "Soporte de conectores de batería y pantalla", cantidad: null, largo: "" }
+    advertencias: [Anota la posición de cada tornillo; los largos son distintos.]
+    seguridad: [litio, esd]
+    checks: [Batería desconectada]
+    tiempo_min: 3
+    verificado: false
+  - titulo: Retirar la pantalla
+    texto: Desconecta los flexores de pantalla y del sensor frontal. Retira la pantalla y guárdala protegida.
+    advertencias: ["Los flexores son frágiles: levanta los conectores en vertical con herramienta plástica."]
+    tiempo_min: 4
+    verificado: false
+  - titulo: Liberar la batería
+    texto: >-
+      Despega las lengüetas de adhesivo extraíble tirando despacio y en ángulo bajo. Si una lengüeta se
+      rompe, usa alcohol isopropílico bajo la batería y una tarjeta plástica. Si en tu unidad las lengüetas
+      quedan bajo otro componente (por ejemplo, Taptic Engine), retíralo primero.
+    advertencias:
+      - NUNCA hagas palanca con herramientas metálicas ni dobles la batería.
+      - Si la batería se perfora o humea, aléjala y colócala en recipiente ignífugo.
+    seguridad: [litio]
+    tiempo_min: 8
+    verificado: false
+  - titulo: Instalar batería nueva
+    texto: Coloca adhesivo nuevo, asienta la batería y conecta temporalmente para probar.
+    checks: [Batería conectada, Enciende, Muestra porcentaje]
+    tiempo_min: 5
+    verificado: false
+  - titulo: Montar pantalla y probar antes de sellar
+    texto: >-
+      Conecta pantalla y flexores, después la batería al final. Prueba encendido, touch, Face ID y
+      True Tone ANTES de colocar el adhesivo de la pantalla.
+    checks: [Imagen y touch, Face ID, True Tone]
+    tiempo_min: 5
+    verificado: false
+  - titulo: Sellar y cerrar
+    texto: Desconecta la batería, coloca la junta adhesiva, reinstala soporte y conecta batería. Cierra, pon los Pentalobe y presiona de manera uniforme.
+    tiempo_min: 6
+    verificado: false
+  - titulo: Checklist de salida
+    texto: Haz el checklist de salida y revisa Ajustes → Batería (salud y mensajes de pieza).
+    checks: [Checklist de salida hecho]
+    tiempo_min: 3
+    verificado: false

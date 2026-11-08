@@ -1,0 +1,48 @@
+# Checklist de entrada y salida (es el mismo para poder comparar antes/después).
+# "solo_biometria" muestra el ítem solo en modelos con face_id o touch_id.
+estado: verificar
+grupos:
+  - id: biometria
+    titulo: Biometría y pantalla
+    items:
+      - { key: face_id, label: Face ID, solo_biometria: face_id, ayuda: "Ajustes → Face ID y código → Configurar apariencia. Anota si sale 'Face ID no disponible'." }
+      - { key: touch_id, label: Touch ID / botón de inicio, solo_biometria: touch_id, ayuda: "Registrar una huella y probar el botón." }
+      - { key: true_tone, label: True Tone, ayuda: "Centro de control → mantener brillo. Si falta el botón True Tone, anótalo." }
+      - { key: pantalla_imagen, label: "Imagen (manchas, líneas, quemado)", ayuda: "Fondo blanco, negro, rojo, verde y azul." }
+      - { key: touch, label: Touch en toda la superficie, ayuda: "Arrastrar un ícono por todas las esquinas." }
+      - { key: mensaje_pieza, label: Mensajes de pieza desconocida, ayuda: "Ajustes → General → Información → Piezas e historial de servicio." }
+  - id: camaras
+    titulo: Cámaras
+    items:
+      - { key: camara_trasera, label: Cámara(s) trasera(s) y zoom, ayuda: "Probar cada lente y el enfoque." }
+      - { key: camara_frontal, label: Cámara frontal }
+      - { key: flash, label: Flash / linterna }
+  - id: audio
+    titulo: Audio
+    items:
+      - { key: altavoz_auricular, label: Altavoz de auricular (llamada) }
+      - { key: altavoz_inferior, label: Altavoz inferior (manos libres) }
+      - { key: microfonos, label: Micrófonos, ayuda: "Nota de voz y video con cámara frontal y trasera." }
+      - { key: vibrador, label: Vibrador (Taptic Engine) }
+  - id: conectividad
+    titulo: Conectividad
+    items:
+      - { key: senal, label: Señal / SIM / eSIM, ayuda: "¿Muestra operador? ¿Hace llamadas?" }
+      - { key: wifi, label: Wi-Fi }
+      - { key: bluetooth, label: Bluetooth }
+      - { key: nfc, label: NFC / Apple Pay }
+  - id: energia
+    titulo: Carga y batería
+    items:
+      - { key: carga_cable, label: Carga por cable }
+      - { key: carga_inalambrica, label: Carga inalámbrica / MagSafe }
+      - { key: salud_bateria, label: Salud de batería, ayuda: "Ajustes → Batería. Anota el porcentaje y si dice 'pieza desconocida'." }
+  - id: botones
+    titulo: Botones y sensores
+    items:
+      - { key: boton_encendido, label: Botón lateral / encendido }
+      - { key: botones_volumen, label: Botones de volumen }
+      - { key: switch_accion, label: Interruptor de silencio / botón de acción }
+      - { key: boton_camara, label: Control de cámara (16/17), ayuda: "Solo en modelos que lo tienen. Marca N/A si no aplica." }
+      - { key: sensor_proximidad, label: Sensor de proximidad, ayuda: "En llamada, tapar la parte superior: la pantalla debe apagarse." }
+      - { key: sensor_luz, label: Sensor de luz (brillo automático) }
