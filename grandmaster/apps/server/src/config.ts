@@ -2,6 +2,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+// Load grandmaster/.env if present (Node ≥ 20.12). Real environment variables take precedence.
+for (const f of [path.resolve(here, "../../../.env"), path.resolve(process.cwd(), ".env")]) {
+  try { (process as any).loadEnvFile?.(f); break; } catch { /* no .env file */ }
+}
 const env = (k: string, d?: string) => process.env[k] ?? d;
 
 export const config = {

@@ -198,6 +198,7 @@ export function detectMotifs(ctx: MotifContext): Motif[] {
   }
   if (materialSwing >= 2 && !motifs.has("mate")) motifs.add("material_gain");
   if (ctx.mateIn !== undefined && ctx.mateIn > 0) motifs.add("mate");
+  if (motifs.has("mate")) motifs.delete("check");
   return [...motifs];
 }
 

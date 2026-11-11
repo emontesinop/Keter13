@@ -367,7 +367,7 @@ export async function buildApp(ctx: Ctx, opts: { logger?: boolean } = {}): Promi
 
   // ---------- Static web app (production) ----------
   if (fs.existsSync(config.webDist)) {
-    await app.register(fstatic, { root: config.webDist, wildcard: false });
+    await app.register(fstatic, { root: config.webDist, wildcard: true });
     app.setNotFoundHandler((req, reply) => {
       if (req.url.startsWith("/api/")) return reply.status(404).send({ error: "Not found" });
       return reply.sendFile("index.html");

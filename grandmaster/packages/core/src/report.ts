@@ -5,7 +5,7 @@ import { classifyMove, gameAccuracy, moveAccuracy, scoreToCp, winPercentFromScor
 import type { ParsedGame } from "./pgn";
 import { gamePhase } from "./features";
 import { explainMove, type Lang, type MoveExplanation } from "./explain";
-import { detectMotifs, type Motif } from "./motifs";
+import { detectMotifs, MOTIF_LABEL, type Motif } from "./motifs";
 
 export interface AnalyzedMove {
   ply: number;
@@ -272,7 +272,7 @@ function deriveLessons(x: { user: AnalyzedMove[]; errors: AnalyzedMove[]; tactic
   const motifCounts = new Map<Motif, number>();
   for (const m of x.errors) for (const mo of m.motifsMissed) motifCounts.set(mo, (motifCounts.get(mo) ?? 0) + 1);
   const topMotif = [...motifCounts.entries()].sort((a, b) => b[1] - a[1])[0];
-  if (topMotif) L.push(es ? `Motivo táctico que se te escapó con más frecuencia: ${topMotif[0]} (${topMotif[1]}×). Lo entrenaremos en el laboratorio táctico.` : `Most frequently missed tactical motif: ${topMotif[0]} (${topMotif[1]}×). We'll drill it in the tactics lab.`);
+  if (topMotif) L.push(es ? `Motivo táctico que se te escapó con más frecuencia: ${MOTIF_LABEL[topMotif[0]].es} (${topMotif[1]}×). Lo entrenaremos en el laboratorio táctico.` : `Most frequently missed tactical motif: ${MOTIF_LABEL[topMotif[0]].en} (${topMotif[1]}×). We'll drill it in the tactics lab.`);
   if (x.strategic.length > x.tactical.length && x.strategic.length >= 2) L.push(es ? "La mayoría de tus errores fueron posicionales (sin táctica inmediata): trabaja la planificación y la evaluación de desequilibrios." : "Most of your errors were positional (no immediate tactic): work on planning and evaluating imbalances.");
   if (x.time.available && (x.time.fastErrors ?? 0) > 0) L.push(es ? "Errores rápidos: en posiciones críticas (capturas, jaques, cambios de estructura) invierte tiempo en calcular." : "Fast errors: in critical positions (captures, checks, structural changes) invest time in calculation.");
   const endErr = x.errors.filter((m) => m.phase === "endgame").length;

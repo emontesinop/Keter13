@@ -34,13 +34,14 @@ export async function streak(db: Db, userId: string, today = new Date()) {
 
 export async function todaysPlan(db: Db, userId: string, date = new Date().toISOString().slice(0, 10)) {
   const existing = await db.one<any>("SELECT * FROM training_sessions WHERE user_id=$1 AND day=$2", [userId, date]);
-  if (existing) return existing;
+  // Once the student has started the day's plan it is frozen; before that it adapts to newly analysed games.
+  if (existing && (existing.completed_blocks ?? []).length) return existing;
   const p = await getProfile(db, userId);
   const { weaknesses } = await userWeaknesses(db, userId);
   const st = await streak(db, userId);
   const recent = await db.query<{ s: number }>("SELECT avg(CASE WHEN correct THEN 100 ELSE 0 END)::float AS s FROM training_attempts WHERE user_id=$1 AND created_at > now() - interval '7 days' GROUP BY to_char(created_at,'YYYY-MM-DD') ORDER BY to_char(created_at,'YYYY-MM-DD')", [userId]);
   const plan = buildDailyPlan({ date, minutes: p.minutes_per_day, weaknesses, dueReviews: await dueCount(db, userId), streak: st.streak, recentSessionScores: recent.map((r) => Number(r.s)), lang: p.language });
-  return db.one("INSERT INTO training_sessions(user_id, day, plan) VALUES ($1,$2,$3) ON CONFLICT (user_id, day) DO UPDATE SET plan=training_sessions.plan RETURNING *", [userId, date, JSON.stringify(plan)]);
+  return db.one("INSERT INTO training_sessions(user_id, day, plan) VALUES ($1,$2,$3) ON CONFLICT (user_id, day) DO UPDATE SET plan=EXCLUDED.plan RETURNING *", [userId, date, JSON.stringify(plan)]);
 }
 
 export async function weeklyPlan(db: Db, userId: string) {
