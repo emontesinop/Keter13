@@ -1,0 +1,31 @@
+{
+  "name": "@gm/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "build": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "migrate": "tsx src/db/migrate-cli.ts",
+    "import:puzzles": "tsx src/scripts/import-lichess-puzzles.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "*",
+    "@electric-sql/pglite": "0.5.16",
+    "@fastify/cookie": "*",
+    "@fastify/cors": "*",
+    "@fastify/rate-limit": "*",
+    "@fastify/static": "*",
+    "@gm/core": "*",
+    "chess.js": "1.4.0",
+    "fastify": "^5.2.0",
+    "pg": "^8.13.1",
+    "stockfish": "18.0.8",
+    "tsx": "^4.19.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": { "@types/node": "^22.10.2", "@types/pg": "^8.11.10", "typescript": "^5.6.3", "vitest": "^2.1.8" }
+}

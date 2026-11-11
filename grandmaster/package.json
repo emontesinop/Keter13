@@ -1,0 +1,15 @@
+{
+  "name": "grandmaster-ai",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Grandmaster AI — personal chess coach & performance system",
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "dev": "npm run dev -w @gm/server & npm run dev -w @gm/web",
+    "build": "npm run build -w @gm/core && npm run build -w @gm/web && npm run build -w @gm/server",
+    "start": "npm run start -w @gm/server",
+    "test": "npm run test -w @gm/core && npm run test -w @gm/server",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": { "node": ">=20" }
+}
