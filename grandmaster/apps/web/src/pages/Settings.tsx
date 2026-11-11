@@ -18,7 +18,7 @@ export function Settings() {
   const save = async () => {
     setSaved(null);
     try {
-      const body: any = {}; for (const k of ["display_name", "rating_estimate", "goal_rating", "long_term_goal", "minutes_per_day", "primary_platform", "secondary_platform", "white_repertoire", "black_repertoire", "language", "secondary_language", "learning_preference", "training_style", "thresholds", "engine_depth", "sync_frequency", "fide_id"]) body[k] = p[k];
+      const body: any = {}; for (const k of ["display_name", "rating_estimate", "goal_rating", "long_term_goal", "minutes_per_day", "primary_platform", "secondary_platform", "language", "secondary_language", "learning_preference", "training_style", "thresholds", "engine_depth", "sync_frequency", "fide_id"]) body[k] = p[k];
       await api("/profile", { method: "PUT", body }); await refresh(); setSaved(tr("Guardado", "Saved"));
     } catch (e) { setSaved((e as Error).message); }
   };
@@ -61,8 +61,7 @@ export function Settings() {
           <div><label>{tr("Objetivo a largo plazo", "Long-term goal")}</label><input type="number" value={p.long_term_goal} onChange={num("long_term_goal")} /></div>
           <div><label>{tr("Minutos al día", "Minutes per day")}</label><input type="number" value={p.minutes_per_day} onChange={num("minutes_per_day")} /></div>
           <div><label>{tr("Plataforma principal", "Primary platform")}</label><select value={p.primary_platform} onChange={(e) => set("primary_platform", e.target.value)}><option value="chesscom">Chess.com</option><option value="lichess">Lichess</option></select></div>
-          <div><label>{tr("Repertorio blancas", "White repertoire")}</label><select value={p.white_repertoire} onChange={(e) => set("white_repertoire", e.target.value)}><option value="london">{tr("Sistema Londres", "London System")}</option></select></div>
-          <div><label>{tr("Repertorio negras", "Black repertoire")}</label><select value={p.black_repertoire} onChange={(e) => set("black_repertoire", e.target.value)}><option value="caro-kann">Caro-Kann</option></select></div>
+          <div><label>{tr("Repertorio", "Repertoire")}</label><a className="btn sm" href="/openings">★ {(p.repertoire_ids ?? []).length} {tr("módulos — editar en Aperturas", "modules — edit in Openings")}</a></div>
           <div><label>{tr("Idioma", "Language")}</label><select value={p.language} onChange={(e) => set("language", e.target.value)}><option value="es">Español</option><option value="en">English</option></select></div>
           <div><label>{tr("Profundidad de análisis (servidor)", "Analysis depth (server)")}</label><input type="number" min={8} max={30} value={p.engine_depth} onChange={num("engine_depth")} /></div>
           <div><label>FIDE ID</label><input value={p.fide_id ?? ""} onChange={(e) => set("fide_id", e.target.value || null)} /></div>

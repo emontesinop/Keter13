@@ -20,7 +20,7 @@ Spanish is the primary language; English is fully supported.
 | PGN upload (multi-game files, colour detection, dedupe) | ✅ |
 | AI Grandmaster Coach: 7 modes, Socratic guided analysis, RAG over the knowledge base, persistent memory, engine-verified context, **hallucinated-move guard** (retry + disclosure), works without an LLM in verified "engine mode" | ✅ |
 | Tactics lab: own-game exercises, curated & engine-verified puzzles, Lichess CC0 importer, SRS review, weakness hunter, GM challenge, blunder prevention, **calculation without moving** (graded by Stockfish) | ✅ |
-| Opening lab: London & Caro-Kann trees with ideas/plans/structures/mistakes, drill mode, explorer, your real per-line results & deviations | ✅ |
+| Opening lab: 13 modules (White: London, Queen's Gambit, Italian, Ruy Lopez, English · Black vs 1.e4: Caro-Kann, Najdorf, French, 1...e5 · Black vs 1.d4: QGD, Slav, King's Indian, Nimzo-Indian), your own selectable repertoire, "understand" mode (why-this-move quizzes, plans, mistakes), 13 pawn-structure cards with engine-verified "find the thematic break" exercises, universal opening principles, tree explorer, drill mode, explorer, your real per-line results | ✅ |
 | Endgame lab: theoretical drills (engine-verified), play vs Stockfish, hints, per-move Syzygy comparison (≤7 pieces) | ✅ |
 | Master games: public-domain classics, stops at critical moments, "what would you play?" + reasoning + engine comparison | ✅ |
 | Analytics: ratings per pool (7d…all), EWMA smoothing, volatility, significance-tested trends, performance-rating estimate with 95% CI, accuracy, error rates, phases, openings, training, weekly coach report | ✅ |

@@ -11,6 +11,8 @@ export * from "./weakness";
 export * from "./plan";
 export * from "./curriculum";
 export * from "./openings";
+export * from "./repertoires";
+export * from "./structures";
 export * from "./endgames";
 export * from "./puzzles";
 export * from "./masters";

@@ -1,4 +1,5 @@
 import type { Txt } from "./openings";
+import { PAWN_STRUCTURES } from "./structures";
 
 export interface SourceRef { title: string; author?: string; note?: string; tier: 1 | 2 | 3 | 4 | 5 | 6; }
 export interface Concept {
@@ -146,8 +147,20 @@ export class Bm25 {
   }
 }
 
+/** Pawn-structure cards exposed as retrievable concepts (opening understanding for the coach). */
+export function structureConcepts(): Concept[] {
+  return PAWN_STRUCTURES.map((st) => ({
+    id: `structure-${st.id}`, level: 2, tags: ["structure", "opening", "plan", "estructura", "apertura", "plan", st.id.replace(/-/g, " ")],
+    title: st.name,
+    body: {
+      es: `${st.description.es} Blancas: ${st.plans.white.map((p) => p.es).join(" ")} Negras: ${st.plans.black.map((p) => p.es).join(" ")}`,
+      en: `${st.description.en} White: ${st.plans.white.map((p) => p.en).join(" ")} Black: ${st.plans.black.map((p) => p.en).join(" ")}`,
+    },
+  }));
+}
+
 export function conceptDocs(): Doc[] {
-  return CONCEPTS.map((c) => ({ id: c.id, text: [c.title.es, c.title.en, c.body.es, c.body.en, c.tags.join(" ")].join(" "), meta: c }));
+  return [...CONCEPTS, ...structureConcepts()].map((c) => ({ id: c.id, text: [c.title.es, c.title.en, c.body.es, c.body.en, c.tags.join(" ")].join(" "), meta: c }));
 }
 
 let _idx: Bm25 | null = null;
@@ -155,4 +168,4 @@ export function searchConcepts(q: string, k = 4): Concept[] {
   _idx = _idx ?? new Bm25(conceptDocs());
   return _idx.search(q, k).map((r) => r.meta as Concept);
 }
-export const conceptById = (id: string) => CONCEPTS.find((c) => c.id === id);
+export const conceptById = (id: string) => CONCEPTS.find((c) => c.id === id) ?? structureConcepts().find((c) => c.id === id);

@@ -7,7 +7,7 @@ import fs from "node:fs";
 import { z } from "zod";
 import { Chess } from "chess.js";
 import {
-  REPERTOIRES, MASTER_GAMES, STAGES, GM_ROADMAP, CONCEPTS, searchConcepts, splitPgn, explainMove, gradeCalculation, gradeCandidates,
+  REPERTOIRES, PAWN_STRUCTURES, OPENING_PRINCIPLES, MASTER_GAMES, STAGES, GM_ROADMAP, CONCEPTS, searchConcepts, splitPgn, explainMove, gradeCalculation, gradeCandidates,
   gradeThreatAnswer, worstPieces, linePositions, uciLineToSan, MILESTONES, stageFor, milestoneDiagnostic, type RatingPool, type CoachMode, type TrainingDomain,
 } from "@gm/core";
 import { config } from "./config";
@@ -85,6 +85,7 @@ export async function buildApp(ctx: Ctx, opts: { logger?: boolean } = {}): Promi
     language: z.enum(["es", "en"]), secondary_language: z.enum(["es", "en"]), learning_preference: z.string().max(40), training_style: z.string().max(40),
     thresholds: z.object({ inaccuracy: z.number().min(1).max(50), mistake: z.number().min(2).max(60), blunder: z.number().min(3).max(80) }),
     engine_depth: z.number().int().min(8).max(30), sync_frequency: z.enum(["manual", "hourly", "daily"]), fide_id: z.string().max(20).nullable(),
+    repertoire_ids: z.array(z.string().refine((id) => REPERTOIRES.some((r) => r.id === id), "Unknown repertoire module")).max(20),
   }).partial();
   app.get("/api/profile", async (req) => getProfile(db, uid(req)));
   app.put("/api/profile", async (req) => {
@@ -93,7 +94,7 @@ export async function buildApp(ctx: Ctx, opts: { logger?: boolean } = {}): Promi
     const keys = Object.keys(body) as (keyof typeof body)[];
     if (keys.length) {
       const sets = keys.map((k, i) => `${k}=$${i + 2}`).join(", ");
-      await db.query(`UPDATE profiles SET ${sets}, updated_at=now() WHERE user_id=$1`, [id, ...keys.map((k) => (k === "thresholds" ? JSON.stringify(body[k]) : body[k]))]);
+      await db.query(`UPDATE profiles SET ${sets}, updated_at=now() WHERE user_id=$1`, [id, ...keys.map((k) => (k === "thresholds" || k === "repertoire_ids" ? JSON.stringify(body[k]) : body[k]))]);
     }
     return getProfile(db, id);
   });
@@ -253,6 +254,7 @@ export async function buildApp(ctx: Ctx, opts: { logger?: boolean } = {}): Promi
   app.get("/api/training/endgames", async () => endgameDrills());
   app.get("/api/training/masters", async () => MASTER_GAMES);
   app.get("/api/training/openings", async () => REPERTOIRES);
+  app.get("/api/training/structures", async () => ({ structures: PAWN_STRUCTURES, principles: OPENING_PRINCIPLES }));
   app.get("/api/training/diagnostics", async (req) => diagnostics(db, uid(req)));
   app.get("/api/training/curriculum", async (req) => {
     const p = await getProfile(db, uid(req));

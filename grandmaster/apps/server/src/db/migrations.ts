@@ -182,4 +182,9 @@ CREATE TABLE IF NOT EXISTS oauth_states (
 );
 `,
   },
+  {
+    id: 2,
+    name: "repertoire_selection",
+    sql: `ALTER TABLE profiles ADD COLUMN IF NOT EXISTS repertoire_ids JSONB NOT NULL DEFAULT '["london","caro-kann"]';`,
+  },
 ];

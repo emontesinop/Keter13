@@ -83,6 +83,10 @@ describe("auth & profile", () => {
   it("updates and validates the profile", async () => {
     expect((await req("PUT", "/api/profile", { minutes_per_day: 75, display_name: "Tester" })).body.minutes_per_day).toBe(75);
     expect((await req("PUT", "/api/profile", { minutes_per_day: 2 })).status).toBe(400);
+    expect((await req("PUT", "/api/profile", { repertoire_ids: ["london", "queens-gambit", "caro-kann", "nimzo-indian"] })).body.repertoire_ids).toEqual(["london", "queens-gambit", "caro-kann", "nimzo-indian"]);
+    expect((await req("PUT", "/api/profile", { repertoire_ids: ["made-up"] })).status).toBe(400);
+    const st = await req("GET", "/api/training/structures");
+    expect(st.body.structures.length).toBeGreaterThan(8);
   });
 });
 
@@ -111,7 +115,8 @@ describe("games & analysis", () => {
     expect(rep.counts.blunders + rep.counts.mistakes).toBeGreaterThan(0);
     expect(rep.topMistakes.length).toBeGreaterThan(0);
     expect(rep.topMistakes[0].explanation.points.length).toBeGreaterThan(0);
-    expect(rep.repertoire.id).toBe("london");
+    expect(rep.repertoire.id).toBe("italian"); // 1.e4 e5 2.Nf3 Nc6 3.Bc4 is recognised even though it is not in the user's chosen modules
+    expect(rep.repertoire.inUserRepertoire).toBe(false);
     expect(g.body.analysis.engine).toMatch(/Stockfish/);
     const ex = await req("GET", "/api/training/exercises?n=20");
     expect(ex.body.some((e: any) => e.source === "user_game")).toBe(true);

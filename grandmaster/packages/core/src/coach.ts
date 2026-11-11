@@ -12,7 +12,7 @@ export const COACH_MODES: Record<CoachMode, { es: string; en: string; focus: str
   grandmaster: { es: "Entrenador GM", en: "Grandmaster Coach", focus: "comprehensive strategic and tactical instruction" },
   tactical: { es: "Entrenador táctico", en: "Tactical Coach", focus: "calculation, forcing moves and pattern recognition" },
   positional: { es: "Entrenador posicional", en: "Positional Coach", focus: "pawn structures, weak squares, outposts, prophylaxis and piece activity" },
-  opening: { es: "Entrenador de aperturas", en: "Opening Coach", focus: "repertoire understanding (London System as White, Caro-Kann as Black): plans, structures, typical mistakes" },
+  opening: { es: "Entrenador de aperturas", en: "Opening Coach", focus: "opening understanding over memorisation: the idea behind each move, the pawn structure it leads to, each side's plans and pawn breaks, typical mistakes, and how to handle unfamiliar moves with opening principles" },
   endgame: { es: "Entrenador de finales", en: "Endgame Coach", focus: "theoretical and technical endgames, conversion and defence" },
   tournament: { es: "Entrenador de torneo", en: "Tournament Coach", focus: "practical decision-making, time management and preparation" },
   performance: { es: "Entrenador de rendimiento", en: "Performance Coach", focus: "concentration, emotional control, consistency and post-game reflection" },

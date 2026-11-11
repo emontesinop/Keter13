@@ -10,7 +10,7 @@ export interface Ctx { db: Db; engine: EngineLike; llm: LlmProvider; fetchImpl?:
 export interface Profile {
   user_id: string; display_name: string | null; rating_estimate: number; goal_rating: number; long_term_goal: number; minutes_per_day: number;
   primary_platform: string; secondary_platform: string; white_repertoire: string; black_repertoire: string; language: "es" | "en"; secondary_language: string;
-  learning_preference: string; training_style: string; thresholds: { inaccuracy: number; mistake: number; blunder: number }; engine_depth: number; sync_frequency: string; fide_id: string | null;
+  learning_preference: string; training_style: string; thresholds: { inaccuracy: number; mistake: number; blunder: number }; engine_depth: number; sync_frequency: string; fide_id: string | null; repertoire_ids: string[];
 }
 
 export async function getProfile(db: Db, userId: string): Promise<Profile> {

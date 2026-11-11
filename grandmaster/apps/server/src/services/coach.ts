@@ -2,7 +2,7 @@ import { Chess } from "chess.js";
 import {
   buildCoachSystemPrompt, buildKnowledgeBlock, buildPositionContext, findUnverifiedMoves, searchConcepts, extractFeatures,
   formatLine, uciLineToSan, formatScore, toWhitePov, COACH_MODES, MOTIF_LABEL, detectMotifs, conceptById,
-  type CoachMode, type PvLine, type Lang,
+  repertoireById, type CoachMode, type PvLine, type Lang,
 } from "@gm/core";
 import type { Ctx } from "./context";
 import { getProfile } from "./context";
@@ -90,7 +90,9 @@ export async function coachChat(ctx: Ctx, userId: string, input: ChatInput) {
   let answer: string, provider = "grounded", unverified: string[] = [];
   const verifiedLines = fen ? [...lines.map((l) => uciLineToSan(fen!, l.pv)), input.history ?? []] : [];
   if (ctx.llm.available) {
-    const system = buildCoachSystemPrompt(input.mode, { rating: p.rating_estimate, goal: p.goal_rating, whiteRepertoire: p.white_repertoire, blackRepertoire: p.black_repertoire, minutesPerDay: p.minutes_per_day, lang });
+    const reps = (p.repertoire_ids ?? []).map((id) => repertoireById(id)).filter(Boolean) as NonNullable<ReturnType<typeof repertoireById>>[];
+    const names = (side: "w" | "b") => reps.filter((r) => r.side === side).map((r) => r.name.en).join(", ") || "not chosen yet";
+    const system = buildCoachSystemPrompt(input.mode, { rating: p.rating_estimate, goal: p.goal_rating, whiteRepertoire: names("w"), blackRepertoire: names("b"), minutesPerDay: p.minutes_per_day, lang });
     const blocks = [
       fen ? buildPositionContext({ fen, lines, history: input.history, lang }) : "No position attached to this question.",
       buildKnowledgeBlock(concepts, lang),

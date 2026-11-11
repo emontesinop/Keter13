@@ -12,9 +12,17 @@ export interface Repertoire {
   plans: Txt[];
   typicalMistakes: Txt[];
   tree: OpeningNode[];
+  /** where it fits in a full repertoire */
+  group: "white" | "black_e4" | "black_d4";
+  /** character of the positions it leads to */
+  style: Txt;
+  /** 1 = understanding-based, little forcing theory · 3 = heavy, concrete theory */
+  theoryLoad: 1 | 2 | 3;
+  /** ids of PAWN_STRUCTURES this opening leads to */
+  structureIds: string[];
 }
 
-const t = (es: string, en: string): Txt => ({ es, en });
+export const t = (es: string, en: string): Txt => ({ es, en });
 
 export interface RepLine { sans: string[]; name?: string; ideas?: Record<number, Txt>; }
 
@@ -37,11 +45,15 @@ export function buildTree(lines: RepLine[]): OpeningNode[] {
   return root;
 }
 
-const sp = (s: string) => s.trim().split(/\s+/);
+export const sp = (s: string) => s.trim().split(/\s+/);
 
 export const LONDON: Repertoire = {
   id: "london",
   side: "w",
+  group: "white",
+  style: t("Sólido y de sistema: mismo esquema contra casi todo; ataque en el flanco de rey con Ce5/f4.", "Solid system play: the same setup against almost everything; kingside attack with Ne5/f4."),
+  theoryLoad: 1,
+  structureIds: ["london-triangle"],
   name: t("Sistema Londres", "London System"),
   summary: t(
     "Esquema sólido con d4, Af4, e3, c3, Cf3/Cbd2 y Ad3. La prioridad no es memorizar, sino entender cuándo atacar con Ce5 y f4, y cuándo jugar en el flanco de dama.",
@@ -82,6 +94,10 @@ export const LONDON: Repertoire = {
 export const CARO_KANN: Repertoire = {
   id: "caro-kann",
   side: "b",
+  group: "black_e4",
+  style: t("Sólida y estratégica: estructura sana, buenos finales, contrajuego con ...c5.", "Solid and strategic: healthy structure, good endgames, counterplay with ...c5."),
+  theoryLoad: 2,
+  structureIds: ["caro-advance", "caro-classical", "iqp", "carlsbad"],
   name: t("Defensa Caro-Kann", "Caro-Kann Defence"),
   summary: t(
     "1.e4 c6 2.d4 d5: estructura sólida que permite sacar el alfil de casillas blancas antes de ...e6. Las ideas clave son la ruptura ...c5, el control de e4 y los finales favorables.",
@@ -129,7 +145,6 @@ export const CARO_KANN: Repertoire = {
   ]),
 };
 
-export const REPERTOIRES: Repertoire[] = [LONDON, CARO_KANN];
 
 /** Flatten a repertoire tree into lines of SAN (for drilling and tests). */
 export function repertoireLines(rep: Repertoire): string[][] {

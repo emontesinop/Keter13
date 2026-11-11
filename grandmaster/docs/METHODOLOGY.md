@@ -16,6 +16,7 @@ limited to what those sources are widely known to contain; no book content is re
 | **Interleaving** | Weekly themes rotate domains; plan mixes tactics, openings, endgames and review each day. |
 | **Master game analysis** | Stops at critical moments; you write your reasoning before moving, then compare with the master and Stockfish. |
 | **Self-analysis before the engine** | Engine toggle on every board; Socratic flow hides the engine until the end. |
+| **Understanding openings instead of memorising** | Each module explains the idea of its moves, leads to named pawn structures and teaches each side's plans and pawn breaks. "Why this move?" quizzes and "find the thematic break" exercises (answers checked by Stockfish in tests) train understanding; trees are deliberately short. Games are matched to the best-fitting module, flagging when you played outside your repertoire. |
 | **Endgame technique** (de la Villa; Dvoretsky) | Theoretical drills checked against Syzygy tablebases. |
 
 **Honest measurement.** Ratings from different systems/time controls are never merged. Trends are only reported when a

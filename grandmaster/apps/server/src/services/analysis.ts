@@ -1,4 +1,4 @@
-import { buildGameReport, errorsFromReport, matchRepertoire, parsePgn, LONDON, CARO_KANN, newSrsState, type PositionAnalysis } from "@gm/core";
+import { buildGameReport, errorsFromReport, parsePgn, bestRepertoireMatch, newSrsState, type PositionAnalysis } from "@gm/core";
 import type { Ctx } from "./context";
 import { getProfile } from "./context";
 
@@ -34,8 +34,7 @@ export async function analyseGame(ctx: Ctx, userId: string, gameId: string, dept
     if (onProgress && i % 4 === 0) await onProgress(i / fens.length);
   }
   const sans = parsed.moves.map((m) => m.san);
-  const rep = game.user_color === "w" ? LONDON : CARO_KANN;
-  const match = matchRepertoire(rep, sans, game.user_color);
+  const { rep, match, inUserRepertoire } = bestRepertoireMatch(sans, game.user_color, profile.repertoire_ids);
   const report = buildGameReport(parsed, analyses, {
     userColor: game.user_color, thresholds: profile.thresholds, lang: profile.language,
     bookPlies: Math.min(match.matchedPlies, 16),
@@ -45,7 +44,7 @@ export async function analyseGame(ctx: Ctx, userId: string, gameId: string, dept
   await ctx.db.query(
     `INSERT INTO analyses(game_id, user_id, depth, engine, report, accuracy, acpl, blunders, mistakes, inaccuracies) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
      ON CONFLICT (game_id) DO UPDATE SET depth=EXCLUDED.depth, engine=EXCLUDED.engine, report=EXCLUDED.report, accuracy=EXCLUDED.accuracy, acpl=EXCLUDED.acpl, blunders=EXCLUDED.blunders, mistakes=EXCLUDED.mistakes, inaccuracies=EXCLUDED.inaccuracies, created_at=now()`,
-    [gameId, userId, depth, engineName, JSON.stringify({ ...report, repertoire: { id: rep.id, ...match } }), report.accuracy.user, report.acpl.user, report.counts.blunders, report.counts.mistakes, report.counts.inaccuracies],
+    [gameId, userId, depth, engineName, JSON.stringify({ ...report, repertoire: { id: rep.id, name: rep.name, inUserRepertoire, ...match } }), report.accuracy.user, report.acpl.user, report.counts.blunders, report.counts.mistakes, report.counts.inaccuracies],
   );
   await ctx.db.query("DELETE FROM error_records WHERE game_id=$1", [gameId]);
   for (const e of errorsFromReport(gameId, game.played_at ?? new Date().toISOString(), report, game.opening ?? match.lineName ?? rep.name.en)) {

@@ -293,3 +293,47 @@ describe("calculation & coach guards", () => {
     expect(buildCoachSystemPrompt("tactical", { rating: 1650, goal: 2000, whiteRepertoire: "London", blackRepertoire: "Caro-Kann", minutesPerDay: 60, lang: "es" })).toContain("Spanish");
   });
 });
+
+import { PAWN_STRUCTURES, OPENING_PRINCIPLES, buildIdeaQuestion, bestRepertoireMatch, repertoireById, lineFen } from "../src";
+
+describe("expanded repertoire & opening understanding", () => {
+  it("has modules for both colours against the main first moves, all legal", () => {
+    const groups = new Set(REPERTOIRES.map((r) => r.group));
+    expect(groups).toEqual(new Set(["white", "black_e4", "black_d4"]));
+    expect(REPERTOIRES.length).toBeGreaterThanOrEqual(13);
+    for (const r of REPERTOIRES) {
+      expect(validateRepertoire(r), r.id).toEqual([]);
+      expect(r.side === "w" ? r.group === "white" : r.group !== "white").toBe(true);
+      for (const sid of r.structureIds) expect(PAWN_STRUCTURES.some((s) => s.id === sid), `${r.id} → ${sid}`).toBe(true);
+      // every module explains itself: ideas on at least a third of its moves for the module's side
+      expect(r.principles.length + r.plans.length).toBeGreaterThanOrEqual(3);
+    }
+  });
+  it("structure example lines and quiz answers are legal", () => {
+    for (const s of PAWN_STRUCTURES) {
+      if (s.exampleLine) expect(() => lineFen(s.exampleLine!), s.id).not.toThrow();
+      if (s.quiz) {
+        const c = new Chess(lineFen(s.quiz.line));
+        for (const a of s.quiz.answers) expect(() => new Chess(c.fen()).move(a), `${s.id}: ${a}`).not.toThrow();
+      }
+    }
+    expect(OPENING_PRINCIPLES.length).toBeGreaterThanOrEqual(6);
+  });
+  it("matches games to the best module of the user's repertoire", () => {
+    const qgd = ["d4", "d5", "c4", "e6", "Nc3", "Nf6", "Bg5", "Be7"];
+    expect(bestRepertoireMatch(qgd, "b", ["caro-kann", "qgd"]).rep.id).toBe("qgd");
+    const r = bestRepertoireMatch(["e4", "c5", "Nf3", "d6", "d4", "cxd4"], "b", ["caro-kann"]);
+    expect(r.rep.id).toBe("sicilian-najdorf");
+    expect(r.inUserRepertoire).toBe(false);
+    expect(bestRepertoireMatch(["d4", "d5", "Bf4"], "w").rep.id).toBe("london");
+  });
+  it("builds 'why this move?' questions with one correct idea", () => {
+    let seed = 1; const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const q = buildIdeaQuestion(REPERTOIRES, "french", rand)!;
+    expect(q.options[q.answerIndex]).toEqual(q.correct);
+    expect(q.options.length).toBe(4);
+    expect(new Set(q.options.map((o) => o.es)).size).toBe(4);
+    expect(() => new Chess(q.fen).move(q.san)).not.toThrow();
+    expect(repertoireById("slav")?.side).toBe("b");
+  });
+});

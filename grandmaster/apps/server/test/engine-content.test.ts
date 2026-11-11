@@ -1,5 +1,5 @@
 import { describe, it, expect, afterAll } from "vitest";
-import { SEED_PUZZLES, ENDGAME_DRILLS, winPercentFromScore, negate } from "@gm/core";
+import { SEED_PUZZLES, ENDGAME_DRILLS, PAWN_STRUCTURES, lineFen, sanToUci, winPercentFromScore, negate } from "@gm/core";
 import { UciEngine } from "../src/engine/uci";
 
 /** Engine validation of the bundled training content: puzzles must have a unique winning first move;
@@ -35,5 +35,25 @@ describe("endgame drills have the stated result", () => {
       if (d.goal === "win") expect(w, `${d.id} ${JSON.stringify(s)}`).toBeGreaterThan(75);
       else { expect(w, `${d.id} ${JSON.stringify(s)}`).toBeGreaterThan(25); expect(w).toBeLessThan(75); }
     }, 60000);
+  }
+});
+
+describe("structure quizzes teach sound moves", () => {
+  for (const st of PAWN_STRUCTURES.filter((x) => x.quiz)) {
+    it(st.id, async () => {
+      const fen = lineFen(st.quiz!.line);
+      const best = await engine.analyse(fen, { depth: 16 });
+      const bestWin = winPercentFromScore(best.lines[0].score);
+      // at least one accepted answer must be close to the engine's best move (within 8 win% points)
+      let closest = 0;
+      for (const a of st.quiz!.answers) {
+        const uci = sanToUci(fen, a)!;
+        const { Chess } = await import("chess.js");
+        const c = new Chess(fen); c.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] });
+        const after = await engine.analyse(c.fen(), { depth: 16 });
+        closest = Math.max(closest, winPercentFromScore(negate(after.lines[0].score)));
+      }
+      expect(bestWin - closest, `${st.id}: best ${best.lines[0].pv[0]} ${JSON.stringify(best.lines[0].score)}`).toBeLessThan(8);
+    }, 90000);
   }
 });
