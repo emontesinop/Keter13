@@ -35,6 +35,6 @@ export const ENDGAME_DRILLS: EndgameDrill[] = [
     technique: t("Mantén la torre en tu tercera fila (la 6ª) hasta que el peón avance; entonces da jaques desde atrás.", "Keep the rook on your third rank (the 6th) until the pawn advances; then check from behind.") },
   { id: "kq-kp", title: t("Dama contra peón central en séptima", "Queen vs central pawn on the 7th"), category: "queen", fen: "8/8/8/8/8/8/1K1kp3/7Q w - - 0 1", side: "w", goal: "win", difficulty: 3, concept: "queen-vs-pawn",
     technique: t("Con jaques y clavadas obliga al rey a ponerse delante del peón; cada vez que lo hace, acerca tu rey una casilla.", "Use checks and pins to force the king in front of its pawn; each time, bring your king one step closer.") },
-  { id: "kp-opposition", title: t("Oposición con peón de reserva", "Opposition with a spare tempo"), category: "king_pawn", fen: "8/8/3k4/8/3K4/3P4/8/8 w - - 0 1", side: "w", goal: "win", difficulty: 3, concept: "opposition",
-    technique: t("El rey delante del peón y un tiempo de reserva con el peón permiten ganar la oposición.", "King in front of the pawn plus a spare pawn tempo lets you win the opposition.") },
+  { id: "kp-key-squares", title: t("Casillas clave", "Key squares"), category: "king_pawn", fen: "3k4/8/8/3K4/8/3P4/8/8 w - - 0 1", side: "w", goal: "win", difficulty: 2, concept: "opposition",
+    technique: t("Con el peón en 2ª–4ª fila, las casillas clave están dos filas por delante del peón. Si tu rey ocupa una, ganas: mantén el rey delante y empuja el peón solo cuando sea seguro.", "With the pawn on the 2nd–4th rank, the key squares are two ranks ahead of it. If your king stands on one you win: keep the king in front and push only when safe.") },
 ];

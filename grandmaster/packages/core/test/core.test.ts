@@ -128,8 +128,8 @@ describe("motifs & puzzles", () => {
   it("puzzle checker accepts alternative mates and walks multi-move solutions", () => {
     const p = SEED_PUZZLES.find((x) => x.id === "o-smother-1")!;
     const r1 = checkPuzzleMove(p, ["d5g8"], 0);
-    expect(r1).toMatchObject({ correct: true, finished: false, reply: "a8g8" });
-    const r2 = checkPuzzleMove(p, ["d5g8", "a8g8", "h6f7"], 2);
+    expect(r1).toMatchObject({ correct: true, finished: false, reply: "e8g8" });
+    const r2 = checkPuzzleMove(p, ["d5g8", "e8g8", "h6f7"], 2);
     expect(r2.finished).toBe(true);
     expect(checkPuzzleMove(p, ["d5d4"], 0).correct).toBe(false);
   });
@@ -270,7 +270,7 @@ describe("calculation & coach guards", () => {
     const sans = ["Qg8+", "Rxg8", "Nf7#"];
     const c = new Chess(fen);
     const fens = [c.fen()]; for (const s of sans) { c.move(s); fens.push(c.fen()); }
-    const an: PositionAnalysis[] = [pa(fens[0], { mate: 2 }, ["d5g8", "a8g8", "h6f7"]), pa(fens[1], { mate: -1 }, ["a8g8", "h6f7"]), pa(fens[2], { mate: 1 }, ["h6f7"]), { fen: fens[3], depth: 0, lines: [] }];
+    const an: PositionAnalysis[] = [pa(fens[0], { mate: 2 }, ["d5g8", "e8g8", "h6f7"]), pa(fens[1], { mate: -1 }, ["e8g8", "h6f7"]), pa(fens[2], { mate: 1 }, ["h6f7"]), { fen: fens[3], depth: 0, lines: [] }];
     const g = gradeCalculation(fen, sans, an, "en");
     expect(g.correctDepth).toBe(3);
     expect(g.verdicts.every((v) => v.verdict === "best")).toBe(true);
@@ -285,10 +285,11 @@ describe("calculation & coach guards", () => {
     expect(findUnverifiedMoves("Now Qxf7# wins immediately.", start)).toEqual(["Qxf7"]);
   });
   it("position context lists engine lines and threats", () => {
-    const ctx = buildPositionContext({ fen, lines: [{ multipv: 1, depth: 22, score: { mate: 2 }, pv: ["d5g8", "a8g8", "h6f7"] }] });
+    const ctx = buildPositionContext({ fen, lines: [{ multipv: 1, depth: 22, score: { mate: 2 }, pv: ["d5g8", "e8g8", "h6f7"] }] });
     expect(ctx).toContain("1.Qg8+ Rxg8 2.Nf7#");
     expect(ctx).toContain("#2");
-    expect(gradeThreatAnswer(fen, "Ra1+", "en").correct).toBe(false); // white is not in danger before... check message
+    expect(gradeThreatAnswer(fen, "gxh6", "en").correct).toBe(true);
+    expect(gradeThreatAnswer(fen, "Re1+", "en").correct).toBe(false);
     expect(buildCoachSystemPrompt("tactical", { rating: 1650, goal: 2000, whiteRepertoire: "London", blackRepertoire: "Caro-Kann", minutesPerDay: 60, lang: "es" })).toContain("Spanish");
   });
 });
