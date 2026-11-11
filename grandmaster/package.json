@@ -8,7 +8,7 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w @gm/server & npm run dev -w @gm/web",
+    "dev": "node scripts/dev.mjs",
     "build": "npm run build -w @gm/web",
     "start": "npm run build && npm run start -w @gm/server",
     "test": "npm run test -w @gm/core && npm run test -w @gm/server",
