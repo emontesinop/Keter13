@@ -8,6 +8,12 @@ optimised thread sequence, a step-by-step simulator and the manufacturing files 
 It runs locally with no cloud services or paid APIs. A Python engine (NumPy, OpenCV, SciPy,
 ReportLab) behind a FastAPI server powers a React + TypeScript UI.
 
+## iPhone version
+
+`mobile/` is an installable, offline iPhone app with the engine running on the phone itself, plus a
+hands-on build mode (big nail numbers, voice, screen kept awake). See [mobile/README.md](mobile/README.md)
+for installing it from Safari.
+
 ## Quick start
 
 ```bash
@@ -59,6 +65,7 @@ backend/stringart/   geometry, imaging, raster (line cache), engine (optimiser),
                      render, metrics, materials, pipeline, project, jobs, api, exports/
 backend/tests/       pytest suite (41 tests)
 frontend/src/        React UI: BoardCanvas, Simulator, SettingsPanel, RightPanel, App
+mobile/              iPhone PWA: TypeScript engine (src/engine) + touch UI, offline service worker
 scripts/benchmark.py validation over 5 images x 4 nail counts -> docs/benchmark/REPORT.md
 docs/                ALGORITHMS.md (the maths), USER_GUIDE.md, benchmark/
 samples/             test images (public domain / CC0 from scikit-image + a synthetic logo)
