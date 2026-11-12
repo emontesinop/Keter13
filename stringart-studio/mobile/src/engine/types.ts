@@ -2,7 +2,7 @@
 
 export type PaletteColor = { name: string; hex: string; enabled: boolean };
 
-export const SETTINGS_VERSION = 2;
+export const SETTINGS_VERSION = 3;
 
 export type Settings = {
   version?: number;
@@ -56,19 +56,23 @@ export function defaultSettings(): Settings {
     thread: { mode: "mono", preset: "black_on_white", threadColor: "#111111", background: "#f5f3ee", thickness: 0.15,
       opacity: 0.85, autoTone: true, maxCoverage: 0.98, tonePhysics: 1,
       palette: PALETTE_PRESETS.cmyk.colors.map(([name, hex]) => ({ name, hex, enabled: true })), paletteBackground: "#ffffff" },
-    gen: { quality: "balanced", maxLines: 6000, minSkip: 0, overshoot: 0.7 },
+    gen: { quality: "balanced", maxLines: 6000, minSkip: 0, overshoot: 2 },
     materials: { knotMm: 150, slackPct: 5, wastePct: 10, secondsPerConnection: 7 },
   };
 }
 
 /** Upgrade settings saved by v1 (lighter tone mapping that stopped at ~2,000 lines). */
 export function migrateSettings(s: Settings): Settings {
-  if ((s.version ?? 1) >= SETTINGS_VERSION) return s;
-  return {
-    ...s, version: SETTINGS_VERSION,
-    thread: { ...s.thread, autoTone: true, maxCoverage: 0.98, tonePhysics: 1 },
-    gen: { ...s.gen, overshoot: 0.7, maxLines: Math.max(s.gen.maxLines, QUALITY[s.gen.quality].maxLines) },
+  const v = s.version ?? 1;
+  if (v >= SETTINGS_VERSION) return s;
+  let out: Settings = s;
+  if (v < 2) out = {
+    ...out, thread: { ...out.thread, autoTone: true, maxCoverage: 0.98, tonePhysics: 1 },
+    gen: { ...out.gen, overshoot: 0.7, maxLines: Math.max(out.gen.maxLines, QUALITY[out.gen.quality].maxLines) },
   };
+  // v3: overshoot 0.7 -> 2.0 (measured: fewer strokes and better likeness)
+  if ([0.7, 1].includes(out.gen.overshoot)) out = { ...out, gen: { ...out.gen, overshoot: 2 } };
+  return { ...out, version: SETTINGS_VERSION };
 }
 
 /** Measured best tone mapping for the thread/board contrast direction (see desktop docs). */

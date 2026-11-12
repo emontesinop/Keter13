@@ -180,3 +180,20 @@ Projects saved by v1 are migrated automatically (`migrate_settings`). The maximu
 connections is an upper limit. When the optimiser stops earlier, the image is complete for that
 thread and board, and more lines would only darken it; the UI says so and suggests thinner thread,
 more nails or a larger board.
+
+## 10. Fewer strokes for the same sharpness (v3)
+
+Measured on a 600 mm board, with likeness = SSIM of the physical render against the photo:
+
+* **The number of strokes needed scales with board size / thread thickness.** Strokes × thickness
+  stayed nearly constant (≈ 1,140 for 600 mm, balanced mode), and a 600 mm board with 0.30 mm
+  thread is geometrically identical to 300 mm with 0.15 mm. With 0.15 mm thread on 600 mm the image
+  was still improving at 6,000 strokes. With 0.35 mm, 2,500 strokes matched or beat it; 0.5 mm was
+  too coarse.
+* **Overshoot penalty 0.7 → 2.0.** Over 5 images, λ = 1.5–3 gave better likeness (0.669 vs 0.660)
+  with 8–16 % fewer strokes, because thick-thread runs no longer add late lines that over-darken.
+  Saved projects still on the old default are migrated (settings v3).
+* **Stroke planner (iPhone app).** A quick low-resolution run with the current thread gives the
+  stroke count N0. The thread for a target N is `t × N0 / N`. Measured on the user's portrait,
+  600 mm: 2,500 / 3,000 / 4,000 requested → 2,444 / 2,876 / 3,941 obtained. Both apps recommend
+  `0.15 mm × diameter / 300 mm` as the default thread for the board size.

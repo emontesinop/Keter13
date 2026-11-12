@@ -121,6 +121,13 @@ export default function SettingsPanel({ s, set, defaults, geometry, onPaletteRep
           </div>
         </>)}
         <NumberField label="Thread thickness" value={t.thickness_mm} onChange={T("thickness_mm")} unit="mm" step={0.01} min={0.03} />
+        {(() => {
+          // strokes needed ~ board size / thread thickness (measured): scale 0.15 mm @ 300 mm with the board
+          const rec = Math.min(0.8, Math.max(0.1, Math.round((0.15 * Math.max(b.diameter_mm, b.shape === "rectangle" ? b.width_mm : 0)) / 300 / 0.05) * 0.05));
+          return t.color_mode === "mono" && Math.abs(t.thickness_mm - rec) > 0.04 ? (
+            <p className="hint">For this board size about <b>{rec.toFixed(2)} mm</b> thread gives a sharp result with ~3,000–4,000 strokes;
+              thinner thread needs many more strokes. <button className="small" onClick={() => T("thickness_mm")(rec)}>Use {rec.toFixed(2)} mm</button></p>) : null;
+        })()}
         <Slider label="Fibre opacity" value={t.opacity} min={0.05} max={1} onChange={T("opacity")} />
         <Toggle label="Automatic tone mapping" value={t.auto_tone} onChange={T("auto_tone")}
           hint="Uses the measured best mapping for your thread/board contrast. Turn off to set the two values below yourself." />
