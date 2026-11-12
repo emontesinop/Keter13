@@ -1,0 +1,11 @@
+numpy>=1.26
+opencv-python-headless>=4.8,<5   # 4.x ships the Haar face cascades used for face detection
+pillow>=10
+scipy>=1.11
+reportlab>=4
+fastapi>=0.110
+uvicorn>=0.27
+python-multipart>=0.0.9
+pydantic>=2.5
+pytest>=8
+httpx>=0.27            # FastAPI TestClient
