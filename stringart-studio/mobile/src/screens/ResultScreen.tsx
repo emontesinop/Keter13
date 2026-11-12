@@ -31,6 +31,9 @@ export default function ResultScreen({ project, onBack, onEdit, onBuild }: {
           <div><span>Nails</span><b>{r.nailsMm.length / 2}</b></div>
           <div><span>Image error removed</span><b>{r.layers.every((L) => L.stopReason === "imported") ? "—" : `${fmt(r.stats.errorReduction * 100, 0)}%`}</b></div>
         </div>
+        {r.layers.some((L) => L.budget && L.path.length - 1 < L.budget * 0.97 && L.stopReason !== "imported") && (
+          <p className="hint">The image was complete at {total.toLocaleString()} of the allowed {r.layers.reduce((a, L) => a + (L.budget ?? 0), 0).toLocaleString()} connections:
+            more lines would only darken it. For more lines and finer detail use thinner thread, more nails or a bigger board.</p>)}
         <div className={`check ${r.stats.validated ? "ok" : "bad"}`}>
           {r.stats.validated ? "✓ Route verified: continuous thread per colour, no repeated connection" : `⚠ Route check failed (${r.stats.duplicates} duplicates)`}
         </div>

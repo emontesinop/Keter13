@@ -87,13 +87,18 @@ PALETTE_PRESETS = {
 
 class ThreadSettings(BaseModel):
     color_mode: Literal["mono", "color"] = "mono"
-    preset: str = "white_on_black"
-    thread_color: str = Field("#f4f4f0", pattern=HEX_COLOR)
-    background_color: str = Field("#0b0b0c", pattern=HEX_COLOR)
+    preset: str = "black_on_white"
+    thread_color: str = Field("#111111", pattern=HEX_COLOR)
+    background_color: str = Field("#f5f3ee", pattern=HEX_COLOR)
     thickness_mm: float = Field(0.15, ge=0.03, le=3.0)
     opacity: float = Field(0.85, ge=0.05, le=1.0)    # optical opacity of one fibre
-    max_coverage: float = Field(0.9, ge=0.3, le=0.995)
-    tone_physics: float = Field(0.25, ge=0.0, le=1.0)   # 0 = perceptual tone axis, 1 = exact linear-light mix
+    # auto_tone picks tone_physics / max_coverage from measurements for the thread/board
+    # contrast direction (dark thread on light board vs light thread on dark board)
+    auto_tone: bool = True
+    max_coverage: float = Field(0.98, ge=0.3, le=0.995)
+    # 1 = exact linear-light mixing (best measured likeness, see docs/ALGORITHMS.md);
+    # lower values lighten mid-tones and use fewer lines
+    tone_physics: float = Field(1.0, ge=0.0, le=1.0)
     palette: List[ThreadColor] = Field(default_factory=lambda: [
         ThreadColor(name=n, hex=h) for n, h in PALETTE_PRESETS["cmyk"][1]])
     palette_background: str = Field("#ffffff", pattern=HEX_COLOR)
@@ -111,13 +116,13 @@ GenerationMode = Literal["quality", "balanced", "min_strokes", "contrast", "fast
 
 class GenerationSettings(BaseModel):
     mode: GenerationMode = "balanced"
-    max_lines: int = Field(4000, ge=50, le=40000)
-    min_improvement: float = Field(0.0005, ge=0.0, le=1.0)  # fraction of first-line gain
+    max_lines: int = Field(6000, ge=50, le=40000)
+    min_improvement: float = Field(0.0, ge=0.0, le=1.0)     # fraction of first-line gain
     target_quality: float = Field(0.0, ge=0.0, le=0.99)     # stop at this error reduction (0=off)
     resolution: int = Field(220, ge=100, le=1200)           # comparison raster, px across the board
     min_skip: int = Field(0, ge=0, le=200)                  # 0 = auto (nails / 25)
-    overshoot_penalty: float = Field(1.0, ge=0.0, le=20.0)
-    patience: int = Field(40, ge=0, le=500)
+    overshoot_penalty: float = Field(0.7, ge=0.0, le=20.0)
+    patience: int = Field(200, ge=0, le=1000)
     strategy: Literal["continuous", "hybrid"] = "continuous"
     max_sections: int = Field(1, ge=1, le=500)
     continuity_preference: float = Field(0.35, ge=0.0, le=1.0)
@@ -147,7 +152,11 @@ class MaterialSettings(BaseModel):
     currency: str = "EUR"
 
 
+SETTINGS_VERSION = 2
+
+
 class ProjectSettings(BaseModel):
+    version: int = SETTINGS_VERSION
     image: ImageSettings = Field(default_factory=ImageSettings)
     board: BoardSettings = Field(default_factory=BoardSettings)
     thread: ThreadSettings = Field(default_factory=ThreadSettings)
@@ -158,16 +167,17 @@ class ProjectSettings(BaseModel):
 
 # ---------------------------------------------------------------- presets
 MODE_PRESETS = {
-    "quality": dict(max_lines=7000, min_improvement=0.0003, resolution=280, overshoot_penalty=1.0,
-                    strategy="hybrid", max_sections=4, continuity_preference=0.30, patience=60),
-    "balanced": dict(max_lines=4500, min_improvement=0.0005, resolution=220, overshoot_penalty=1.0,
-                     strategy="continuous", max_sections=1, patience=40),
-    "min_strokes": dict(max_lines=3000, min_improvement=0.003, resolution=200, overshoot_penalty=1.5,
-                        strategy="continuous", max_sections=1, target_quality=0.8, patience=20),
-    "contrast": dict(max_lines=4500, min_improvement=0.0005, resolution=220, overshoot_penalty=0.7,
-                     strategy="continuous", max_sections=1, patience=40),
-    "fast": dict(max_lines=2500, min_improvement=0.002, resolution=160, overshoot_penalty=1.0,
-                 strategy="continuous", max_sections=1, patience=20),
+    # Tuned with scripts/tune_engine.py (likeness of the physical render to the photo).
+    "quality": dict(max_lines=9000, min_improvement=0.0, resolution=240, overshoot_penalty=0.7,
+                    strategy="continuous", max_sections=1, patience=300),
+    "balanced": dict(max_lines=6000, min_improvement=0.0, resolution=220, overshoot_penalty=0.7,
+                     strategy="continuous", max_sections=1, patience=200),
+    "min_strokes": dict(max_lines=4000, min_improvement=0.002, resolution=200, overshoot_penalty=1.0,
+                        strategy="continuous", max_sections=1, target_quality=0.85, patience=60),
+    "contrast": dict(max_lines=6000, min_improvement=0.0, resolution=220, overshoot_penalty=0.5,
+                     strategy="continuous", max_sections=1, patience=200),
+    "fast": dict(max_lines=3500, min_improvement=0.0, resolution=180, overshoot_penalty=0.7,
+                 strategy="continuous", max_sections=1, patience=60),
 }
 
 # image-side adjustments a preset also implies
@@ -189,3 +199,33 @@ def apply_mode(gen: GenerationSettings) -> GenerationSettings:
 
 def effective_min_skip(gen: GenerationSettings, nail_count: int) -> int:
     return gen.min_skip if gen.min_skip > 0 else max(2, nail_count // 25)
+
+
+def migrate_settings(data: dict) -> dict:
+    """Upgrade settings saved by older versions (v1 used a tone mapping that lightened mid-tones
+    and stopped at ~2,000 lines; see docs/ALGORITHMS.md "Engine tuning")."""
+    data = dict(data or {})
+    if int(data.get("version", 1)) < 2:
+        th = dict(data.get("thread", {}))
+        th["auto_tone"] = True
+        data["thread"] = th
+        gen = dict(data.get("generation", {}))
+        gen["overshoot_penalty"] = 0.7
+        gen["min_improvement"] = 0.0
+        gen["patience"] = 200
+        if gen.get("max_lines", 0) < 6000:
+            gen["max_lines"] = 6000
+        data["generation"] = gen
+        data["version"] = SETTINGS_VERSION
+    return data
+
+
+def resolve_tone(thread_hex: str, background_hex: str, t: "ThreadSettings", overshoot: float):
+    """(tone_physics, max_coverage, overshoot) to use. With auto_tone the values come from
+    scripts/tune_engine.py: dark thread on a light board -> exact linear-light mixing (1.0, 0.98);
+    light thread on a dark board -> half physical (0.5, 0.90) and at least 1.0 overshoot."""
+    if not t.auto_tone:
+        return t.tone_physics, t.max_coverage, overshoot
+    from .colorsci import hex_to_rgb, relative_luminance
+    light_board = float(relative_luminance(hex_to_rgb(background_hex))) >= float(relative_luminance(hex_to_rgb(thread_hex)))
+    return (1.0, 0.98, overshoot) if light_board else (0.5, 0.90, max(overshoot, 1.0))
