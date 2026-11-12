@@ -5,6 +5,7 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   base: "./",
   plugins: [react()],
-  worker: { format: "es" },
+  // classic worker bundle: module workers fail on some iOS versions / home-screen apps
+  worker: { format: "iife" },
   build: { target: "es2020" },
 });
