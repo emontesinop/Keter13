@@ -88,6 +88,7 @@ export default function Editor({ project, onBack, onResult }: { project: Project
       setPlanBusy(false);
     }, 50);
   };
+  const [lightFrac, setLightFrac] = useState(0);
   const [palBusy, setPalBusy] = useState(false);
   const [palCount, setPalCount] = useState(5);
   const runAutoPalette = (k = palCount, base: Settings = s) => {
@@ -123,7 +124,8 @@ export default function Editor({ project, onBack, onResult }: { project: Project
       try {
         const res = s.thread.mode === "color" ? 150 : 200;
         const rgba = framedPixels(src, res, s.frame);
-        const { dens, layers, bg, mask } = targets(rgba, res, s);
+        const { dens, layers, bg, mask, pi } = targets(rgba, res, s);
+        setLightFrac(pi.lightFraction);
         const out = intendedRGBA(dens, layers.map((l) => l.color), bg, mask);
         const c = intended.current ?? document.createElement("canvas");
         c.width = c.height = res;
@@ -271,6 +273,12 @@ export default function Editor({ project, onBack, onResult }: { project: Project
           <p className="hint">Tip: for portraits, zoom in until the face fills about half of the circle.</p>
         </>}
         {tab === "tone" && <>
+          <Segmented value={s.tone.lineArt ? "drawing" : "photo"} onChange={(v) => upd("tone", { lineArt: v === "drawing" })}
+            options={[{ value: "photo", label: "Photo" }, { value: "drawing", label: "Drawing / line art" }]} />
+          {!s.tone.lineArt && lightFrac > 0.5 && <p className="tip">This looks like a <b>drawing</b> (mostly white with thin outlines).
+            Thin curved outlines are hard to make with straight threads: <b>Drawing mode</b> thickens them so they show up clearly.
+            <button className="primary" onClick={() => upd("tone", { lineArt: true })}>Use drawing mode</button></p>}
+          {s.tone.lineArt && <p className="hint">Drawing mode thickens dark outlines. Tip: 400 nails and a close crop give the crispest drawings.</p>}
           <Segmented value={s.tone.background ?? "keep"} onChange={(v) => upd("tone", { background: v })}
             options={[{ value: "keep", label: "Keep background" }, { value: "remove", label: "Remove background" }]} />
           {s.tone.background === "remove" && <>
