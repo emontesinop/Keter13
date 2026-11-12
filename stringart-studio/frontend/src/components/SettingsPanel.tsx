@@ -4,9 +4,17 @@ import { ColorField, NumberField, Section, Select, Slider, Toggle, fmt } from ".
 
 type Upd = (group: keyof Settings, key: string, value: any) => void;
 
-export default function SettingsPanel({ s, set, defaults, geometry, onPaletteReplace }: {
+export default function SettingsPanel({ s, set, defaults, geometry, onPaletteReplace, onAutoPalette }: {
   s: Settings; set: Upd; defaults: any; geometry: any; onPaletteReplace: (bg: string, cols: any[]) => void;
+  onAutoPalette?: (count: number, background: string) => Promise<void>;
 }) {
+  const [palCount, setPalCount] = React.useState(5);
+  const [palBusy, setPalBusy] = React.useState(false);
+  const autoPal = async (count = palCount, bg = s.thread.palette_background) => {
+    if (!onAutoPalette) return;
+    setPalBusy(true);
+    try { await onAutoPalette(count, bg); } finally { setPalBusy(false); }
+  };
   const im = s.image, b = s.board, t = s.thread, m = s.materials;
   const I = (k: string) => (v: any) => set("image", k, v);
   const B = (k: string) => (v: any) => set("board", k, v);
@@ -70,7 +78,11 @@ export default function SettingsPanel({ s, set, defaults, geometry, onPaletteRep
       <Section title="Thread & colour">
         <div className="seg">
           {(["mono", "color"] as const).map((v) => (
-            <button key={v} className={t.color_mode === v ? "on" : ""} onClick={() => T("color_mode")(v)}>
+            <button key={v} className={t.color_mode === v ? "on" : ""} onClick={() => {
+              const first = v === "color" && t.color_mode !== "color";
+              T("color_mode")(v);
+              if (first) autoPal(palCount, "#ffffff");   // first switch: white board + palette from the photo
+            }}>
               {v === "mono" ? "Monochrome" : "Multi-colour"}</button>
           ))}
         </div>
@@ -82,6 +94,14 @@ export default function SettingsPanel({ s, set, defaults, geometry, onPaletteRep
           <ColorField label="Thread" value={t.thread_color} onChange={(v) => { T("preset")("custom"); T("thread_color")(v); }} />
           <ColorField label="Background" value={t.background_color} onChange={(v) => { T("preset")("custom"); T("background_color")(v); }} />
         </>) : (<>
+          <button className="primary wide" disabled={palBusy} onClick={() => autoPal()}>
+            {palBusy ? "Choosing colours…" : "✦ Choose thread colours from photo"}</button>
+          <div className="seg">
+            {[3, 4, 5, 6].map((k) => <button key={k} className={palCount === k ? "on" : ""} onClick={() => setPalCount(k)}>{k} colours</button>)}
+          </div>
+          <p className="hint">Picks the best real thread colours for this photo and board from 30 common shades (skin tones, browns,
+            blues…). 5 is usually best. Colours are optimised together, and each colour stays one thread: its line groups are
+            joined by running the thread around the outside of the board.</p>
           <Select label="Palette preset" value="" onChange={(k: string) => {
             const p = defaults?.palette_presets?.[k]; if (p) onPaletteReplace(p.background, p.colors);
           }} options={[{ value: "", label: "choose…" }, ...Object.keys(defaults?.palette_presets ?? {}).map((k) => ({ value: k, label: k.toUpperCase() }))]} />

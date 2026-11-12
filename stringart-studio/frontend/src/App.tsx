@@ -155,12 +155,13 @@ export default function App() {
   }, [compareWith, project?.id]);
 
   // ------------------------------------------------ derived
-  const compact = useMemo<CompactStep[]>(() => steps.map((s) => [s.layer, s.from - 1, s.to - 1]), [steps]);
+  const compact = useMemo<CompactStep[]>(() => steps.map((s) => [s.layer, s.kind === "rim" ? -1 : s.from - 1, s.kind === "rim" ? -1 : s.to - 1]), [steps]);
   const liveCompact = useMemo<CompactStep[] | null>(() => {
-    const pr = job?.progress;
-    if (!pr?.partial || !(job?.status === "running")) return null;
+    const pr = job?.progress as any;
+    if (!(job?.status === "running") || !(pr?.partial || pr?.partial_layers)) return null;
     const out: CompactStep[] = [];
-    for (const sec of pr.partial) for (let i = 1; i < sec.length; i++) out.push([pr.layer_index ?? 0, sec[i - 1], sec[i]]);
+    if (pr.partial_layers) pr.partial_layers.forEach((edges: number[][], li: number) => edges.forEach(([a, b]) => out.push([li, a, b])));
+    else for (const sec of pr.partial) for (let i = 1; i < sec.length; i++) out.push([pr.layer_index ?? 0, sec[i - 1], sec[i]]);
     return out;
   }, [job]);
 
@@ -204,7 +205,11 @@ export default function App() {
       </nav>
       <main className="workspace">
         <aside className="left">
-          <SettingsPanel s={settings} set={set} defaults={defaults} geometry={geom?.summary} onPaletteReplace={replacePalette} />
+          <SettingsPanel s={settings} set={set} defaults={defaults} geometry={geom?.summary} onPaletteReplace={replacePalette}
+            onAutoPalette={async (count, bg) => {
+              try { const p = await api.autoPalette(project.id, count, bg, settings); replacePalette(p.background, p.colors); }
+              catch (e: any) { setError(e.message); }
+            }} />
         </aside>
         <section className="center">
           <div className="view-tabs">

@@ -182,6 +182,28 @@ def preview(pid: str, settings: Optional[dict] = Body(None), size: int = Query(3
     }
 
 
+class AutoPaletteBody(BaseModel):
+    count: int = 5
+    background: str = "#ffffff"
+    settings: Optional[dict] = None
+
+
+@app.post("/api/projects/{pid}/auto-palette")
+def auto_palette_endpoint(pid: str, body: AutoPaletteBody):
+    """Choose thread colours from the catalogue that best reproduce this photo on the given board."""
+    try:
+        meta = store.get_project(pid)
+        rgb = store.source_rgb(pid)
+    except KeyError as e:
+        _404(e)
+    s = effective_settings(ProjectSettings(**(body.settings or meta["settings"])))
+    s.thread.palette_background = body.background
+    s.thread.color_mode = "color"
+    _, pi = process_image(rgb, s, 160, faces=store.faces(pid))
+    pal = colormod.auto_palette(pi.color, pi.mask, pi.importance, body.background, max(1, min(8, body.count)))
+    return {"background": body.background, "colors": [{"name": n, "hex": h, "enabled": True} for n, h in pal]}
+
+
 @app.post("/api/geometry")
 def geometry(board: dict = Body(...)):
     s = ProjectSettings(board=board)

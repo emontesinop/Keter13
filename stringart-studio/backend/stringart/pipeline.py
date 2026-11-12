@@ -21,6 +21,7 @@ import numpy as np
 
 from . import color as colormod
 from .colorsci import hex_to_rgb, linear_to_srgb, srgb_to_linear
+from .color_joint import JointColorOptimizer
 from .config import (ProjectSettings, THREAD_PRESETS, apply_mode, effective_min_skip, MODE_IMAGE_HINTS, resolve_tone)
 from .engine import LayerOptimizer, LayerParams
 from .geometry import BoardGeometry
@@ -53,6 +54,9 @@ def get_cache(geom: BoardGeometry, resolution: int, min_skip: int) -> LineCache:
 def effective_settings(settings: ProjectSettings) -> ProjectSettings:
     s = settings.model_copy(deep=True)
     s.generation = apply_mode(s.generation)
+    if s.thread.color_mode == "color" and s.generation.mode != "custom":
+        # colours share the board: give the joint optimiser room for more connections
+        s.generation.max_lines = max(s.generation.max_lines, 10000)
     if s.generation.mode in MODE_IMAGE_HINTS:
         s.image = s.image.model_copy(update=MODE_IMAGE_HINTS[s.generation.mode])
     if s.thread.color_mode == "mono" and s.thread.preset in THREAD_PRESETS:
@@ -130,7 +134,10 @@ def generate(src_rgb: np.ndarray, settings: ProjectSettings, progress: ProgressF
     layer_out = []
     densities = []
     n_layers = len(layers)
-    for li, ((name, hexc), tgt, budget) in enumerate(zip(layers, targets, budgets)):
+    if s.thread.color_mode == "color":
+        layer_out = _generate_color_joint(s, cache, pi, layers, bg, thread_px, report, cancel)
+        n_layers = 0  # skip the per-layer loop below
+    for li, ((name, hexc), tgt, budget) in enumerate(zip(layers, targets, budgets) if n_layers else []):
         def prog(d, li=li, name=name):
             frac = 0.08 + 0.82 * (li + d["lines"] / max(1, d["max_lines"])) / n_layers
             report({"stage": "optimise", "layer": name, "layer_index": li, "fraction": min(0.9, frac),
@@ -191,6 +198,38 @@ def generate(src_rgb: np.ndarray, settings: ProjectSettings, progress: ProgressF
     return result, images
 
 
+def _generate_color_joint(s, cache, pi, layers, bg, thread_px, report, cancel) -> list:
+    """All colours optimised together (no continuity constraint); see color_joint.py."""
+    gen = s.generation
+
+    def prog(d):
+        report({"stage": "optimise", "layer": "all colours", "fraction": min(0.9, 0.08 + 0.82 * d["lines"] / max(1, d["max_lines"])),
+                "lines": d["lines"], "error_reduction": d["error_reduction"],
+                "partial_layers": [[[int(a), int(b)] for a, b in e] for e in d["edges"]]})
+    opt = JointColorOptimizer(cache, srgb_to_linear(pi.color), pi.importance * pi.mask,
+                              [srgb_to_linear(hex_to_rgb(c)) for _, c in layers], srgb_to_linear(hex_to_rgb(bg)),
+                              thread_px, s.thread.opacity, progress=prog, cancel=cancel)
+    edges, err_red, stop, elapsed = opt.run(gen.max_lines)
+    # build lighter colours first so darker detail ends up on top
+    lum = lambda h: float(np.dot(srgb_to_linear(hex_to_rgb(h)), [0.2126, 0.7152, 0.0722]))
+    order = sorted(range(len(layers)), key=lambda i: -lum(layers[i][1]))
+    out = []
+    for li in order:
+        if not edges[li]:
+            continue
+        name, hexc = layers[li]
+        out.append({
+            "name": name, "color": hexc,
+            "selected_edges": [[int(a), int(b)] for a, b in edges[li]],
+            "optimizer_sections": [],
+            "stats": {"lines": len(edges[li]), "stop_reason": stop, "error_reduction": err_red, "jumps": 0,
+                      "trimmed_tail_lines": 0, "elapsed_s": elapsed, "budget": gen.max_lines, "error_curve": [],
+                      "optimizer": "joint-colour"},
+            "bridges_proposed": [],
+        })
+    return out
+
+
 def finalize(result: dict, s: ProjectSettings, geom: BoardGeometry, approved, intended=None, mask=None):
     """(Re)compute route, materials and metrics. Safe to call again after approvals."""
     approved_set = {canon(a - 1, b - 1) for a, b in approved}
@@ -209,7 +248,7 @@ def finalize(result: dict, s: ProjectSettings, geom: BoardGeometry, approved, in
                       "steps": plan.n_steps, "validated": True,
                       "min_sections_without_bridges": min_sections(edges)}
         mat_layers.append({"name": L["name"], "color": L["color"], "sections": L["sections"]})
-    result["materials"] = estimate(geom, mat_layers, s.board, s.thread, s.materials)
+    result["materials"] = estimate(geom, mat_layers, s.board, s.thread, s.materials, join=s.route.join)
     # metrics: compare simulated vs intended appearance at comparison resolution
     res = result["comparison_resolution"]
     if mask is None:
@@ -234,17 +273,29 @@ def all_edges(L: dict):
 
 
 def build_steps(result: dict) -> List[dict]:
-    """Flat, numbered construction sequence (1-based nail numbers)."""
+    """Flat, numbered construction sequence (1-based nail numbers).
+
+    ``kind`` is "line" for a visible connection, or "rim" when the same thread runs around the
+    OUTSIDE of the nail ring from the end of one section to the start of the next (route join
+    "rim"; no visible line, no cut).
+    """
     nails = result["nails"]
     xy = np.array([[n["x_mm"], n["y_mm"]] for n in nails])
+    join = result.get("settings", {}).get("route", {}).get("join", "cut")
     steps = []
     k = 0
     for li, L in enumerate(result["layers"]):
         bridges = {canon(a - 1, b - 1) for a, b in L.get("bridges_applied", [])}
         for si, sec in enumerate(L["sections"]):
+            if si > 0 and join == "rim":
+                k += 1
+                prev_end = L["sections"][si - 1][-1]
+                steps.append({"step": k, "kind": "rim", "layer": li, "color_name": L["name"], "color": L["color"],
+                              "section": si + 1, "from": prev_end + 1, "to": sec[0] + 1, "distance_mm": 0.0,
+                              "bridge": False})
             for a, b in zip(sec[:-1], sec[1:]):
                 k += 1
-                steps.append({"step": k, "layer": li, "color_name": L["name"], "color": L["color"],
+                steps.append({"step": k, "kind": "line", "layer": li, "color_name": L["name"], "color": L["color"],
                               "section": si + 1, "from": a + 1, "to": b + 1,
                               "distance_mm": round(float(np.hypot(*(xy[a] - xy[b]))), 2),
                               "bridge": canon(a, b) in bridges})
@@ -260,6 +311,7 @@ def render_result(result: dict, size: int = 1000, upto: Optional[int] = None) ->
         steps = steps[:upto]
     per = [[] for _ in result["layers"]]
     for st in steps:
-        per[st["layer"]].append((st["from"] - 1, st["to"] - 1))
+        if st.get("kind", "line") == "line":
+            per[st["layer"]].append((st["from"] - 1, st["to"] - 1))
     dens = [layer_density(geom, e, size, s.thread.thickness_mm, s.thread.opacity) for e in per]
     return composite(dens, [L["color"] for L in result["layers"]], result["background"])

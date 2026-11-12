@@ -132,6 +132,9 @@ class GenerationSettings(BaseModel):
 
 class RouteSettings(BaseModel):
     mode: Literal["strict", "practical"] = "strict"
+    # how separate thread sections of one colour are joined: "rim" = keep the same thread and run it
+    # around the OUTSIDE of the nail ring to the next section (no cut); "cut" = tie off, cut, re-tie
+    join: Literal["rim", "cut"] = "rim"
     max_bridges: int = Field(20, ge=0, le=500)
     approved_bridges: List[Tuple[int, int]] = Field(default_factory=list)  # 1-based nail numbers
 

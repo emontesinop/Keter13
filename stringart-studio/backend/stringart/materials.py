@@ -19,8 +19,18 @@ def recommend_spool(length_m: float) -> float:
     return float(np.ceil(length_m / 5000) * 5000)
 
 
+def rim_travel_mm(geom: BoardGeometry, sections: List[List[int]]) -> float:
+    """Thread run around the outside of the nail ring between consecutive sections."""
+    n, total = geom.n, 0.0
+    spacing = geom.nail_spacing_mm()
+    for a_sec, b_sec in zip(sections[:-1], sections[1:]):
+        d = abs(a_sec[-1] - b_sec[0])
+        total += min(d, n - d) * spacing + 10.0       # + allowance to pass around the end nails
+    return total
+
+
 def layer_thread(geom: BoardGeometry, sections: List[List[int]], board: BoardSettings,
-                 thread_mm: float, m: MaterialSettings) -> dict:
+                 thread_mm: float, m: MaterialSettings, join: str = "cut") -> dict:
     straight = wraps = 0.0
     sec_lengths = []
     for sec in sections:
@@ -30,13 +40,15 @@ def layer_thread(geom: BoardGeometry, sections: List[List[int]], board: BoardSet
         sec_lengths.append(sec_total)
         straight += s
         wraps += w
-    knots_total = 2 * m.knot_allowance_mm * len(sections)
-    slack = (straight + wraps) * m.slack_percent / 100
-    total = straight + wraps + slack + knots_total
+    rim = rim_travel_mm(geom, sections) if join == "rim" else 0.0
+    knots_total = 2 * m.knot_allowance_mm * (1 if join == "rim" and sections else len(sections))
+    slack = (straight + wraps + rim) * m.slack_percent / 100
+    total = straight + wraps + rim + slack + knots_total
     with_waste = total * (1 + m.waste_percent / 100)
     return {
         "straight_mm": straight,
         "wrap_mm": wraps,
+        "rim_mm": rim,
         "slack_mm": slack,
         "knots_mm": knots_total,
         "total_mm": total,
@@ -47,7 +59,7 @@ def layer_thread(geom: BoardGeometry, sections: List[List[int]], board: BoardSet
 
 
 def estimate(geom: BoardGeometry, layers: List[dict], board: BoardSettings, thread: ThreadSettings,
-             m: MaterialSettings) -> dict:
+             m: MaterialSettings, join: str = "cut") -> dict:
     """``layers``: [{"name", "color", "sections"}] with 0-based sections."""
     per_layer = []
     total_m = 0.0
@@ -55,7 +67,7 @@ def estimate(geom: BoardGeometry, layers: List[dict], board: BoardSettings, thre
     sections = 0
     thread_cost = 0.0
     for L in layers:
-        t = layer_thread(geom, L["sections"], board, thread.thickness_mm, m)
+        t = layer_thread(geom, L["sections"], board, thread.thickness_mm, m, join)
         n_conn = sum(len(s) - 1 for s in L["sections"])
         spools = int(np.ceil(t["total_with_waste_m"] / m.spool_length_m)) if t["total_with_waste_m"] > 0 else 0
         cost = spools * m.thread_price_per_spool
@@ -65,7 +77,9 @@ def estimate(geom: BoardGeometry, layers: List[dict], board: BoardSettings, thre
         connections += n_conn
         sections += len(L["sections"])
         thread_cost += cost
-    seconds = (connections * m.seconds_per_connection + sections * m.seconds_per_section
+    threads = len(per_layer) if join == "rim" else sections      # separate pieces of thread to tie on
+    rim_moves = sections - len(per_layer) if join == "rim" else 0
+    seconds = (connections * m.seconds_per_connection + threads * m.seconds_per_section + rim_moves * 10
                + geom.n * m.seconds_per_nail)
     nails_cost = geom.n * m.nail_price
     total_cost = nails_cost + m.board_price + thread_cost + m.other_costs
@@ -77,12 +91,14 @@ def estimate(geom: BoardGeometry, layers: List[dict], board: BoardSettings, thre
         "layers": per_layer,
         "total_connections": connections,
         "total_sections": sections,
-        "knots": 2 * sections,
-        "cuts": sections,
+        "threads": threads,
+        "rim_moves": rim_moves,
+        "knots": 2 * threads,
+        "cuts": threads,
         "total_thread_m": total_m,
         "construction_time_h": {
             "nailing": geom.n * m.seconds_per_nail / 3600,
-            "threading": (connections * m.seconds_per_connection + sections * m.seconds_per_section) / 3600,
+            "threading": (connections * m.seconds_per_connection + threads * m.seconds_per_section + rim_moves * 10) / 3600,
             "total": seconds / 3600,
         },
         "costs": {"nails": nails_cost, "board": m.board_price, "thread": thread_cost, "other": m.other_costs,

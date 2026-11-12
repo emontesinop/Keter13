@@ -49,7 +49,7 @@ For frontend development, run `npm run dev` in `frontend/`. It proxies `/api` to
 | Adjustments | Crop, zoom, offset, rotation, exposure, brightness, contrast, gamma, local contrast (CLAHE), sharpening, noise reduction, threshold, invert, background keep/simplify/remove, edge/face/detail priority |
 | Board | Circle, square or rectangle; diameter, margin, 50–1000 nails, nail Ø and height, clockwise/counter-clockwise numbering, nail 1 position |
 | Thread | White on black, black on white, red on black, on wood, custom colours; thickness, fibre opacity, tone physics |
-| Colour | Up to 12 real thread colours, CMYK and RGB-inspired palettes, perceptual ΔE (CIEDE2000) scoring, per-colour layers and routes |
+| Colour | Joint optimisation of all colours (no continuity constraint), automatic palette from a 30-shade thread catalogue, up to 12 colours, perceptual ΔE scoring, one thread per colour joined around the outside of the board |
 | Generation | Greedy error minimisation in optical-density space: exact per-line gains, cached rasterised lines, no repeated connections, 6 modes (quality, balanced, min strokes, contrast, fast, custom), live progress, cancellation |
 | Route | Graph analysis (degrees, components, Euler bound), minimum trail decomposition (Hierholzer), strict and practical modes, bridge proposals only applied after explicit approval, mathematical validation |
 | Simulator | Real nail-to-nail order; play, pause, stop, restart, step ±1, jump, timeline, speed, current/next nail, colour layers on/off |

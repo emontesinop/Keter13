@@ -86,7 +86,7 @@ Modes are parameter presets: quality = hybrid, more lines, 280 px; balanced; min
 error reduction; contrast = stronger CLAHE, edge and face weights and a lower overshoot penalty;
 fast = 160 px.
 
-## 5. Colour (`color.py`, `render.py`)
+## 5. Colour (`color.py`, `color_joint.py`, `render.py`)
 
 Threads lying side by side mix **partitively** (spatial averaging), not subtractively like ink. With
 per-colour densities `A_k`:
@@ -95,13 +95,25 @@ per-colour densities `A_k`:
 C = 1 − e^(−ΣA_k),   mix = Σ A_k c_k / ΣA_k,   pixel = (1 − C)·bg + C·mix
 ```
 
-In coverage shares `a_k = C·A_k/ΣA` this model is linear: `pixel = bg + Σ a_k (c_k − bg)` with
-`a_k ≥ 0` and `Σ a_k ≤ C_max`. Every pixel is unmixed into the user's real thread palette by
-constrained least squares (vectorised FISTA projected gradient). The result is converted back to
-per-colour target densities, and each colour gets its own optimiser run, route and sequence.
-Lines are allocated in proportion to each colour's required density (the `color_balance` exponent).
-Quality is reported as mean CIE ΔE76 and ΔE2000 in Lab. "CMYK" is offered as a palette of physical
-threads; no ink separation is involved.
+* **Joint optimiser (v3).** All colours are optimised together, without any continuity
+  constraint. Each step picks the best *(colour, connection)* pair anywhere on the board by the exact
+  reduction of `E = Σ w ‖√P − √T‖²`, the error of the *mixed* colour on square-root linear RGB, which
+  is close to perceptual lightness. So colours compensate for each other: black adds shadow where
+  a skin-tone thread alone can't. Lazy greedy over a heap with vectorised batch re-evaluation and
+  periodic full refreshes (mixing makes gains non-monotone). v2 optimised each colour separately
+  against a fixed unmixed target, as one continuous thread; on a real portrait the joint optimiser
+  with an automatic palette lowered the mean CIEDE2000 against the photo from 15.9 (RGB preset) and
+  15.1 (CMYK) to 9.8–10.4.
+* **Automatic palette.** Greedy forward selection from a 30-shade thread catalogue (skin tones,
+  browns, blues, …). Each round adds the colour that most reduces the CIE Lab (ΔE76) error of the
+  constrained least-squares unmixing on a pixel sample. Measuring in Lab matters: on square-root
+  RGB the selection chose almost only dark threads, and the result was nearly grey.
+* **Route.** Each colour's connections are split into the minimum number of Euler trails (§6).
+  With `route.join = "rim"` (the default) consecutive trails are joined by running the same thread
+  around the **outside** of the nail ring, so each colour is still one piece of thread with no cuts.
+  Lighter colours are built first so dark detail lies on top.
+* **Screen preview.** Canvas compositing happens in sRGB. For thread darker than the board, each
+  line is drawn with alpha `1 − (1 − a)^(1/2.2)`, so overlapping lines match the linear-light model.
 
 ## 6. Route planning (`route.py`)
 

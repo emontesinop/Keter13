@@ -53,7 +53,8 @@ class ProgressiveRenderer:
     def add(self, steps):
         by_layer = {}
         for st in steps:
-            by_layer.setdefault(st["layer"], []).append((st["from"] - 1, st["to"] - 1))
+            if st.get("kind", "line") == "line":
+                by_layer.setdefault(st["layer"], []).append((st["from"] - 1, st["to"] - 1))
         for li, e in by_layer.items():
             e = np.asarray(e)
             lo, hi = np.minimum(e[:, 0], e[:, 1]), np.maximum(e[:, 0], e[:, 1])
@@ -111,7 +112,9 @@ def simulation_frames(result: dict, size: int = 600, mode: str = "timelapse", ma
         st = steps[m - 1]
         hl = {st["from"] - 1: (80, 200, 255), st["to"] - 1: (255, 90, 90)}
         yield _frame(R.image(), R.geom, result, highlight=hl,
-                     caption=f'Step {m}/{n}  nail {st["from"]} -> {st["to"]}  ({st["color_name"]}, section {st["section"]})')
+                     caption=(f'Step {m}/{n}  around the outside {st["from"]} ~> {st["to"]}  ({st["color_name"]})'
+                              if st.get("kind") == "rim" else
+                              f'Step {m}/{n}  nail {st["from"]} -> {st["to"]}  ({st["color_name"]}, section {st["section"]})'))
 
 
 def simulation_gif(result: dict, size: int = 520, mode: str = "timelapse", max_frames: int = 120,

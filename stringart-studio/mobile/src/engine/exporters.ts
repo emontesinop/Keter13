@@ -96,7 +96,7 @@ export function drawArt(ctx: CanvasRenderingContext2D, r: Result, size: number, 
   ctx.fill();
   const wpx = r.thicknessMm * s;
   ctx.lineWidth = Math.max(1, wpx);
-  ctx.globalAlpha = Math.min(1, wpx >= 1 ? r.opacity : r.opacity * wpx);
+  const baseAlpha = Math.min(1, wpx >= 1 ? r.opacity : r.opacity * wpx);
   ctx.lineCap = "round";
   const steps = buildSteps(r);
   for (let k = 0; k < steps.length && k < upto; k++) {
@@ -104,6 +104,7 @@ export function drawArt(ctx: CanvasRenderingContext2D, r: Result, size: number, 
     if (st.kind !== "line" || hidden?.has(st.layer)) continue;
     const a = st.from - 1, b = st.to - 1;
     ctx.strokeStyle = st.color;
+    ctx.globalAlpha = canvasAlpha(baseAlpha, st.color, r.background);
     ctx.beginPath();
     ctx.moveTo(o + r.nailsMm[2 * a] * s, o + r.nailsMm[2 * a + 1] * s);
     ctx.lineTo(o + r.nailsMm[2 * b] * s, o + r.nailsMm[2 * b + 1] * s);
@@ -137,4 +138,13 @@ export async function shareFile(data: Blob | string, filename: string, mime: str
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+/** Canvas blends in sRGB, real light mixes linearly. For thread darker than the board, drawing each
+ *  line with alpha 1-(1-a)^(1/2.2) makes n overlapping lines match the linear physical model exactly
+ *  (sRGB value of (1-a)^n). Lighter threads keep the plain alpha. */
+export function canvasAlpha(a: number, threadHex: string, boardHex: string): number {
+  const lum = (h: string) => { const v = h.replace("#", ""); return [0, 2, 4].reduce((s, i, k) => s + parseInt(v.slice(i, i + 2), 16) * [0.2126, 0.7152, 0.0722][k], 0); };
+  a = Math.min(0.999, Math.max(0, a));
+  return lum(threadHex) < lum(boardHex) ? 1 - Math.pow(1 - a, 1 / 2.2) : a;
 }

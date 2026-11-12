@@ -94,12 +94,16 @@ export default function BoardCanvas(p: Props) {
     const alpha = wpx >= 1 ? p.opacity : p.opacity * wpx;
     ctx.lineWidth = lw;
     ctx.lineCap = "round";
-    ctx.globalAlpha = Math.min(1, alpha);
+    const baseAlpha = Math.min(1, alpha);
     let lastLayer = -1;
     for (let k = start; k < upto; k++) {
       const [L, a, b] = p.steps[k];
-      if (p.hiddenLayers?.has(L)) continue;
-      if (L !== lastLayer) { ctx.strokeStyle = p.colors[L] ?? "#fff"; lastLayer = L; }
+      if (a < 0 || p.hiddenLayers?.has(L)) continue;     // a < 0: move around the outside (no visible line)
+      if (L !== lastLayer) {
+        ctx.strokeStyle = p.colors[L] ?? "#fff";
+        ctx.globalAlpha = canvasAlpha(baseAlpha, p.colors[L] ?? "#ffffff", p.background);
+        lastLayer = L;
+      }
       const [x1, y1] = pt(a, t), [x2, y2] = pt(b, t);
       ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
     }
@@ -186,4 +190,13 @@ export default function BoardCanvas(p: Props) {
       <div className="zoom-hint">{view.zoom.toFixed(1)}× · scroll to zoom · drag to pan · double-click to reset</div>
     </div>
   );
+}
+
+/** Canvas blends in sRGB, real light mixes linearly. For thread darker than the board, drawing each
+ *  line with alpha 1-(1-a)^(1/2.2) makes n overlapping lines match the linear physical model exactly
+ *  (sRGB value of (1-a)^n). Lighter threads keep the plain alpha. */
+export function canvasAlpha(a: number, threadHex: string, boardHex: string): number {
+  const lum = (h: string) => { const v = h.replace("#", ""); return [0, 2, 4].reduce((s, i, k) => s + parseInt(v.slice(i, i + 2), 16) * [0.2126, 0.7152, 0.0722][k], 0); };
+  a = Math.min(0.999, Math.max(0, a));
+  return lum(threadHex) < lum(boardHex) ? 1 - Math.pow(1 - a, 1 / 2.2) : a;
 }

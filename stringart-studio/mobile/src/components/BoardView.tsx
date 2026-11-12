@@ -1,5 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { buildSteps, Result } from "../engine/types";
+import { canvasAlpha } from "../engine/exporters";
 import { useGestures } from "./ui";
 
 /** Zoomable artwork view: pinch / drag / double-tap reset. Draws incrementally when `upto` grows. */
@@ -59,11 +60,12 @@ export default function BoardView({ result, upto, highlight, numbers = false, hi
     }
     const wpx = result.thicknessMm * g.s;
     ctx.lineWidth = Math.max(1, wpx);
-    ctx.globalAlpha = Math.min(1, wpx >= 1 ? result.opacity : result.opacity * wpx);
+    const baseAlpha = Math.min(1, wpx >= 1 ? result.opacity : result.opacity * wpx);
     for (let k = start; k < lim; k++) {
       const st = steps[k];
       if (st.kind !== "line" || hidden?.has(st.layer)) continue;
       ctx.strokeStyle = st.color;
+      ctx.globalAlpha = canvasAlpha(baseAlpha, st.color, result.background);
       const [x1, y1] = P(st.from - 1, g), [x2, y2] = P(st.to - 1, g);
       ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
     }
