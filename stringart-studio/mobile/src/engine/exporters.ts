@@ -1,6 +1,7 @@
 // Export helpers: CSV / JSON / SVG template / PNG, shared via the iOS share sheet when possible.
 import { boardGeometry } from "./geometry";
 import { buildSteps, layerSections, Result } from "./types";
+import { PhysicalCanvas } from "./physicalRender";
 
 export function sequenceCSV(r: Result): string {
   const rows = ["Step,From nail,To nail,Thread color,Color hex,Distance (mm),Section,Action"];
@@ -85,32 +86,11 @@ export function templateSVG(r: Result, marginMm = 15): string {
   return p.join("\n");
 }
 
-/** Draw the artwork (physically scaled thread) onto a canvas. */
+/** Draw the artwork with the physical light-mixing model (identical to what the optimiser scored). */
 export function drawArt(ctx: CanvasRenderingContext2D, r: Result, size: number, upto = Infinity, hidden?: Set<number>) {
-  const s = (size / r.widthMm) * 0.98, o = size / 2;
-  ctx.save();
-  ctx.fillStyle = r.background;
-  ctx.beginPath();
-  if (r.board.shape === "circle") ctx.arc(o, o, (r.widthMm / 2) * s, 0, Math.PI * 2);
-  else ctx.rect(o - (r.widthMm / 2) * s, o - (r.heightMm / 2) * s, r.widthMm * s, r.heightMm * s);
-  ctx.fill();
-  const wpx = r.thicknessMm * s;
-  ctx.lineWidth = Math.max(1, wpx);
-  const baseAlpha = Math.min(1, wpx >= 1 ? r.opacity : r.opacity * wpx);
-  ctx.lineCap = "round";
-  const steps = buildSteps(r);
-  for (let k = 0; k < steps.length && k < upto; k++) {
-    const st = steps[k];
-    if (st.kind !== "line" || hidden?.has(st.layer)) continue;
-    const a = st.from - 1, b = st.to - 1;
-    ctx.strokeStyle = st.color;
-    ctx.globalAlpha = canvasAlpha(baseAlpha, st.color, r.background);
-    ctx.beginPath();
-    ctx.moveTo(o + r.nailsMm[2 * a] * s, o + r.nailsMm[2 * a + 1] * s);
-    ctx.lineTo(o + r.nailsMm[2 * b] * s, o + r.nailsMm[2 * b + 1] * s);
-    ctx.stroke();
-  }
-  ctx.restore();
+  const pc = new PhysicalCanvas(r, size);
+  pc.advance(Math.min(upto, Number.MAX_SAFE_INTEGER), hidden);
+  ctx.drawImage(pc.toCanvas(), 0, 0, size, size);
 }
 
 export async function artworkPNG(r: Result, size = 2048): Promise<Blob> {

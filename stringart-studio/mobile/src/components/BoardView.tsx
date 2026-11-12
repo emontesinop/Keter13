@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { buildSteps, Result } from "../engine/types";
-import { canvasAlpha } from "../engine/exporters";
+import { PhysicalCanvas } from "../engine/physicalRender";
 import { useGestures } from "./ui";
 
 /** Zoomable artwork view: pinch / drag / double-tap reset. Draws incrementally when `upto` grows. */
@@ -43,33 +43,28 @@ export default function BoardView({ result, upto, highlight, numbers = false, hi
   };
   const P = (i: number, g: ReturnType<typeof geom>) => [g.ox + result.nailsMm[2 * i] * g.s, g.oy + result.nailsMm[2 * i + 1] * g.s];
 
+  // artwork layer: physically based render (same light-mixing model as the optimiser), kept in an
+  // offscreen bitmap that grows incrementally with `upto` and is drawn with the current zoom/pan
+  const phys = useRef<{ pc: PhysicalCanvas; key: string; bmp: HTMLCanvasElement } | null>(null);
   useEffect(() => {
     const c = art.current!, g = geom();
     if (c.width !== g.S) { c.width = c.height = g.S; }
+    const R = Math.min(2048, Math.round(size * dpr * 1.25));
+    const key = [R, result.created, result.layers.length, [...(hidden ?? [])].join()].join("|");
+    let ph = phys.current;
+    if (!ph || ph.key !== key || lim < ph.pc.drawn) {
+      const bmp = document.createElement("canvas");
+      bmp.width = bmp.height = R;
+      ph = phys.current = { pc: new PhysicalCanvas(result, R, steps), key, bmp };
+    }
+    ph.pc.advance(lim, hidden);
+    ph.bmp.getContext("2d")!.putImageData(ph.pc.image(), 0, 0);
     const ctx = c.getContext("2d")!;
-    const key = [g.S, g.s, g.ox, g.oy, result.created, [...(hidden ?? [])].join()].join("|");
-    let start = drawn.current.k;
-    if (key !== drawn.current.key || lim < start) {
-      ctx.clearRect(0, 0, g.S, g.S);
-      ctx.fillStyle = result.background;
-      ctx.beginPath();
-      if (result.board.shape === "circle") ctx.arc(g.ox, g.oy, (result.widthMm / 2) * g.s, 0, Math.PI * 2);
-      else ctx.rect(g.ox - (result.widthMm / 2) * g.s, g.oy - (result.heightMm / 2) * g.s, result.widthMm * g.s, result.heightMm * g.s);
-      ctx.fill();
-      start = 0;
-    }
-    const wpx = result.thicknessMm * g.s;
-    ctx.lineWidth = Math.max(1, wpx);
-    const baseAlpha = Math.min(1, wpx >= 1 ? result.opacity : result.opacity * wpx);
-    for (let k = start; k < lim; k++) {
-      const st = steps[k];
-      if (st.kind !== "line" || hidden?.has(st.layer)) continue;
-      ctx.strokeStyle = st.color;
-      ctx.globalAlpha = canvasAlpha(baseAlpha, st.color, result.background);
-      const [x1, y1] = P(st.from - 1, g), [x2, y2] = P(st.to - 1, g);
-      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
+    ctx.clearRect(0, 0, g.S, g.S);
+    const sBmp = (R / result.widthMm) * 0.98, k = g.s / sBmp;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(ph.bmp, g.ox - (R * k) / 2, g.oy - (R * k) / 2, R * k, R * k);
     drawn.current = { k: lim, key };
   }, [result, lim, size, view, hidden]);
 
