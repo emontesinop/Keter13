@@ -152,3 +152,8 @@ input[type=color] { width: 40px; height: 32px; border: 1px solid var(--line); bo
 .tip button { width: 100%; margin-top: 8px; }
 .stage-msg.lost { text-align: center; padding: 20px; max-width: 320px; }
 .stage-msg.lost p { color: #cfd2d6; font-size: 15px; }
+.banner.rim { background: #142433; border-color: #2d5677; color: #cfe4f7; }
+.from-to.rim .to b { color: #7fc4ff; }
+.auto-pal { margin: 8px 0; }
+.auto-pal > button { width: 100%; margin-bottom: 8px; }
+.row-buttons button.on { border-color: var(--accent); color: var(--accent2); }

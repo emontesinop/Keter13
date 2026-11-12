@@ -1,10 +1,10 @@
 // Export helpers: CSV / JSON / SVG template / PNG, shared via the iOS share sheet when possible.
 import { boardGeometry } from "./geometry";
-import { buildSteps, Result } from "./types";
+import { buildSteps, layerSections, Result } from "./types";
 
 export function sequenceCSV(r: Result): string {
-  const rows = ["Step,From nail,To nail,Thread color,Color hex,Distance (mm),Section"];
-  for (const s of buildSteps(r)) rows.push(`${s.step},${s.from},${s.to},${s.colorName},${s.color},${s.distMm.toFixed(2)},${s.section}`);
+  const rows = ["Step,From nail,To nail,Thread color,Color hex,Distance (mm),Section,Action"];
+  for (const s of buildSteps(r)) rows.push(`${s.step},${s.from},${s.to},${s.colorName},${s.color},${s.distMm.toFixed(2)},${s.section},${s.kind === "rim" ? "around the outside of the board (no line)" : "line"}`);
   return "﻿" + rows.join("\n") + "\n";
 }
 
@@ -25,8 +25,8 @@ export function sequenceJSON(r: Result): string {
     board: { shape: r.board.shape, width_mm: r.widthMm, height_mm: r.heightMm, nail_count: r.nailsMm.length / 2, numbering: r.board.numbering },
     background: r.background, thread_mm: r.thicknessMm, opacity: r.opacity, board_settings: r.board,
     nails: Array.from({ length: r.nailsMm.length / 2 }, (_, i) => ({ number: i + 1, x_mm: r.nailsMm[2 * i], y_mm: r.nailsMm[2 * i + 1] })),
-    layers: r.layers.map((L) => ({ name: L.name, color: L.color, sections: [L.path.map((v) => v + 1)] })),
-    steps: buildSteps(r).map((s) => ({ step: s.step, layer: s.layer, color_name: s.colorName, color: s.color, section: s.section, from: s.from, to: s.to, distance_mm: +s.distMm.toFixed(2) })),
+    layers: r.layers.map((L) => ({ name: L.name, color: L.color, sections: layerSections(L).map((sec) => sec.map((v) => v + 1)) })),
+    steps: buildSteps(r).map((s) => ({ step: s.step, kind: s.kind, layer: s.layer, color_name: s.colorName, color: s.color, section: s.section, from: s.from, to: s.to, distance_mm: +s.distMm.toFixed(2) })),
     stats: r.stats,
   });
 }
@@ -38,10 +38,11 @@ export function importSequenceJSON(text: string): Result {
   const nailsMm: number[] = [];
   for (const n of j.nails) nailsMm.push(n.x_mm, n.y_mm);
   const layers: Result["layers"] = [];
-  for (const L of j.layers) for (const sec of L.sections)
-    layers.push({ name: L.sections.length > 1 ? `${L.name} ${layers.filter((x) => x.color === L.color).length + 1}` : L.name,
-      color: L.color, path: sec.map((v: number) => v - 1), stopReason: "imported", errorReduction: 0 });
-  const conns = layers.reduce((a, L) => a + L.path.length - 1, 0);
+  for (const L of j.layers) {
+    const secs: number[][] = L.sections.map((sec: number[]) => sec.map((v: number) => v - 1)).filter((x: number[]) => x.length > 1);
+    if (secs.length) layers.push({ name: L.name, color: L.color, path: secs[0], sections: secs, stopReason: "imported", errorReduction: 0 });
+  }
+  const conns = layers.reduce((a, L) => a + layerSections(L).reduce((b, x) => b + x.length - 1, 0), 0);
   const n = nailsMm.length / 2;
   const w = j.board?.width_mm ?? 300;
   return {
@@ -97,19 +98,16 @@ export function drawArt(ctx: CanvasRenderingContext2D, r: Result, size: number, 
   ctx.lineWidth = Math.max(1, wpx);
   ctx.globalAlpha = Math.min(1, wpx >= 1 ? r.opacity : r.opacity * wpx);
   ctx.lineCap = "round";
-  let k = 0;
-  for (let li = 0; li < r.layers.length; li++) {
-    const L = r.layers[li];
-    ctx.strokeStyle = L.color;
-    for (let i = 1; i < L.path.length; i++) {
-      if (k++ >= upto) break;
-      if (hidden?.has(li)) continue;
-      const a = L.path[i - 1], b = L.path[i];
-      ctx.beginPath();
-      ctx.moveTo(o + r.nailsMm[2 * a] * s, o + r.nailsMm[2 * a + 1] * s);
-      ctx.lineTo(o + r.nailsMm[2 * b] * s, o + r.nailsMm[2 * b + 1] * s);
-      ctx.stroke();
-    }
+  const steps = buildSteps(r);
+  for (let k = 0; k < steps.length && k < upto; k++) {
+    const st = steps[k];
+    if (st.kind !== "line" || hidden?.has(st.layer)) continue;
+    const a = st.from - 1, b = st.to - 1;
+    ctx.strokeStyle = st.color;
+    ctx.beginPath();
+    ctx.moveTo(o + r.nailsMm[2 * a] * s, o + r.nailsMm[2 * a + 1] * s);
+    ctx.lineTo(o + r.nailsMm[2 * b] * s, o + r.nailsMm[2 * b + 1] * s);
+    ctx.stroke();
   }
   ctx.restore();
 }

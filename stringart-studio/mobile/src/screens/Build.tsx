@@ -54,7 +54,8 @@ export default function Build({ project, onExit }: { project: Project; onExit: (
   };
   useEffect(() => {
     if (!cur) { speak("Finished. Tie off the thread."); return; }
-    speak(newSection ? `New thread, ${cur.colorName}. Start at ${cur.from}. Then ${cur.to}` : `${cur.to}`);
+    speak(newSection ? `New thread, ${cur.colorName}. Start at ${cur.from}. Then ${cur.to}`
+      : cur.kind === "rim" ? `Around the outside to ${cur.to}` : `${cur.to}`);
   }, [pos, voice]);
 
   // auto-advance
@@ -84,24 +85,28 @@ export default function Build({ project, onExit }: { project: Project; onExit: (
               ? <>Tie a new <i className="swatch" style={{ background: cur.color }} /><b>{cur.colorName}</b> thread on nail <b>{cur.from}</b>.</>
               : <>Tie the thread to nail <b>{cur.from}</b> with a double knot.</>}
           </div>}
-          <div className="from-to">
+          {cur.kind === "rim" && <div className="banner rim">
+            <b>Around the outside:</b> do not cross the board. Run the thread along the OUTSIDE of the nails from {cur.from} to {cur.to},
+            then continue.
+          </div>}
+          <div className={`from-to ${cur.kind === "rim" ? "rim" : ""}`}>
             <div className="from"><span>from</span><b>{cur.from}</b></div>
-            <div className="arrow">→</div>
-            <div className="to"><span>to</span><b>{cur.to}</b></div>
+            <div className="arrow">{cur.kind === "rim" ? "⤳" : "→"}</div>
+            <div className="to"><span>{cur.kind === "rim" ? "around to" : "to"}</span><b>{cur.to}</b></div>
           </div>
           <div className="meta">
-            nail {cur.to} is at <b>{clockPosition(geom, cur.to - 1)}</b> o'clock · {Math.round(cur.distMm)} mm
+            nail {cur.to} is at <b>{clockPosition(geom, cur.to - 1)}</b> o'clock{cur.kind === "line" && <> · {Math.round(cur.distMm)} mm</>}
             {r.layers.length > 1 && <> · <i style={{ background: cur.color }} />{cur.colorName}</>}
           </div>
-          {nxt && nxt.layer === cur.layer && <div className="then">then → {nxt.to}</div>}
+          {nxt && nxt.layer === cur.layer && <div className="then">then {nxt.kind === "rim" ? "around the outside" : "→"} {nxt.to}</div>}
         </div>
       ) : (
         <div className="instruction done">
           <div className="big-done">✓</div>
-          <p>All {n.toLocaleString()} connections done. Tie off the thread on nail {prev?.to} and secure the knot with a drop of glue.</p>
+          <p>All {n.toLocaleString()} steps done. Tie off the thread on nail {prev?.to} and secure the knot with a drop of glue.</p>
         </div>
       )}
-      {showBoard && <div className="build-board"><BoardView result={r} upto={pos + 1} highlight={cur ? { from: cur.from - 1, to: cur.to - 1 } : null} /></div>}
+      {showBoard && <div className="build-board"><BoardView result={r} upto={pos + 1} highlight={cur && cur.kind === "line" ? { from: cur.from - 1, to: cur.to - 1 } : null} /></div>}
       <div className="build-controls">
         <div className="build-opts">
           <button className={voice ? "on" : ""} onClick={() => { const v = !voice; setVoice(v); localStorage.setItem("sa:voice", v ? "1" : "0");

@@ -83,11 +83,14 @@ export function resolveTone(threadHex: string, bgHex: string, t: Settings["threa
 export type Layer = {
   name: string;
   color: string;
-  path: number[];        // 0-based nail indices; one continuous thread section per layer
+  path: number[];        // first (or only) section, kept for older saved results
+  sections?: number[][]; // 0-based nail trails; consecutive sections are joined by a rim move
   stopReason: string;
   errorReduction: number;
   budget?: number;       // max connections allowed for this layer
 };
+
+export const layerSections = (L: Layer): number[][] => (L.sections && L.sections.length ? L.sections : (L.path.length > 1 ? [L.path] : []));
 
 export type Result = {
   version: 1;
@@ -101,22 +104,32 @@ export type Result = {
   opacity: number;
   layers: Layer[];
   stats: {
-    connections: number; sections: number; threadM: number; buildHours: number; seconds: number;
+    connections: number; sections: number; rimMoves?: number; threads?: number; threadM: number; buildHours: number; seconds: number;
     errorReduction: number; candidates: number; validated: boolean; duplicates: number;
   };
 };
 
-export type Step = { step: number; layer: number; colorName: string; color: string; section: number; from: number; to: number; distMm: number };
+export type Step = {
+  step: number; kind: "line" | "rim" | "start"; layer: number; colorName: string; color: string; section: number;
+  from: number; to: number; distMm: number;
+};
 
+/** Flat build sequence. "start" = tie the thread on `from`; "rim" = run the thread around the
+ *  outside of the nail ring from `from` to `to` (no visible line); "line" = a visible connection. */
 export function buildSteps(r: Result): Step[] {
   const out: Step[] = [];
   let k = 0;
+  const dist = (a: number, b: number) => Math.hypot(r.nailsMm[2 * a] - r.nailsMm[2 * b], r.nailsMm[2 * a + 1] - r.nailsMm[2 * b + 1]);
   r.layers.forEach((L, li) => {
-    for (let i = 1; i < L.path.length; i++) {
-      const a = L.path[i - 1], b = L.path[i];
-      const d = Math.hypot(r.nailsMm[2 * a] - r.nailsMm[2 * b], r.nailsMm[2 * a + 1] - r.nailsMm[2 * b + 1]);
-      out.push({ step: ++k, layer: li, colorName: L.name, color: L.color, section: li + 1, from: a + 1, to: b + 1, distMm: d });
-    }
+    layerSections(L).forEach((sec, si) => {
+      if (si > 0) {
+        const a = layerSections(L)[si - 1].slice(-1)[0];
+        out.push({ step: ++k, kind: "rim", layer: li, colorName: L.name, color: L.color, section: si + 1, from: a + 1, to: sec[0] + 1, distMm: 0 });
+      }
+      for (let i = 1; i < sec.length; i++) {
+        out.push({ step: ++k, kind: "line", layer: li, colorName: L.name, color: L.color, section: si + 1, from: sec[i - 1] + 1, to: sec[i] + 1, distMm: dist(sec[i - 1], sec[i]) });
+      }
+    });
   });
   return out;
 }

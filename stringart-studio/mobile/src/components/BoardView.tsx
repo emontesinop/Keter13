@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { Result } from "../engine/types";
+import { buildSteps, Result } from "../engine/types";
 import { useGestures } from "./ui";
 
 /** Zoomable artwork view: pinch / drag / double-tap reset. Draws incrementally when `upto` grows. */
@@ -14,7 +14,8 @@ export default function BoardView({ result, upto, highlight, numbers = false, hi
   const drawn = useRef({ k: 0, key: "" });
   const lastTap = useRef(0);
   const dpr = Math.min(3, window.devicePixelRatio || 1);
-  const total = result.layers.reduce((a, L) => a + L.path.length - 1, 0);
+  const steps = React.useMemo(() => buildSteps(result), [result]);
+  const total = steps.length;
   const lim = Math.min(upto ?? total, total);
 
   useLayoutEffect(() => {
@@ -59,16 +60,12 @@ export default function BoardView({ result, upto, highlight, numbers = false, hi
     const wpx = result.thicknessMm * g.s;
     ctx.lineWidth = Math.max(1, wpx);
     ctx.globalAlpha = Math.min(1, wpx >= 1 ? result.opacity : result.opacity * wpx);
-    let k = 0;
-    outer: for (let li = 0; li < result.layers.length; li++) {
-      const L = result.layers[li];
-      ctx.strokeStyle = L.color;
-      for (let i = 1; i < L.path.length; i++, k++) {
-        if (k >= lim) break outer;
-        if (k < start || hidden?.has(li)) continue;
-        const [x1, y1] = P(L.path[i - 1], g), [x2, y2] = P(L.path[i], g);
-        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-      }
+    for (let k = start; k < lim; k++) {
+      const st = steps[k];
+      if (st.kind !== "line" || hidden?.has(st.layer)) continue;
+      ctx.strokeStyle = st.color;
+      const [x1, y1] = P(st.from - 1, g), [x2, y2] = P(st.to - 1, g);
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
     }
     ctx.globalAlpha = 1;
     drawn.current = { k: lim, key };
