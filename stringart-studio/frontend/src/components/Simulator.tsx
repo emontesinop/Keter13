@@ -13,7 +13,7 @@ export default function Simulator({ result, steps, pos, setPos, numbers }: {
   const raf = useRef<number>();
   const acc = useRef(0);
   const n = steps.length;
-  const compact = useMemo<CompactStep[]>(() => steps.map((s) => [s.layer, s.from - 1, s.to - 1]), [steps]);
+  const compact = useMemo<CompactStep[]>(() => steps.map((s) => [s.layer, s.kind === "rim" ? -1 : s.from - 1, s.kind === "rim" ? -1 : s.to - 1]), [steps]);
 
   useEffect(() => {
     if (!playing) return;
@@ -45,7 +45,7 @@ export default function Simulator({ result, steps, pos, setPos, numbers }: {
 
   const cur = pos > 0 ? steps[pos - 1] : null;
   const nxt = pos < n ? steps[pos] : null;
-  const current = cur ? { from: cur.from - 1, to: cur.to - 1, next: nxt && nxt.from === cur.to ? nxt.to - 1 : null } : null;
+  const current = cur && cur.kind !== "rim" ? { from: cur.from - 1, to: cur.to - 1, next: nxt && nxt.from === cur.to && nxt.kind !== "rim" ? nxt.to - 1 : null } : null;
   const sps = Math.pow(10, speed);
   return (
     <div className="sim">
@@ -63,9 +63,11 @@ export default function Simulator({ result, steps, pos, setPos, numbers }: {
                 <span className="nail to">{cur.to}</span>
                 {nxt && <><span className="arrow dim">→</span><span className="nail next">{nxt.to}</span></>}
               </div>
+              {cur.kind === "rim" && <div className="hud-warn">Around the OUTSIDE of the board from {cur.from} to {cur.to} (no line, no cut)</div>}
               <div className="hud-meta"><i style={{ background: cur.color }} /> {cur.color_name} · section {cur.section}
                 {cur.bridge && <span className="tag">bridge</span>}</div>
               {nxt && nxt.from !== cur.to && <div className="hud-warn">Next: cut & start new section at nail {nxt.from}</div>}
+              {nxt && nxt.kind === "rim" && <div className="hud-warn">Next: run the thread around the outside to nail {nxt.to}</div>}
             </>
           ) : <div className="hud-step">Empty board · press play or →</div>}
         </div>

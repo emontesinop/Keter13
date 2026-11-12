@@ -40,7 +40,7 @@ export type Result = {
   totals: { connections: number; unique_connections: number; bridges: number; sections: number };
 };
 
-export type Step = { step: number; layer: number; color_name: string; color: string; section: number;
+export type Step = { step: number; kind: "line" | "rim"; layer: number; color_name: string; color: string; section: number;
   from: number; to: number; distance_mm: number; bridge: boolean };
 
 export type Preview = { analysis: any; faces_px: number[][]; size: [number, number];
@@ -81,6 +81,9 @@ export const api = {
   duplicate: (id: string) => j<ProjectMeta>(fetch(`/api/projects/${id}/duplicate`, { method: "POST" })),
   preview: (id: string, settings: Settings, size = 360) =>
     j<Preview>(fetch(`/api/projects/${id}/preview?size=${size}`, { method: "POST", headers: H, body: JSON.stringify(settings) })),
+  autoPalette: (id: string, count: number, background: string, settings: Settings) =>
+    j<{ background: string; colors: { name: string; hex: string; enabled: boolean }[] }>(fetch(`/api/projects/${id}/auto-palette`,
+      { method: "POST", headers: H, body: JSON.stringify({ count, background, settings }) })),
   geometry: (board: any) => j<{ summary: any; nails: Nail[] }>(fetch("/api/geometry", { method: "POST", headers: H, body: JSON.stringify(board) })),
   generate: (id: string, settings: Settings) =>
     j<{ job_id: string }>(fetch(`/api/projects/${id}/generate`, { method: "POST", headers: H, body: JSON.stringify(settings) })),

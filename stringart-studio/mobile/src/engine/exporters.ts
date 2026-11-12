@@ -1,6 +1,7 @@
 // Export helpers: CSV / JSON / SVG template / PNG, shared via the iOS share sheet when possible.
 import { boardGeometry } from "./geometry";
 import { buildSteps, layerSections, Result } from "./types";
+import { PhysicalCanvas } from "./physicalRender";
 
 export function sequenceCSV(r: Result): string {
   const rows = ["Step,From nail,To nail,Thread color,Color hex,Distance (mm),Section,Action"];
@@ -85,31 +86,11 @@ export function templateSVG(r: Result, marginMm = 15): string {
   return p.join("\n");
 }
 
-/** Draw the artwork (physically scaled thread) onto a canvas. */
+/** Draw the artwork with the physical light-mixing model (identical to what the optimiser scored). */
 export function drawArt(ctx: CanvasRenderingContext2D, r: Result, size: number, upto = Infinity, hidden?: Set<number>) {
-  const s = (size / r.widthMm) * 0.98, o = size / 2;
-  ctx.save();
-  ctx.fillStyle = r.background;
-  ctx.beginPath();
-  if (r.board.shape === "circle") ctx.arc(o, o, (r.widthMm / 2) * s, 0, Math.PI * 2);
-  else ctx.rect(o - (r.widthMm / 2) * s, o - (r.heightMm / 2) * s, r.widthMm * s, r.heightMm * s);
-  ctx.fill();
-  const wpx = r.thicknessMm * s;
-  ctx.lineWidth = Math.max(1, wpx);
-  ctx.globalAlpha = Math.min(1, wpx >= 1 ? r.opacity : r.opacity * wpx);
-  ctx.lineCap = "round";
-  const steps = buildSteps(r);
-  for (let k = 0; k < steps.length && k < upto; k++) {
-    const st = steps[k];
-    if (st.kind !== "line" || hidden?.has(st.layer)) continue;
-    const a = st.from - 1, b = st.to - 1;
-    ctx.strokeStyle = st.color;
-    ctx.beginPath();
-    ctx.moveTo(o + r.nailsMm[2 * a] * s, o + r.nailsMm[2 * a + 1] * s);
-    ctx.lineTo(o + r.nailsMm[2 * b] * s, o + r.nailsMm[2 * b + 1] * s);
-    ctx.stroke();
-  }
-  ctx.restore();
+  const pc = new PhysicalCanvas(r, size);
+  pc.advance(Math.min(upto, Number.MAX_SAFE_INTEGER), hidden);
+  ctx.drawImage(pc.toCanvas(), 0, 0, size, size);
 }
 
 export async function artworkPNG(r: Result, size = 2048): Promise<Blob> {
@@ -137,4 +118,13 @@ export async function shareFile(data: Blob | string, filename: string, mime: str
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+/** Canvas blends in sRGB, real light mixes linearly. For thread darker than the board, drawing each
+ *  line with alpha 1-(1-a)^(1/2.2) makes n overlapping lines match the linear physical model exactly
+ *  (sRGB value of (1-a)^n). Lighter threads keep the plain alpha. */
+export function canvasAlpha(a: number, threadHex: string, boardHex: string): number {
+  const lum = (h: string) => { const v = h.replace("#", ""); return [0, 2, 4].reduce((s, i, k) => s + parseInt(v.slice(i, i + 2), 16) * [0.2126, 0.7152, 0.0722][k], 0); };
+  a = Math.min(0.999, Math.max(0, a));
+  return lum(threadHex) < lum(boardHex) ? 1 - Math.pow(1 - a, 1 / 2.2) : a;
 }

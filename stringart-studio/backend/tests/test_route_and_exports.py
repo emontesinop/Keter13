@@ -131,15 +131,20 @@ def test_result_route_is_validated(result):
 
 def test_exported_sequence_matches_simulation(result):
     r, _, s = result
-    steps = build_steps(r)
+    all_steps = build_steps(r)
+    steps = [st for st in all_steps if st["kind"] == "line"]
+    rims = [st for st in all_steps if st["kind"] == "rim"]
     g = BoardGeometry(s.board)
+    # with the default "rim" join, sections of one colour are linked by moves around the outside
+    assert len(rims) == r["layers"][0]["route"]["sections"] - 1
     # sequence edges == simulated edges, step by step and in total
     from_steps = sorted(canon(st["from"] - 1, st["to"] - 1) for st in steps)
     simulated = sorted(canon(*e) for e in all_edges(r["layers"][0]))
     assert from_steps == simulated
     # continuity inside each section
-    for a, b in zip(steps, steps[1:]):
-        if a["section"] == b["section"] and a["layer"] == b["layer"]:
+    # continuity: within one colour every step (line or rim move) starts where the previous ended
+    for a, b in zip(all_steps, all_steps[1:]):
+        if a["layer"] == b["layer"]:
             assert a["to"] == b["from"]
     # rendering the exported steps reproduces the optimiser density exactly
     d1 = layer_density(g, [(st["from"] - 1, st["to"] - 1) for st in steps], r["comparison_resolution"],
@@ -230,3 +235,56 @@ def test_color_mode_layers():
     assert "delta_e2000" in r["metrics"]
     steps = build_steps(r)
     assert {st["color_name"] for st in steps} == {"Red", "Blue"}
+
+
+def _two_colour_image():
+    img = np.ones((160, 160, 3), np.float32)
+    img[:, :80] = [0.85, 0.12, 0.12]
+    img[:, 80:] = [0.12, 0.2, 0.85]
+    return img
+
+
+def test_joint_colour_route_is_one_thread_per_colour():
+    s = ProjectSettings()
+    s.board.nail_count = 150
+    s.generation.mode = "fast"
+    s.thread.color_mode = "color"
+    s.thread.palette_background = "#ffffff"
+    s.thread.palette = [ThreadColor(name="Red", hex="#d62a2a"), ThreadColor(name="Blue", hex="#2a5bd6")]
+    r, _ = generate(_two_colour_image(), s)
+    assert r["layers"][0]["stats"]["optimizer"] == "joint-colour"
+    steps = build_steps(r)
+    for L in r["layers"]:
+        edges = [tuple(e) for e in L["selected_edges"]]
+        assert len({canon(*e) for e in edges}) == len(edges)           # no repeated connection per colour
+        assert validate_sections(L["sections"], edges)
+        assert len(L["sections"]) == min_sections(edges)               # Euler minimum
+    for a, b in zip(steps, steps[1:]):                                   # one continuous thread per colour
+        if a["layer"] == b["layer"]:
+            assert a["to"] == b["from"]
+    mat = r["materials"]
+    assert mat["threads"] == 2 and mat["cuts"] == 2
+    assert mat["rim_moves"] == sum(1 for st in steps if st["kind"] == "rim")
+    assert all(L["rim_mm"] > 0 for L in mat["layers"] if L["sections"] > 1)
+    csv_rows = list(csv.reader(io.StringIO(vector.sequence_csv(r).decode("utf-8-sig"))))
+    assert csv_rows[0][-1] == "Action" and len(csv_rows) - 1 == len(steps)
+
+
+def test_cut_join_keeps_separate_sections():
+    s = ProjectSettings()
+    s.board.nail_count = 150
+    s.generation.mode = "fast"
+    s.thread.color_mode = "color"
+    s.route.join = "cut"
+    s.thread.palette = [ThreadColor(name="Red", hex="#d62a2a"), ThreadColor(name="Blue", hex="#2a5bd6")]
+    r, _ = generate(_two_colour_image(), s)
+    assert not any(st["kind"] == "rim" for st in build_steps(r))
+    assert r["materials"]["cuts"] == r["totals"]["sections"]
+
+
+def test_auto_palette_finds_the_photo_colours():
+    from stringart.color import auto_palette
+    img = _two_colour_image()
+    mask = np.ones(img.shape[:2], bool)
+    names = [n for n, _ in auto_palette(img, mask, np.ones(img.shape[:2]), "#ffffff", 2)]
+    assert set(names) == {"Red", "Blue"}

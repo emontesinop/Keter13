@@ -22,10 +22,12 @@ def _geom(result) -> BoardGeometry:
 def sequence_csv(result: dict, excel: bool = True) -> bytes:
     buf = io.StringIO()
     w = csv.writer(buf)
-    w.writerow(["Step", "From nail", "To nail", "Thread color", "Color hex", "Distance (mm)", "Section", "Bridge"])
+    w.writerow(["Step", "From nail", "To nail", "Thread color", "Color hex", "Distance (mm)", "Section", "Bridge",
+                "Action"])
     for s in build_steps(result):
         w.writerow([s["step"], s["from"], s["to"], s["color_name"], s["color"], f'{s["distance_mm"]:.2f}',
-                    s["section"], "yes" if s["bridge"] else ""])
+                    s["section"], "yes" if s["bridge"] else "",
+                    "around the outside of the board (no line)" if s["kind"] == "rim" else "line"])
     data = buf.getvalue().encode("utf-8")
     return (b"\xef\xbb\xbf" + data) if excel else data   # BOM so Excel detects UTF-8
 

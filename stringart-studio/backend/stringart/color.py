@@ -64,3 +64,57 @@ def decompose(color_img: np.ndarray, palette_hex: List[str], background_hex: str
     total_A = -np.log1p(-C)
     dens = shares / np.maximum(C, 1e-9)[:, None] * total_A[:, None]
     return dens.T.reshape(-1, h, w).astype(np.float32), shares.T.reshape(-1, h, w).astype(np.float32)
+
+
+# ---------------------------------------------------------------------------------------------
+# Thread catalogue and automatic palette (same catalogue and method as the iPhone app)
+THREAD_CATALOG = [
+    ("Black", "#111111"), ("Charcoal", "#3b3b3b"), ("Grey", "#8a8a8a"), ("White", "#f4f4f0"),
+    ("Dark brown", "#3e2418"), ("Brown", "#6e4026"), ("Chestnut", "#8e5634"), ("Tan", "#b9875c"),
+    ("Caramel", "#c98f5a"), ("Skin medium", "#d29a77"), ("Skin light", "#eab99b"), ("Peach", "#f4cbb0"),
+    ("Cream", "#efe2c4"), ("Dark red", "#7a1420"), ("Red", "#c41e26"), ("Coral", "#e26d5a"),
+    ("Orange", "#e2711d"), ("Ochre", "#c9952b"), ("Yellow", "#f2cf1d"), ("Olive", "#66652a"),
+    ("Dark green", "#1d5c33"), ("Green", "#3d9a4f"), ("Teal", "#127f86"), ("Sky blue", "#7fb2e5"),
+    ("Blue", "#2a5bd6"), ("Navy", "#1f2f5c"), ("Purple", "#5f3d8a"), ("Pink", "#e48aa8"),
+    ("Magenta", "#c62a7a"), ("Cyan", "#14a3d6"),
+]
+
+
+def auto_palette(color_img: np.ndarray, mask: np.ndarray, weight: np.ndarray, background_hex: str, k: int,
+                 cmax: float = 0.95, sample: int = 1500) -> List[Tuple[str, str]]:
+    """Pick ``k`` catalogue threads that best reproduce the photo on this board.
+
+    Greedy forward selection: each round adds the catalogue colour whose inclusion most reduces the
+    reconstruction error of the partitive-mixing unmixing on a pixel sample, measured as CIE76
+    Delta E in Lab (perceptual, so chroma counts as much as lightness).
+    """
+    from .colorsci import linear_rgb_to_lab, relative_luminance
+    idx = np.flatnonzero(mask.ravel())
+    if idx.size == 0:
+        return []
+    idx = idx[:: max(1, idx.size // sample)]
+    T = srgb_to_linear(color_img.reshape(-1, 3)[idx].astype(np.float64))
+    w = 0.5 + 0.5 * np.minimum(2.0, weight.ravel()[idx])
+    t_lab = linear_rgb_to_lab(T)
+    bg = srgb_to_linear(hex_to_rgb(background_hex))
+    bg_lum = float(relative_luminance(hex_to_rgb(background_hex)))
+    chosen: List[int] = []
+
+    def err(pal):
+        cols = srgb_to_linear(np.array([hex_to_rgb(THREAD_CATALOG[i][1]) for i in pal]))
+        a = _unmix(T, bg, cols, cmax, iters=80)
+        P = np.clip(bg + a @ (cols - bg), 0, None)
+        return float(np.sum(w * np.sqrt(np.sum((linear_rgb_to_lab(P) - t_lab) ** 2, axis=1))))
+
+    for _ in range(k):
+        best, bi = np.inf, -1
+        for ci, (_, hx) in enumerate(THREAD_CATALOG):
+            if ci in chosen or abs(float(relative_luminance(hex_to_rgb(hx))) - bg_lum) < 0.03:
+                continue
+            e = err(chosen + [ci])
+            if e < best:
+                best, bi = e, ci
+        if bi < 0:
+            break
+        chosen.append(bi)
+    return [THREAD_CATALOG[i] for i in chosen]

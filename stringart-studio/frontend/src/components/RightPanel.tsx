@@ -93,7 +93,9 @@ function ResultStats({ r }: { r: Result }) {
       <Section title="Statistics">
         <div className="stats">
           <Stat label="Connections" value={r.totals.connections.toLocaleString()} sub={`${r.totals.unique_connections.toLocaleString()} unique`} />
-          <Stat label="Thread sections" value={r.totals.sections} sub={`${mat.cuts} cuts · ${mat.knots} knots`} />
+          {mat.rim_moves
+            ? <Stat label="Threads" value={mat.threads} sub={`${mat.rim_moves} moves around the outside · ${mat.knots} knots`} />
+            : <Stat label="Thread sections" value={r.totals.sections} sub={`${mat.cuts} cuts · ${mat.knots} knots`} />}
           <Stat label="Thread length" value={`${fmt(mat.total_thread_m, 0)} m`} sub="incl. allowances" />
           <Stat label="Build time" value={`${fmt(mat.construction_time_h.total, 1)} h`} sub={`${fmt(mat.construction_time_h.threading, 1)} h threading`} />
           <Stat label="Cost" value={`${fmt(mat.costs.total, 2)} ${mat.costs.currency}`} />
@@ -196,7 +198,7 @@ export function SequencePanel({ steps, onJump, searchNail, setSearchNail }: {
               <td className={`mono ${s.from === searchNail ? "hl" : ""}`}>{s.from}</td>
               <td className={`mono ${s.to === searchNail ? "hl" : ""}`}>{s.to}</td>
               <td><i className="sw" style={{ background: s.color }} />{s.color_name}</td>
-              <td className="mono">{s.distance_mm.toFixed(0)}</td>
+              <td className="mono">{s.kind === "rim" ? "outside" : s.distance_mm.toFixed(0)}</td>
               <td>{s.section}{s.bridge ? " B" : ""}</td>
             </tr>))}
         </tbody>

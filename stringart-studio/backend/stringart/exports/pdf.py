@@ -227,6 +227,7 @@ def construction_manual(result: dict, project_name: str = "String art") -> bytes
     s = ProjectSettings(**result["settings"])
     geom = BoardGeometry(s.board)
     steps = build_steps(result)
+    rim_join = result["settings"].get("route", {}).get("join", "cut") == "rim"
     mat = result["materials"]
     doc = _Doc(f"{project_name} - construction manual")
     c = doc.c
@@ -322,10 +323,16 @@ def construction_manual(result: dict, project_name: str = "String art") -> bytes
         "Work in sessions; record the last completed step number (use the checkbox column).",
     ])
     doc.h2("Sections, cutting and finishing")
-    doc.bullets([
-        f"This design uses {t['sections']} continuous thread section(s). A new section means: tie off the "
-        "current thread on its last nail, cut it, and tie a new start on the first nail of the next section.",
-        "Colour layers are built one after another in the order listed in the sequence.",
+    rim_note = (
+        [f"Each colour is ONE piece of thread ({mat.get('threads', t['sections'])} in total). Its line groups are joined by "
+         f"{mat.get('rim_moves', 0)} moves around the OUTSIDE of the board, marked '~' and 'OUTSIDE' in the sequence: "
+         "run the thread along the outside of the nails from the first nail to the second without crossing the "
+         "board, then continue with the next line. Do not cut."]
+        if rim_join and mat.get("rim_moves") else
+        [f"This design uses {t['sections']} continuous thread section(s). A new section means: tie off the "
+         "current thread on its last nail, cut it, and tie a new start on the first nail of the next section."])
+    doc.bullets(rim_note + [
+        "Colour layers are built one after another in the order listed in the sequence (lighter colours first).",
         "Finish each section with two half hitches around the last nail and a drop of glue; trim the tail.",
         f"Thread allowances included in estimates: {s.materials.knot_allowance_mm:g} mm per knot, "
         f"{s.materials.slack_percent:g} % tension slack, {s.materials.waste_percent:g} % waste.",
@@ -407,14 +414,22 @@ def construction_manual(result: dict, project_name: str = "String art") -> bytes
                 if i >= len(steps):
                     break
                 st = steps[i]
-                key = (st["layer"], st["section"])
+                key = st["layer"] if st.get("kind") == "rim" or rim_join else (st["layer"], st["section"])
                 if key != cur_sec:
                     cur_sec = key
                     c.setFillColor(colors.HexColor(st["color"]) if st["color"].lower() not in ("#ffffff", "#f4f4f0") else INK)
                     c.setFont("Helvetica-Bold", 7)
-                    c.drawString(18 * mm + k * colw, yy, f'{st["color_name"].upper()} - SECTION {st["section"]}')
+                    c.drawString(18 * mm + k * colw, yy, f'{st["color_name"].upper()} THREAD' if rim_join
+                                 else f'{st["color_name"].upper()} - SECTION {st["section"]}')
                     c.setFillColor(INK)
                     yy -= lh
+                    continue
+                if st.get("kind") == "rim":
+                    c.setFont("Courier-Oblique", 7.3)
+                    c.rect(18 * mm + k * colw, yy - 0.4 * mm, 2.4 * mm, 2.4 * mm)
+                    c.drawString(18 * mm + k * colw + 3.4 * mm, yy, f'{st["step"]:>5} {st["from"]:>4}~{st["to"]:<4} OUTSIDE')
+                    yy -= lh
+                    i += 1
                     continue
                 c.setFont("Courier", 7.3)
                 c.rect(18 * mm + k * colw, yy - 0.4 * mm, 2.4 * mm, 2.4 * mm)

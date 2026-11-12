@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { PhysicalBitmap } from "../physical";
 
 export type CompactStep = [layer: number, from: number, to: number]; // 0-based nails
 
@@ -29,6 +30,7 @@ export default function BoardCanvas(p: Props) {
   const [size, setSize] = useState({ w: 600, h: 600 });
   const [view, setView] = useState({ zoom: 1, x: 0, y: 0 });
   const drawn = useRef({ upto: 0, key: "" });
+  const phys = useRef<{ key: string; bmp: PhysicalBitmap } | null>(null);
   const drag = useRef<{ x: number; y: number; vx: number; vy: number } | null>(null);
   const imgEl = useRef<HTMLImageElement | null>(null);
   const [imgReady, setImgReady] = useState(0);
@@ -88,22 +90,26 @@ export default function BoardCanvas(p: Props) {
       }
       start = 0;
     }
-    // physical thread: coverage per pass = opacity * width_in_px
-    const wpx = p.thread_mm * t.s;
-    const lw = Math.max(1, wpx);
-    const alpha = wpx >= 1 ? p.opacity : p.opacity * wpx;
-    ctx.lineWidth = lw;
-    ctx.lineCap = "round";
-    ctx.globalAlpha = Math.min(1, alpha);
-    let lastLayer = -1;
-    for (let k = start; k < upto; k++) {
-      const [L, a, b] = p.steps[k];
-      if (p.hiddenLayers?.has(L)) continue;
-      if (L !== lastLayer) { ctx.strokeStyle = p.colors[L] ?? "#fff"; lastLayer = L; }
-      const [x1, y1] = pt(a, t), [x2, y2] = pt(b, t);
-      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    // threads: physically based bitmap (same light-mixing model as the optimiser), grown
+    // incrementally with `upto` and drawn with the current zoom / pan
+    if (p.steps.length) {
+      const R = Math.min(2400, Math.round(Math.min(t.W, t.H) * 1.1));
+      const pkey = [R, p.background, p.colors.join(), p.thread_mm, p.opacity, p.steps.length, p.steps[0]?.join(),
+        [...(p.hiddenLayers ?? [])].join(), p.nails.length].join("|");
+      let pb = phys.current;
+      if (!pb || pb.key !== pkey || upto < pb.bmp.drawn) {
+        pb = phys.current = { key: pkey, bmp: new PhysicalBitmap({ nails: p.nails, width_mm: p.width_mm, height_mm: p.height_mm,
+          shape: p.shape, background: p.background, colors: p.colors, thread_mm: p.thread_mm, opacity: p.opacity }, R) };
+      }
+      pb.bmp.advance(p.steps, upto, p.hiddenLayers);
+      const bmp = pb.bmp.render();
+      const k = t.s / pb.bmp.scale;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, t.W, t.H);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(bmp, t.ox - (R * k) / 2, t.oy - (R * k) / 2, R * k, R * k);
     }
-    ctx.globalAlpha = 1;
     drawn.current = { upto, key };
   }, [p.steps, p.upto, p.colors, p.background, p.thread_mm, p.opacity, p.hiddenLayers, tf, imgReady, p.imageOpacity]);
 
@@ -186,4 +192,13 @@ export default function BoardCanvas(p: Props) {
       <div className="zoom-hint">{view.zoom.toFixed(1)}× · scroll to zoom · drag to pan · double-click to reset</div>
     </div>
   );
+}
+
+/** Canvas blends in sRGB, real light mixes linearly. For thread darker than the board, drawing each
+ *  line with alpha 1-(1-a)^(1/2.2) makes n overlapping lines match the linear physical model exactly
+ *  (sRGB value of (1-a)^n). Lighter threads keep the plain alpha. */
+export function canvasAlpha(a: number, threadHex: string, boardHex: string): number {
+  const lum = (h: string) => { const v = h.replace("#", ""); return [0, 2, 4].reduce((s, i, k) => s + parseInt(v.slice(i, i + 2), 16) * [0.2126, 0.7152, 0.0722][k], 0); };
+  a = Math.min(0.999, Math.max(0, a));
+  return lum(threadHex) < lum(boardHex) ? 1 - Math.pow(1 - a, 1 / 2.2) : a;
 }
