@@ -184,7 +184,10 @@ def test_auto_tone_and_settings_migration():
     assert resolve_tone("#111111", "#ffffff", manual, 2.0) == (0.3, 0.8, 2.0)
     old = {"thread": {"tone_physics": 0.25, "max_coverage": 0.9}, "generation": {"max_lines": 3500}}
     new = migrate_settings(old)
-    assert new["version"] == 2 and new["thread"]["auto_tone"] is True
+    assert new["version"] == 3 and new["thread"]["auto_tone"] is True
+    assert new["generation"]["overshoot_penalty"] == 2.0                    # v3 retune
+    custom = migrate_settings({"version": 2, "generation": {"overshoot_penalty": 5.0}})
+    assert custom["generation"]["overshoot_penalty"] == 5.0                  # user values are kept
     assert new["generation"]["max_lines"] == 6000 and new["generation"]["min_improvement"] == 0.0
     ProjectSettings(**new)                                                    # still valid
     assert migrate_settings(new) == new                                       # idempotent

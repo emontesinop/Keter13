@@ -121,7 +121,7 @@ class GenerationSettings(BaseModel):
     target_quality: float = Field(0.0, ge=0.0, le=0.99)     # stop at this error reduction (0=off)
     resolution: int = Field(220, ge=100, le=1200)           # comparison raster, px across the board
     min_skip: int = Field(0, ge=0, le=200)                  # 0 = auto (nails / 25)
-    overshoot_penalty: float = Field(0.7, ge=0.0, le=20.0)
+    overshoot_penalty: float = Field(2.0, ge=0.0, le=20.0)
     patience: int = Field(200, ge=0, le=1000)
     strategy: Literal["continuous", "hybrid"] = "continuous"
     max_sections: int = Field(1, ge=1, le=500)
@@ -155,7 +155,7 @@ class MaterialSettings(BaseModel):
     currency: str = "EUR"
 
 
-SETTINGS_VERSION = 2
+SETTINGS_VERSION = 3
 
 
 class ProjectSettings(BaseModel):
@@ -171,15 +171,15 @@ class ProjectSettings(BaseModel):
 # ---------------------------------------------------------------- presets
 MODE_PRESETS = {
     # Tuned with scripts/tune_engine.py (likeness of the physical render to the photo).
-    "quality": dict(max_lines=9000, min_improvement=0.0, resolution=240, overshoot_penalty=0.7,
+    "quality": dict(max_lines=9000, min_improvement=0.0, resolution=240, overshoot_penalty=2.0,
                     strategy="continuous", max_sections=1, patience=300),
-    "balanced": dict(max_lines=6000, min_improvement=0.0, resolution=220, overshoot_penalty=0.7,
+    "balanced": dict(max_lines=6000, min_improvement=0.0, resolution=220, overshoot_penalty=2.0,
                      strategy="continuous", max_sections=1, patience=200),
-    "min_strokes": dict(max_lines=4000, min_improvement=0.002, resolution=200, overshoot_penalty=1.0,
+    "min_strokes": dict(max_lines=4000, min_improvement=0.002, resolution=200, overshoot_penalty=4.0,
                         strategy="continuous", max_sections=1, target_quality=0.85, patience=60),
-    "contrast": dict(max_lines=6000, min_improvement=0.0, resolution=220, overshoot_penalty=0.5,
+    "contrast": dict(max_lines=6000, min_improvement=0.0, resolution=220, overshoot_penalty=1.2,
                      strategy="continuous", max_sections=1, patience=200),
-    "fast": dict(max_lines=3500, min_improvement=0.0, resolution=180, overshoot_penalty=0.7,
+    "fast": dict(max_lines=3500, min_improvement=0.0, resolution=180, overshoot_penalty=2.0,
                  strategy="continuous", max_sections=1, patience=60),
 }
 
@@ -218,6 +218,13 @@ def migrate_settings(data: dict) -> dict:
         gen["patience"] = 200
         if gen.get("max_lines", 0) < 6000:
             gen["max_lines"] = 6000
+        data["generation"] = gen
+        data["version"] = 2
+    if int(data.get("version", 1)) < 3:
+        # v3: overshoot penalty 0.7 -> 2.0 (fewer strokes and better likeness, docs/ALGORITHMS.md section 9)
+        gen = dict(data.get("generation", {}))
+        if gen.get("overshoot_penalty", 0.7) in (0.7, 1.0):
+            gen["overshoot_penalty"] = 2.0
         data["generation"] = gen
         data["version"] = SETTINGS_VERSION
     return data

@@ -64,6 +64,30 @@ export default function Editor({ project, onBack, onResult }: { project: Project
     return () => clearTimeout(t);
   }, [s]);
 
+  // thread recommendation: line count needed ~ board size / thread thickness (measured), so the
+  // thread that gives the 300 mm / 0.15 mm look scales with the board diameter
+  const recThread = Math.min(0.8, Math.max(0.1, Math.round((0.15 * s.board.diameter) / 300 / 0.05) * 0.05));
+  const [planN, setPlanN] = useState(3000);
+  const [planMsg, setPlanMsg] = useState<string | null>(null);
+  const [planBusy, setPlanBusy] = useState(false);
+  const planThread = () => {
+    if (!src) return;
+    setPlanBusy(true); setPlanMsg(null);
+    setTimeout(() => {
+      try {
+        // quick low-resolution run with the current thread: the number of lines needed scales
+        // inversely with thread thickness, so one run tells us which thread gives planN strokes
+        const res = 160;
+        const probe = { ...s, gen: { ...s.gen, quality: "fast" as const, maxLines: 20000 } };
+        const r = generateSync(framedPixels(src, res, s.frame), res, probe, () => {});
+        const n0 = Math.max(1, r.stats.connections);
+        const t = Math.min(1, Math.max(0.05, Math.round((s.thread.thickness * n0) / planN * 100) / 100));
+        setS((v) => ({ ...v, thread: { ...v.thread, thickness: t }, gen: { ...v.gen, maxLines: Math.max(1000, Math.round(planN * 1.15 / 100) * 100) } }));
+        setPlanMsg(`Use ≈ ${t.toFixed(2)} mm thread for about ${planN.toLocaleString()} strokes on this ${s.board.diameter} mm board. Thread thickness and the line limit were updated - tap Generate.`);
+      } catch (e: any) { setError(e.message); }
+      setPlanBusy(false);
+    }, 50);
+  };
   const [palBusy, setPalBusy] = useState(false);
   const [palCount, setPalCount] = useState(5);
   const runAutoPalette = (k = palCount, base: Settings = s) => {
@@ -273,6 +297,10 @@ export default function Editor({ project, onBack, onResult }: { project: Project
           <Segmented value={s.board.numbering} onChange={(v) => upd("board", { numbering: v })}
             options={[{ value: "clockwise", label: "Clockwise" }, { value: "counterclockwise", label: "Counter-clockwise" }]} />
           <Slider label="Nail 1 position" value={s.board.startAngle} min={-180} max={180} step={1} onChange={(v) => upd("board", { startAngle: v })} fmt={(v) => v + "°"} />
+          {s.thread.mode === "mono" && Math.abs(s.thread.thickness - recThread) > 0.04 && <p className="tip">
+            For a {s.board.diameter} mm board, <b>{recThread.toFixed(2)} mm thread</b> gives a sharp result with about 3,000–4,000 strokes
+            (thinner thread needs many more strokes on a big board).
+            <button className="primary" onClick={() => upd("thread", { thickness: recThread })}>Use {recThread.toFixed(2)} mm thread</button></p>}
           <p className="hint">Spacing {fmt(nailSpacingMm(geom), 2)} mm between nails{nailSpacingMm(geom) < s.board.nailDiameter * 2.2 ? " — very tight, consider fewer nails" : ""}.</p>
         </>}
         {tab === "thread" && <>
@@ -323,6 +351,9 @@ export default function Editor({ project, onBack, onResult }: { project: Project
             {s.thread.palette.length < 12 && <button className="ghost" onClick={() => upd("thread", { palette: [...s.thread.palette, { name: "Thread", hex: "#888888", enabled: true }] })}>+ Add colour</button>}
           </>}
           <NumberRow label="Thread thickness" value={s.thread.thickness} unit="mm" step={0.01} onChange={(v) => upd("thread", { thickness: v })} />
+          {s.thread.mode === "mono" && Math.abs(s.thread.thickness - recThread) > 0.04 &&
+            <p className="hint">Recommended for a {s.board.diameter} mm board: about {recThread.toFixed(2)} mm (fewer strokes, same sharpness).
+              <button className="link" onClick={() => upd("thread", { thickness: recThread })}>Use it</button></p>}
           <Slider label="Thread opacity" value={s.thread.opacity} min={0.1} max={1} onChange={(v) => upd("thread", { opacity: v })} />
           <Toggle label="Automatic tone mapping" value={s.thread.autoTone !== false} onChange={(v) => upd("thread", { autoTone: v })} />
           {s.thread.autoTone === false && <>
@@ -332,6 +363,12 @@ export default function Editor({ project, onBack, onResult }: { project: Project
           <p className="hint">Dark thread on a light board gives the most faithful results. Thinner thread allows more lines and finer detail.</p>
         </>}
         {tab === "create" && <>
+          {s.thread.mode === "mono" && !running && <div className="planner">
+            <b>Plan by number of strokes</b>
+            <Slider label="Strokes I want to make" value={planN} min={1500} max={8000} step={100} onChange={setPlanN} fmt={(v) => v.toLocaleString()} />
+            <button disabled={!src || planBusy} onClick={planThread}>{planBusy ? "Calculating…" : `Calculate the thread for ${planN.toLocaleString()} strokes`}</button>
+            {planMsg && <p className="tip">{planMsg}</p>}
+          </div>}
           <Segmented value={s.gen.quality} onChange={(v) => upd("gen", { quality: v, maxLines: s.thread.mode === "color" ? Math.max(10000, QUALITY[v].maxLines) : QUALITY[v].maxLines })}
             options={[{ value: "fast", label: "Fast" }, { value: "balanced", label: "Balanced" }, { value: "detailed", label: "Detailed" }]} />
           <Slider label="Max connections" value={s.gen.maxLines} min={500} max={20000} step={100} onChange={(v) => upd("gen", { maxLines: v })} fmt={(v) => v.toLocaleString()} />
