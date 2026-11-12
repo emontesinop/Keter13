@@ -36,7 +36,30 @@ export function targets(rgba: Uint8ClampedArray, res: number, s: Settings) {
   return { pi, mask, dens, layers, bg, tone };
 }
 
+/**
+ * Strokes needed scale ~ 1 / thread thickness. With a stroke target, run the real generator,
+ * rescale the thickness by achieved/target and repeat (usually converges in 2-3 runs), so the
+ * image is COMPLETE at about the requested number of strokes with the finest possible thread.
+ */
 export function generate(rgba: Uint8ClampedArray, res: number, s: Settings, report: (p: Progress) => void): Result {
+  const target = s.gen.targetStrokes ?? 0;
+  if (!(target > 0) || s.thread.mode !== "mono") return generateOnce(rgba, res, s, report);
+  let t = s.thread.thickness, best: Result | null = null, bestErr = Infinity;
+  for (let it = 0; it < 4; it++) {
+    const si: Settings = { ...s, thread: { ...s.thread, thickness: t }, gen: { ...s.gen, maxLines: Math.round(target * 1.6) } };
+    const r = generateOnce(rgba, res, si, (p) => report({ ...p, stage: `Fitting thread to ${target.toLocaleString()} strokes (pass ${it + 1})`,
+      fraction: Math.min(0.97, (it + p.fraction) / 3) }));
+    const n = Math.max(1, r.stats.connections);
+    const err = Math.abs(n - target) / target;
+    if (err < bestErr) { best = r; bestErr = err; }
+    if (err < 0.07) break;
+    t = Math.min(1.2, Math.max(0.05, t * n / target));
+  }
+  report({ stage: "Done", fraction: 1 });
+  return best!;
+}
+
+function generateOnce(rgba: Uint8ClampedArray, res: number, s: Settings, report: (p: Progress) => void): Result {
   const t0 = Date.now();
   const q = QUALITY[s.gen.quality];
   report({ stage: "Analysing image", fraction: 0.02 });
@@ -50,18 +73,26 @@ export function generate(rgba: Uint8ClampedArray, res: number, s: Settings, repo
   const maxLines = s.gen.maxLines || q.maxLines;
   const out: Result["layers"] = [];
   let threadMm = 0, connections = 0, dupTotal = 0, valid = true, errSum = 0, sections = 0, rimMoves = 0;
-  if (s.thread.mode === "color") {
+  if (s.thread.mode === "color" || s.gen.sharp) {
     // joint optimisation of all colours on the whole board (no continuity constraint), then the
     // physical route: minimum Euler trails per colour, chained by rim moves (one thread per colour)
     const N = res * res;
     const tLin = new Float32Array(3 * N);
-    for (let i = 0; i < 3 * N; i++) tLin[i] = s2l(pi.color[i]);
+    if (s.thread.mode === "color") for (let i = 0; i < 3 * N; i++) tLin[i] = s2l(pi.color[i]);
+    else {
+      // one colour: the target is the tone the mono mapping asks for (density -> visible colour)
+      const thr = hexRgb(layers[0].color).map(s2l), b = hexRgb(bg).map(s2l);
+      for (let i = 0; i < N; i++) {
+        const C = 1 - Math.exp(-dens[0][i]);
+        for (let c = 0; c < 3; c++) tLin[3 * i + c] = (1 - C) * b[c] + C * thr[c];
+      }
+    }
     const w = Float32Array.from(pi.importance, (v, i) => (pi.mask[i] ? v : 0));
     const colsLin = layers.map((l) => hexRgb(l.color).map(s2l));
     const r = optimizeColorJoint(cache, tLin, w, colsLin, hexRgb(bg).map(s2l), {
       maxLines, threadPx: s.thread.thickness * pxPerMm, opacity: s.thread.opacity, refreshEvery: 800,
     }, (lines, edges, er) => report({
-      stage: "Optimising all colours together", fraction: 0.08 + 0.88 * Math.min(1, lines / maxLines), lines,
+      stage: s.thread.mode === "color" ? "Optimising all colours together" : "Choosing the sharpest lines", fraction: 0.08 + 0.88 * Math.min(1, lines / maxLines), lines,
       edges, errorReduction: er,
     }));
     report({ stage: "Planning the thread route", fraction: 0.97 });

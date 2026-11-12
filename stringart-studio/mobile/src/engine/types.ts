@@ -2,7 +2,7 @@
 
 export type PaletteColor = { name: string; hex: string; enabled: boolean };
 
-export const SETTINGS_VERSION = 3;
+export const SETTINGS_VERSION = 4;
 
 export type Settings = {
   version?: number;
@@ -21,7 +21,10 @@ export type Settings = {
     mode: "mono" | "color"; preset: string; threadColor: string; background: string; thickness: number;
     opacity: number; autoTone: boolean; maxCoverage: number; tonePhysics: number; palette: PaletteColor[]; paletteBackground: string;
   };
-  gen: { quality: "fast" | "balanced" | "detailed"; maxLines: number; minSkip: number; overshoot: number };
+  gen: { quality: "fast" | "balanced" | "detailed"; maxLines: number; minSkip: number; overshoot: number;
+    targetStrokes?: number;   // > 0: thread thickness is chosen automatically so the image completes in ~this many strokes
+    sharp?: boolean;          // pick the best line anywhere on the board (thread may run around the outside)
+  };
   materials: { knotMm: number; slackPct: number; wastePct: number; secondsPerConnection: number };
 };
 
@@ -57,7 +60,7 @@ export function defaultSettings(): Settings {
     thread: { mode: "mono", preset: "black_on_white", threadColor: "#111111", background: "#f5f3ee", thickness: 0.15,
       opacity: 0.85, autoTone: true, maxCoverage: 0.98, tonePhysics: 1,
       palette: PALETTE_PRESETS.cmyk.colors.map(([name, hex]) => ({ name, hex, enabled: true })), paletteBackground: "#ffffff" },
-    gen: { quality: "balanced", maxLines: 6000, minSkip: 0, overshoot: 2 },
+    gen: { quality: "balanced", maxLines: 6000, minSkip: 0, overshoot: 2, targetStrokes: 3000, sharp: true },
     materials: { knotMm: 150, slackPct: 5, wastePct: 10, secondsPerConnection: 7 },
   };
 }
@@ -73,6 +76,7 @@ export function migrateSettings(s: Settings): Settings {
   };
   // v3: overshoot 0.7 -> 2.0 (measured: fewer strokes and better likeness)
   if ([0.7, 1].includes(out.gen.overshoot)) out = { ...out, gen: { ...out.gen, overshoot: 2 } };
+  if (v < 4) out = { ...out, gen: { ...out.gen, sharp: out.gen.sharp ?? true, targetStrokes: out.gen.targetStrokes || 3000 } };
   return { ...out, version: SETTINGS_VERSION };
 }
 

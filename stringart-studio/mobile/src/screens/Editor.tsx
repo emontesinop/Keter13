@@ -67,27 +67,6 @@ export default function Editor({ project, onBack, onResult }: { project: Project
   // thread recommendation: line count needed ~ board size / thread thickness (measured), so the
   // thread that gives the 300 mm / 0.15 mm look scales with the board diameter
   const recThread = Math.min(0.8, Math.max(0.1, Math.round((0.15 * s.board.diameter) / 300 / 0.05) * 0.05));
-  const [planN, setPlanN] = useState(3000);
-  const [planMsg, setPlanMsg] = useState<string | null>(null);
-  const [planBusy, setPlanBusy] = useState(false);
-  const planThread = () => {
-    if (!src) return;
-    setPlanBusy(true); setPlanMsg(null);
-    setTimeout(() => {
-      try {
-        // quick low-resolution run with the current thread: the number of lines needed scales
-        // inversely with thread thickness, so one run tells us which thread gives planN strokes
-        const res = 160;
-        const probe = { ...s, gen: { ...s.gen, quality: "fast" as const, maxLines: 20000 } };
-        const r = generateSync(framedPixels(src, res, s.frame), res, probe, () => {});
-        const n0 = Math.max(1, r.stats.connections);
-        const t = Math.min(1, Math.max(0.05, Math.round((s.thread.thickness * n0) / planN * 100) / 100));
-        setS((v) => ({ ...v, thread: { ...v.thread, thickness: t }, gen: { ...v.gen, maxLines: Math.max(1000, Math.round(planN * 1.15 / 100) * 100) } }));
-        setPlanMsg(`Use ≈ ${t.toFixed(2)} mm thread for about ${planN.toLocaleString()} strokes on this ${s.board.diameter} mm board. Thread thickness and the line limit were updated - tap Generate.`);
-      } catch (e: any) { setError(e.message); }
-      setPlanBusy(false);
-    }, 50);
-  };
   const [lightFrac, setLightFrac] = useState(0);
   const [palBusy, setPalBusy] = useState(false);
   const [palCount, setPalCount] = useState(5);
@@ -372,14 +351,22 @@ export default function Editor({ project, onBack, onResult }: { project: Project
         </>}
         {tab === "create" && <>
           {s.thread.mode === "mono" && !running && <div className="planner">
-            <b>Plan by number of strokes</b>
-            <Slider label="Strokes I want to make" value={planN} min={1500} max={8000} step={100} onChange={setPlanN} fmt={(v) => v.toLocaleString()} />
-            <button disabled={!src || planBusy} onClick={planThread}>{planBusy ? "Calculating…" : `Calculate the thread for ${planN.toLocaleString()} strokes`}</button>
-            {planMsg && <p className="tip">{planMsg}</p>}
+            <Toggle label="Choose the thread automatically" value={(s.gen.targetStrokes ?? 0) > 0}
+              onChange={(v) => upd("gen", { targetStrokes: v ? 3000 : 0 })} />
+            {(s.gen.targetStrokes ?? 0) > 0 ? <>
+              <Slider label="Strokes I want to make" value={s.gen.targetStrokes!} min={1000} max={8000} step={100}
+                onChange={(v) => upd("gen", { targetStrokes: v })} fmt={(v) => v.toLocaleString()} />
+              <p className="hint">Generate finds the finest thread that completes the image in about this many strokes
+                (it runs 2–3 passes, so it takes a little longer). The thread thickness to buy is shown in the result.</p>
+            </> : <p className="hint">Thread: {s.thread.thickness.toFixed(2)} mm (set in the Thread tab). Max connections below is only a limit.</p>}
+            <Toggle label="Sharpest result" value={s.gen.sharp !== false} onChange={(v) => upd("gen", { sharp: v })} />
+            <p className="hint">{s.gen.sharp !== false
+              ? "Picks the best line anywhere on the board: cleaner whites and crisper shapes. Still one thread with no cuts: a few times the thread runs around the outside of the nails."
+              : "One fully continuous thread, nail to nail (slightly less sharp)."}</p>
           </div>}
           <Segmented value={s.gen.quality} onChange={(v) => upd("gen", { quality: v, maxLines: s.thread.mode === "color" ? Math.max(10000, QUALITY[v].maxLines) : QUALITY[v].maxLines })}
             options={[{ value: "fast", label: "Fast" }, { value: "balanced", label: "Balanced" }, { value: "detailed", label: "Detailed" }]} />
-          <Slider label="Max connections" value={s.gen.maxLines} min={500} max={20000} step={100} onChange={(v) => upd("gen", { maxLines: v })} fmt={(v) => v.toLocaleString()} />
+          {!((s.gen.targetStrokes ?? 0) > 0 && s.thread.mode === "mono") && <Slider label="Max connections" value={s.gen.maxLines} min={500} max={20000} step={100} onChange={(v) => upd("gen", { maxLines: v })} fmt={(v) => v.toLocaleString()} />}
           <Slider label="Overshoot penalty" value={s.gen.overshoot} min={0.3} max={4} step={0.1} onChange={(v) => upd("gen", { overshoot: v })} />
           {running ? (
             <div className="progress">

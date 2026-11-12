@@ -31,6 +31,7 @@ export default function ResultScreen({ project, onBack, onEdit, onBuild, onTryBl
           <div><span>{r.stats.rimMoves ? "Threads" : "Sections"}</span><b>{r.stats.threads ?? r.stats.sections}</b></div>
           <div><span>Build time</span><b>≈ {fmt(r.stats.buildHours, 1)} h</b></div>
           <div><span>Nails</span><b>{r.nailsMm.length / 2}</b></div>
+          <div><span>Thread to use</span><b>{r.thicknessMm.toFixed(2)} mm</b></div>
           <div><span>Image error removed</span><b>{r.layers.every((L) => L.stopReason === "imported") ? "—" : `${fmt(r.stats.errorReduction * 100, 0)}%`}</b></div>
         </div>
         {r.layers.some((L) => L.stopReason === "max_lines") && (
