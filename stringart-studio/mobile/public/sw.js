@@ -1,5 +1,5 @@
 // Offline cache: the page is network-first (to get updates), everything else cache-first.
-const CACHE = "stringart-v1";
+const CACHE = "stringart-v2";
 self.addEventListener("install", (e) => {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png"])).catch(() => {}));
@@ -10,6 +10,7 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET" || new URL(req.url).origin !== location.origin) return;
+  if (req.destination === "worker" || req.destination === "sharedworker") return;   // let the browser load workers directly
   if (req.mode === "navigate") {
     e.respondWith(fetch(req).then((r) => { const copy = r.clone(); caches.open(CACHE).then((c) => c.put("./index.html", copy)); return r; })
       .catch(() => caches.match("./index.html").then((r) => r || caches.match("./"))));

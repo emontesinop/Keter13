@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { boardGeometry, nailSpacingMm } from "../engine/geometry";
-import { backgroundOf, layersOf, Progress, targets } from "../engine/generate";
+import { backgroundOf, generate as generateSync, layersOf, Progress, targets } from "../engine/generate";
 import { intendedRGBA } from "../engine/imageproc";
 import { drawArt } from "../engine/exporters";
 import { migrateSettings, PALETTE_PRESETS, QUALITY, Result, Settings, THREAD_PRESETS } from "../engine/types";
@@ -120,25 +120,58 @@ export default function Editor({ project, onBack, onResult }: { project: Project
     setError(null);
     const q = QUALITY[s.gen.quality];
     const rgba = framedPixels(src, q.resolution, s.frame);
-    const w = new Worker(new URL("../engine/worker.ts", import.meta.url), { type: "module" });
-    worker.current = w;
+    const settings = { ...s, gen: { ...s.gen, maxLines: s.gen.maxLines } };
+    let finished = false, heard = false;
+
+    const finish = async (result: Result) => {
+      if (finished) return;
+      finished = true;
+      const thumb = await thumbnail((ctx, sz) => { ctx.fillStyle = "#111214"; ctx.fillRect(0, 0, sz, sz); drawArt(ctx, result, sz); });
+      const p: Project = { ...project, settings: s, result, thumb, buildStep: 0 };
+      await saveProject(p);
+      setProgress(null);
+      onResult(p);
+    };
+    const fail = (msg: string) => { if (finished) return; finished = true; setError(msg); setProgress(null); };
+
+    // Fallback for iPhones where background workers cannot start: run on the main thread.
+    // The screen freezes for a few seconds, but generation still works.
+    const runHere = () => {
+      if (finished) return;
+      worker.current?.terminate();
+      worker.current = null;
+      setProgress({ stage: "Generating (compatibility mode, the screen may freeze for a few seconds)…", fraction: 0.1 });
+      setTimeout(() => {
+        try { finish(generateSync(rgba, q.resolution, settings, () => {})); }
+        catch (err: any) { fail(`Generation error: ${err?.message ?? err}`); }
+      }, 80);
+    };
+
     setProgress({ stage: "Starting", fraction: 0 });
-    w.onmessage = async (e) => {
+    let w: Worker;
+    try {
+      // classic (non-module) worker: works on every iOS version that supports workers
+      w = new Worker(new URL("../engine/worker.ts", import.meta.url));
+    } catch {
+      runHere();
+      return;
+    }
+    worker.current = w;
+    const watchdog = setTimeout(() => { if (!heard) runHere(); }, 6000);
+    w.onmessage = (e) => {
+      heard = true;
       const m = e.data;
       if (m.type === "progress") setProgress(m.progress);
-      else if (m.type === "error") { setError(m.message); setProgress(null); w.terminate(); }
-      else if (m.type === "done") {
-        w.terminate();
-        const result: Result = m.result;
-        const thumb = await thumbnail((ctx, sz) => { ctx.fillStyle = "#111214"; ctx.fillRect(0, 0, sz, sz); drawArt(ctx, result, sz); });
-        const p: Project = { ...project, settings: s, result, thumb, buildStep: 0 };
-        await saveProject(p);
-        setProgress(null);
-        onResult(p);
-      }
+      else if (m.type === "error") { clearTimeout(watchdog); w.terminate(); fail(`Generation error: ${m.message}`); }
+      else if (m.type === "done") { clearTimeout(watchdog); w.terminate(); finish(m.result); }
     };
-    w.onerror = (e) => { setError(e.message || "Generation failed"); setProgress(null); };
-    w.postMessage({ rgba, res: q.resolution, settings: { ...s, gen: { ...s.gen, maxLines: s.gen.maxLines } } });
+    w.onerror = (e) => {
+      e.preventDefault?.();
+      clearTimeout(watchdog);
+      if (!heard) runHere();                     // worker could not start -> fallback
+      else fail(`Generation error: ${e.message || "background task crashed (memory?)"}${e.lineno ? ` (line ${e.lineno})` : ""}`);
+    };
+    w.postMessage({ rgba, res: q.resolution, settings });
   }, [src, s, project]);
 
   const cancel = () => { worker.current?.terminate(); setProgress(null); };
