@@ -12,6 +12,9 @@ export type Settings = {
     localContrast: number; sharpness: number; invert: boolean; edgeEmphasis: number; centerFocus: number;
     background?: "keep" | "remove"; bgTolerance?: number;
     lineArt?: boolean;      // drawing mode: thicken dark outlines so straight threads can carry them
+    // user importance map (Birsak et al. 2018): accuracy inside this area counts `strength` times more.
+    // x, y, r are fractions of the framed square
+    focus?: { x: number; y: number; r: number; strength: number } | null;
   };
   board: {
     shape: "circle" | "square"; diameter: number; nails: number; margin: number; nailDiameter: number;

@@ -90,8 +90,17 @@ export default function Editor({ project, onBack, onResult }: { project: Project
     setS((v) => ({ ...v, [g]: { ...(v[g] as object), ...patch } }));
 
   // ---- gestures on the preview: pan / pinch the photo (frame tab or any time before generating)
+  const [placingFocus, setPlacingFocus] = useState(false);
   useGestures(stage, {
-    pan: (dx, dy) => { if (src && !running) setS((v) => ({ ...v, frame: panFrame(v.frame, src, size, dx, dy) })); },
+    tap: (x, y) => {
+      if (!placingFocus || !canvas.current || !stage.current) return;
+      const cr = canvas.current.getBoundingClientRect(), sr = stage.current.getBoundingClientRect();
+      const fx = (x - (cr.left - sr.left)) / cr.width, fy = (y - (cr.top - sr.top)) / cr.height;
+      if (fx < 0 || fy < 0 || fx > 1 || fy > 1) return;
+      setS((v) => ({ ...v, tone: { ...v.tone, focus: { r: v.tone.focus?.r ?? 0.2, strength: v.tone.focus?.strength ?? 8, x: fx, y: fy } } }));
+      setPlacingFocus(false);
+    },
+    pan: (dx, dy) => { if (src && !running && !placingFocus) setS((v) => ({ ...v, frame: panFrame(v.frame, src, size, dx, dy) })); },
     pinch: (r) => { if (!running) setS((v) => ({ ...v, frame: { ...v.frame, zoom: Math.min(8, Math.max(0.3, v.frame.zoom * r)) } })); },
   });
 
@@ -151,6 +160,15 @@ export default function Editor({ project, onBack, onResult }: { project: Project
     else ctx.rect(S * 0.01, S * 0.01, S * 0.98, S * 0.98);
     ctx.fill("evenodd");
     ctx.restore();
+    if (!live && s.tone.focus && tab === "tone") {
+      const f = s.tone.focus;
+      ctx.save();
+      ctx.strokeStyle = "#f0c060"; ctx.lineWidth = 2 * dpr; ctx.setLineDash([6 * dpr, 4 * dpr]);
+      ctx.beginPath(); ctx.arc(f.x * S, f.y * S, f.r * S, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = "#f0c060"; ctx.font = `${12 * dpr}px -apple-system, sans-serif`; ctx.textAlign = "center";
+      ctx.fillText(`focus ×${f.strength}`, f.x * S, f.y * S - f.r * S - 6 * dpr);
+      ctx.restore();
+    }
     if (!live) {
       const g = boardGeometry(s.board), sc = (S / g.widthMm) * 0.98;
       ctx.fillStyle = "#c9a45c";
@@ -237,7 +255,7 @@ export default function Editor({ project, onBack, onResult }: { project: Project
           <button className="primary" onClick={() => replaceInput.current?.click()}>Choose photo again</button>
         </div>}
         <input ref={replaceInput} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) replacePhoto(f); }} />
-        <div className="stage-tag">{running ? "Generating…" : tab === "frame" ? "Drag · pinch to frame" : "Thread preview"}</div>
+        <div className="stage-tag">{running ? "Generating…" : placingFocus ? "Tap the most important area" : tab === "frame" ? "Drag · pinch to frame" : "Thread preview"}</div>
       </div>
       {error && <div className="error">{error}</div>}
       <div className="panel">
@@ -252,6 +270,18 @@ export default function Editor({ project, onBack, onResult }: { project: Project
           <p className="hint">Tip: for portraits, zoom in until the face fills about half of the circle.</p>
         </>}
         {tab === "tone" && <>
+          <div className="planner">
+            <b>Focus area</b>
+            <p className="hint">Mark the most important part (usually the face). Accuracy there counts several times more, so
+              eyes, eyebrows and mouth get thread first. Best for drawings and photos where the face is small.</p>
+            <button className={placingFocus ? "primary" : ""} onClick={() => setPlacingFocus(!placingFocus)}>
+              {placingFocus ? "Now tap the face on the image…" : s.tone.focus ? "Move focus area" : "＋ Tap to set a focus area"}</button>
+            {s.tone.focus && <>
+              <Slider label="Size" value={s.tone.focus.r} min={0.08} max={0.5} onChange={(v) => upd("tone", { focus: { ...s.tone.focus!, r: v } })} />
+              <Slider label="Strength" value={s.tone.focus.strength} min={2} max={12} step={1} onChange={(v) => upd("tone", { focus: { ...s.tone.focus!, strength: v } })} fmt={(v) => `×${v}`} />
+              <button className="ghost" onClick={() => upd("tone", { focus: null })}>Remove focus area</button>
+            </>}
+          </div>
           <Segmented value={s.tone.lineArt ? "drawing" : "photo"} onChange={(v) => upd("tone", { lineArt: v === "drawing" })}
             options={[{ value: "photo", label: "Photo" }, { value: "drawing", label: "Drawing / line art" }]} />
           {!s.tone.lineArt && lightFrac > 0.5 && <p className="tip">This looks like a <b>drawing</b> (mostly white with thin outlines).

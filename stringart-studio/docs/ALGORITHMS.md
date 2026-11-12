@@ -197,3 +197,21 @@ Measured on a 600 mm board, with likeness = SSIM of the physical render against 
   stroke count N0. The thread for a target N is `t × N0 / N`. Measured on the user's portrait,
   600 mm: 2,500 / 3,000 / 4,000 requested → 2,444 / 2,876 / 3,941 obtained. Both apps recommend
   `0.15 mm × diameter / 300 mm` as the default thread for the board size.
+
+## 11. Focus area (user importance map) and what did not help (v4)
+
+Analysis on a flat-colour cartoon (large black hair, white face, thin facial lines), 600 mm, about 3,000 strokes:
+
+* **Not the optimiser.** Birsak et al. (2018) style local search (remove the 10 % most harmful lines,
+  greedily re-add, 6 rounds) lowered the objective by only 0.25 %. The greedy result is already
+  near a local optimum for this objective.
+* **Not continuity.** Allowing up to 5 cut sections (hybrid) or free global selection with
+  around-the-rim joins ("Sharpest result") gave the same quality, so cutting the thread buys nothing.
+* **White protection** (higher weight on white areas) and stronger overshoot made it worse
+  (SSIM 0.500 → 0.488 / 0.476).
+* **What helps:**
+  - More nails: 300 → 400 raised SSIM from 0.500 to 0.519.
+  - A **user importance map**, as in Birsak et al., where uniform weighting lets large regions
+    take the thread budget. A focus area ×8 on the face raised face-region SSIM from 0.47 to 0.56,
+    with eyes, eyebrows and face outline appearing. The iPhone app lets the user tap the most
+    important area (Tone tab → Focus area: size, strength ×2–12).
