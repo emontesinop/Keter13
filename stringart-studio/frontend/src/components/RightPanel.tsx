@@ -114,6 +114,9 @@ function ResultStats({ r }: { r: Result }) {
             <div className="layer-head"><i style={{ background: L.color }} />{L.name}
               <span className="mono dim">{L.stats.lines} lines · {L.stats.stop_reason.replace(/_/g, " ")}</span></div>
             <Sparkline data={L.stats.error_curve} />
+            {L.stats.lines < L.stats.budget * 0.97 && L.stats.stop_reason !== "target_quality" && (
+              <p className="hint">The image was complete at {L.stats.lines.toLocaleString()} of the allowed {L.stats.budget.toLocaleString()} connections: more
+                lines would only darken it. For more lines (and finer detail) use thinner thread, more nails or a larger board.</p>)}
           </div>
         ))}
       </Section>

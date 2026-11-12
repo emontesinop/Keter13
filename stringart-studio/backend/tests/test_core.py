@@ -173,3 +173,18 @@ def test_target_coverage_physics():
     assert perceptual[0, 5] == pytest.approx(0.5, abs=0.02)
     with pytest.raises(ValueError):
         target_coverage(tone, "#777777", "#787878", 0.9)
+
+
+def test_auto_tone_and_settings_migration():
+    from stringart.config import ThreadSettings, migrate_settings, resolve_tone
+    t = ThreadSettings()
+    assert resolve_tone("#111111", "#f5f3ee", t, 0.7) == (1.0, 0.98, 0.7)     # dark thread, light board
+    assert resolve_tone("#f4f4f0", "#0b0b0c", t, 0.7) == (0.5, 0.90, 1.0)     # light thread, dark board
+    manual = ThreadSettings(auto_tone=False, tone_physics=0.3, max_coverage=0.8)
+    assert resolve_tone("#111111", "#ffffff", manual, 2.0) == (0.3, 0.8, 2.0)
+    old = {"thread": {"tone_physics": 0.25, "max_coverage": 0.9}, "generation": {"max_lines": 3500}}
+    new = migrate_settings(old)
+    assert new["version"] == 2 and new["thread"]["auto_tone"] is True
+    assert new["generation"]["max_lines"] == 6000 and new["generation"]["min_improvement"] == 0.0
+    ProjectSettings(**new)                                                    # still valid
+    assert migrate_settings(new) == new                                       # idempotent

@@ -21,7 +21,7 @@ import numpy as np
 
 from . import color as colormod
 from .colorsci import hex_to_rgb, linear_to_srgb, srgb_to_linear
-from .config import (ProjectSettings, THREAD_PRESETS, apply_mode, effective_min_skip, MODE_IMAGE_HINTS)
+from .config import (ProjectSettings, THREAD_PRESETS, apply_mode, effective_min_skip, MODE_IMAGE_HINTS, resolve_tone)
 from .engine import LayerOptimizer, LayerParams
 from .geometry import BoardGeometry
 from .imaging import ProcessedImage, preprocess, target_coverage
@@ -109,12 +109,14 @@ def generate(src_rgb: np.ndarray, settings: ProjectSettings, progress: ProgressF
     bg = background_hex(s)
 
     # ---------------- target densities
+    darkest = min((c for _, c in layers), key=lambda h: sum(hex_to_rgb(h)))
+    physics, cmax, overshoot = resolve_tone(darkest if s.thread.color_mode == "color" else layers[0][1], bg,
+                                            s.thread, gen.overshoot_penalty)
     if s.thread.color_mode == "mono":
-        C = target_coverage(pi.tone, layers[0][1], bg, s.thread.max_coverage, s.thread.tone_physics)
+        C = target_coverage(pi.tone, layers[0][1], bg, cmax, physics)
         targets = [-np.log1p(-C)]
     else:
-        dens, _ = colormod.decompose(pi.color, [c for _, c in layers], bg, s.thread.max_coverage,
-                                     s.thread.tone_physics, pi.mask)
+        dens, _ = colormod.decompose(pi.color, [c for _, c in layers], bg, cmax, physics, pi.mask)
         targets = [d * pi.mask for d in dens]
     targets = [t * pi.mask for t in targets]
     intended = target_appearance(s, pi, layers, targets)
@@ -135,7 +137,7 @@ def generate(src_rgb: np.ndarray, settings: ProjectSettings, progress: ProgressF
                     "lines": d["lines"], "error_reduction": d["error_reduction"],
                     "partial": [[int(v) for v in sec] for sec in d["sections"]]})
         params = LayerParams(max_lines=budget, min_improvement=gen.min_improvement,
-                             target_quality=gen.target_quality, overshoot_penalty=gen.overshoot_penalty,
+                             target_quality=gen.target_quality, overshoot_penalty=overshoot,
                              strategy=gen.strategy, max_sections=gen.max_sections,
                              continuity_preference=gen.continuity_preference,
                              start_nail=(gen.start_nail - 1) % geom.n, thread_px=thread_px,
@@ -155,7 +157,7 @@ def generate(src_rgb: np.ndarray, settings: ProjectSettings, progress: ProgressF
             "name": name, "color": hexc,
             "selected_edges": [[int(a), int(b)] for a, b in edges],
             "optimizer_sections": [[int(v) for v in sec] for sec in res.sections],
-            "stats": {"lines": res.n_lines, "stop_reason": res.stop_reason,
+            "stats": {"lines": res.n_lines, "stop_reason": res.stop_reason, "tone_physics": physics,
                       "error_reduction": 1 - res.final_error / res.initial_error if res.initial_error > 0 else 0.0,
                       "jumps": res.jumps, "trimmed_tail_lines": res.trimmed, "elapsed_s": res.elapsed_s,
                       "budget": budget, "error_curve": [float(x) for x in res.error_curve]},

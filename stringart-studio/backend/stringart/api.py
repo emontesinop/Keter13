@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import __version__, jobs, project as store
-from .config import (MODE_PRESETS, PALETTE_PRESETS, THREAD_PRESETS, ProjectSettings, effective_min_skip)
+from .config import (MODE_PRESETS, PALETTE_PRESETS, THREAD_PRESETS, ProjectSettings, effective_min_skip, resolve_tone)
 from .exports import media, pdf, vector
 from .geometry import BoardGeometry
 from .imaging import target_coverage, to_png_bytes
@@ -157,12 +157,13 @@ def preview(pid: str, settings: Optional[dict] = Body(None), size: int = Query(3
     geom, pi = process_image(rgb, s, size, faces=store.faces(pid))
     layers = layer_specs(s)
     bg = background_hex(s)
+    darkest = min((c for _, c in layers), key=lambda h: sum(int(h[i:i + 2], 16) for i in (1, 3, 5)))
+    physics, cmax, _ = resolve_tone(layers[0][1] if s.thread.color_mode == "mono" else darkest, bg, s.thread, 1.0)
     if s.thread.color_mode == "mono":
-        C = target_coverage(pi.tone, layers[0][1], bg, s.thread.max_coverage, s.thread.tone_physics)
+        C = target_coverage(pi.tone, layers[0][1], bg, cmax, physics)
         dens = [-np.log1p(-C) * pi.mask]
     else:
-        d, _ = colormod.decompose(pi.color, [c for _, c in layers], bg, s.thread.max_coverage,
-                                  s.thread.tone_physics, pi.mask)
+        d, _ = colormod.decompose(pi.color, [c for _, c in layers], bg, cmax, physics, pi.mask)
         dens = [x * pi.mask for x in d]
     intended = apply_board_shape(target_appearance(s, pi, layers, dens), geom, bg)
     sub = pi.subject if pi.subject is not None else np.ones_like(pi.tone)

@@ -141,3 +141,30 @@ lengths. Time is connections × s/connection + sections × s/section + nails × 
 * The routes are valid edge decompositions with the minimum number of sections.
 * SVG, PDF and DXF templates place nails at the computed millimetre coordinates. DXF uses +Y up, as
   CAD expects, and every file has a 100 mm calibration bar.
+
+## 9. Engine tuning (v2)
+
+`scripts/tune_engine.py` measures how much the **physical render** (real thread width, 1200 px,
+downsampled to viewing distance) looks like the processed photo: SSIM after a slight blur, averaged
+over the sample images. v1 used `tone_physics = 0.25`, which lightened mid-tones. The optimiser
+then filled an already-washed-out target and stopped at about 2,000–2,500 connections, whatever
+the user's maximum.
+
+A parameter search (tone mapping, overshoot penalty, comparison resolution, length normalisation,
+a perceptual-blur objective, local refinement of the trail, thread width and nail count) gave:
+
+| Setting | Result |
+|---|---|
+| `tone_physics` 1.0 + max coverage 0.98 (dark thread, light board) | SSIM 0.616 → 0.701 in the isolated search; 0.631 → 0.665 through the full app; lines ≈ 2,700 → 4,600 |
+| Light thread on a dark board | best at `tone_physics` 0.5, coverage 0.90, overshoot ≥ 1.0 (0.571 → 0.578); intrinsically harder, because every light line also brightens dark areas |
+| Overshoot penalty | 0.7 slightly better than 1–3 |
+| Length-normalised ("mean darkness") scoring | worse (0.658 vs 0.687) and over-darkens without a penalty |
+| Perceptual-blur objective, local node-swap refinement | no meaningful gain (< 0.003); not used |
+| More nails (400) / thinner thread (0.10 mm) | better (0.709 / 0.716 with both) |
+| Thicker thread (0.25 mm), fewer nails (200) | worse (0.667 / 0.670) |
+
+`ThreadSettings.auto_tone` (default on) applies these per thread/board contrast direction.
+Projects saved by v1 are migrated automatically (`migrate_settings`). The maximum number of
+connections is an upper limit. When the optimiser stops earlier, the image is complete for that
+thread and board, and more lines would only darken it; the UI says so and suggests thinner thread,
+more nails or a larger board.

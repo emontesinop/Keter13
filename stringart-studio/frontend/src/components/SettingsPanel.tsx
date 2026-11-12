@@ -102,9 +102,13 @@ export default function SettingsPanel({ s, set, defaults, geometry, onPaletteRep
         </>)}
         <NumberField label="Thread thickness" value={t.thickness_mm} onChange={T("thickness_mm")} unit="mm" step={0.01} min={0.03} />
         <Slider label="Fibre opacity" value={t.opacity} min={0.05} max={1} onChange={T("opacity")} />
+        <Toggle label="Automatic tone mapping" value={t.auto_tone} onChange={T("auto_tone")}
+          hint="Uses the measured best mapping for your thread/board contrast. Turn off to set the two values below yourself." />
+        {!t.auto_tone && <>
         <Slider label="Max coverage" value={t.max_coverage} min={0.3} max={0.99} onChange={T("max_coverage")} hint="Darkest achievable coverage of the board by thread" />
         <Slider label="Tone physics" value={t.tone_physics} min={0} max={1} onChange={T("tone_physics")}
-          hint="0 = perceptual tone axis (more contrast in mid-tones), 1 = exact linear-light mixing" />
+          hint="1 = exact linear-light mixing (best for dark thread on a light board); lower values lighten mid-tones and use fewer lines" />
+        </>}
       </Section>
       <Section title="Materials & cost" open={false}>
         <NumberField label="Knot allowance" value={m.knot_allowance_mm} onChange={M("knot_allowance_mm")} unit="mm" />

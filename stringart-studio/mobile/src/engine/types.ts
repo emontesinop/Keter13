@@ -2,7 +2,10 @@
 
 export type PaletteColor = { name: string; hex: string; enabled: boolean };
 
+export const SETTINGS_VERSION = 2;
+
 export type Settings = {
+  version?: number;
   frame: { zoom: number; x: number; y: number; rotation: number };
   tone: {
     autoLevels: boolean; exposure: number; brightness: number; contrast: number; gamma: number;
@@ -14,7 +17,7 @@ export type Settings = {
   };
   thread: {
     mode: "mono" | "color"; preset: string; threadColor: string; background: string; thickness: number;
-    opacity: number; maxCoverage: number; tonePhysics: number; palette: PaletteColor[]; paletteBackground: string;
+    opacity: number; autoTone: boolean; maxCoverage: number; tonePhysics: number; palette: PaletteColor[]; paletteBackground: string;
   };
   gen: { quality: "fast" | "balanced" | "detailed"; maxLines: number; minSkip: number; overshoot: number };
   materials: { knotMm: number; slackPct: number; wastePct: number; secondsPerConnection: number };
@@ -36,23 +39,44 @@ export const PALETTE_PRESETS: Record<string, { label: string; background: string
 
 // comparison resolution (px across the board) and line budget per quality level
 export const QUALITY: Record<Settings["gen"]["quality"], { resolution: number; maxLines: number; patience: number; minImprovement: number }> = {
-  fast: { resolution: 160, maxLines: 2500, patience: 20, minImprovement: 0.002 },
-  balanced: { resolution: 220, maxLines: 4500, patience: 40, minImprovement: 0.0005 },
-  detailed: { resolution: 250, maxLines: 6500, patience: 60, minImprovement: 0.0003 },
+// tuned with the desktop scripts/tune_engine.py (likeness of the physical render to the photo)
+  fast: { resolution: 180, maxLines: 3500, patience: 60, minImprovement: 0 },
+  balanced: { resolution: 220, maxLines: 6000, patience: 200, minImprovement: 0 },
+  detailed: { resolution: 240, maxLines: 9000, patience: 300, minImprovement: 0 },
 };
 
 export function defaultSettings(): Settings {
   return {
+    version: SETTINGS_VERSION,
     frame: { zoom: 1, x: 0, y: 0, rotation: 0 },
     tone: { autoLevels: true, exposure: 0, brightness: 0, contrast: 1, gamma: 1, localContrast: 0.6, sharpness: 0.4,
       invert: false, edgeEmphasis: 0.6, centerFocus: 0.3 },
     board: { shape: "circle", diameter: 300, nails: 300, margin: 6, nailDiameter: 1.6, numbering: "clockwise", startAngle: 0 },
-    thread: { mode: "mono", preset: "white_on_black", threadColor: "#f4f4f0", background: "#0b0b0c", thickness: 0.15,
-      opacity: 0.85, maxCoverage: 0.9, tonePhysics: 0.25,
+    thread: { mode: "mono", preset: "black_on_white", threadColor: "#111111", background: "#f5f3ee", thickness: 0.15,
+      opacity: 0.85, autoTone: true, maxCoverage: 0.98, tonePhysics: 1,
       palette: PALETTE_PRESETS.cmyk.colors.map(([name, hex]) => ({ name, hex, enabled: true })), paletteBackground: "#ffffff" },
-    gen: { quality: "balanced", maxLines: 4500, minSkip: 0, overshoot: 1 },
+    gen: { quality: "balanced", maxLines: 6000, minSkip: 0, overshoot: 0.7 },
     materials: { knotMm: 150, slackPct: 5, wastePct: 10, secondsPerConnection: 7 },
   };
+}
+
+/** Upgrade settings saved by v1 (lighter tone mapping that stopped at ~2,000 lines). */
+export function migrateSettings(s: Settings): Settings {
+  if ((s.version ?? 1) >= SETTINGS_VERSION) return s;
+  return {
+    ...s, version: SETTINGS_VERSION,
+    thread: { ...s.thread, autoTone: true, maxCoverage: 0.98, tonePhysics: 1 },
+    gen: { ...s.gen, overshoot: 0.7, maxLines: Math.max(s.gen.maxLines, QUALITY[s.gen.quality].maxLines) },
+  };
+}
+
+/** Measured best tone mapping for the thread/board contrast direction (see desktop docs). */
+export function resolveTone(threadHex: string, bgHex: string, t: Settings["thread"], overshoot: number) {
+  if (!t.autoTone) return { physics: t.tonePhysics, cmax: t.maxCoverage, overshoot };
+  const lum = (h: string) => { const v = h.replace("#", ""); return [0, 2, 4].map((i) => parseInt(v.slice(i, i + 2), 16)).reduce((a, x, k) => a + x * [0.2126, 0.7152, 0.0722][k], 0); };
+  return lum(bgHex) >= lum(threadHex)
+    ? { physics: 1, cmax: 0.98, overshoot }
+    : { physics: 0.5, cmax: 0.9, overshoot: Math.max(overshoot, 1) };
 }
 
 export type Layer = {
@@ -61,6 +85,7 @@ export type Layer = {
   path: number[];        // 0-based nail indices; one continuous thread section per layer
   stopReason: string;
   errorReduction: number;
+  budget?: number;       // max connections allowed for this layer
 };
 
 export type Result = {

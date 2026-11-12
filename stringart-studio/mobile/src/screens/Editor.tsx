@@ -3,7 +3,7 @@ import { boardGeometry, nailSpacingMm } from "../engine/geometry";
 import { backgroundOf, layersOf, Progress, targets } from "../engine/generate";
 import { intendedRGBA } from "../engine/imageproc";
 import { drawArt } from "../engine/exporters";
-import { PALETTE_PRESETS, QUALITY, Result, Settings, THREAD_PRESETS } from "../engine/types";
+import { migrateSettings, PALETTE_PRESETS, QUALITY, Result, Settings, THREAD_PRESETS } from "../engine/types";
 import { drawFramed, framedPixels, loadPhoto, panFrame, Source, thumbnail } from "../framing";
 import { Project, saveProject } from "../store";
 import { ColorRow, NumberRow, Segmented, Slider, Toggle, fmt, useGestures } from "../components/ui";
@@ -15,7 +15,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
 ];
 
 export default function Editor({ project, onBack, onResult }: { project: Project; onBack: () => void; onResult: (p: Project) => void }) {
-  const [s, setS] = useState<Settings>(project.settings);
+  const [s, setS] = useState<Settings>(() => migrateSettings(project.settings));
   const [src, setSrc] = useState<Source | null>(null);
   const [tab, setTab] = useState<Tab>(project.result ? "create" : "frame");
   const [size, setSize] = useState(320);
@@ -44,7 +44,8 @@ export default function Editor({ project, onBack, onResult }: { project: Project
     return () => clearTimeout(t);
   }, [s]);
 
-  const upd = <G extends keyof Settings>(g: G, patch: Partial<Settings[G]>) => setS((v) => ({ ...v, [g]: { ...v[g], ...patch } }));
+  const upd = <G extends Exclude<keyof Settings, "version">>(g: G, patch: Partial<Settings[G]>) =>
+    setS((v) => ({ ...v, [g]: { ...(v[g] as object), ...patch } }));
 
   // ---- gestures on the preview: pan / pinch the photo (frame tab or any time before generating)
   useGestures(stage, {
@@ -221,13 +222,17 @@ export default function Editor({ project, onBack, onResult }: { project: Project
           </>}
           <NumberRow label="Thread thickness" value={s.thread.thickness} unit="mm" step={0.01} onChange={(v) => upd("thread", { thickness: v })} />
           <Slider label="Thread opacity" value={s.thread.opacity} min={0.1} max={1} onChange={(v) => upd("thread", { opacity: v })} />
-          <Slider label="Tone physics" value={s.thread.tonePhysics} min={0} max={1} onChange={(v) => upd("thread", { tonePhysics: v })} />
-          <p className="hint">Tone physics: 0 keeps more contrast in mid-tones, 1 is the exact light-mixing model.</p>
+          <Toggle label="Automatic tone mapping" value={s.thread.autoTone !== false} onChange={(v) => upd("thread", { autoTone: v })} />
+          {s.thread.autoTone === false && <>
+            <Slider label="Tone physics" value={s.thread.tonePhysics} min={0} max={1} onChange={(v) => upd("thread", { tonePhysics: v })} />
+            <Slider label="Max coverage" value={s.thread.maxCoverage} min={0.5} max={0.99} onChange={(v) => upd("thread", { maxCoverage: v })} />
+          </>}
+          <p className="hint">Dark thread on a light board gives the most faithful results. Thinner thread allows more lines and finer detail.</p>
         </>}
         {tab === "create" && <>
           <Segmented value={s.gen.quality} onChange={(v) => upd("gen", { quality: v, maxLines: QUALITY[v].maxLines })}
             options={[{ value: "fast", label: "Fast" }, { value: "balanced", label: "Balanced" }, { value: "detailed", label: "Detailed" }]} />
-          <Slider label="Max connections" value={s.gen.maxLines} min={500} max={9000} step={100} onChange={(v) => upd("gen", { maxLines: v })} fmt={(v) => v.toLocaleString()} />
+          <Slider label="Max connections" value={s.gen.maxLines} min={500} max={12000} step={100} onChange={(v) => upd("gen", { maxLines: v })} fmt={(v) => v.toLocaleString()} />
           <Slider label="Overshoot penalty" value={s.gen.overshoot} min={0.3} max={4} step={0.1} onChange={(v) => upd("gen", { overshoot: v })} />
           {running ? (
             <div className="progress">

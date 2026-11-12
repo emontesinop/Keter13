@@ -27,7 +27,7 @@ from typing import List, Optional
 
 import numpy as np
 
-from .config import ProjectSettings
+from .config import ProjectSettings, migrate_settings
 from .imaging import SUPPORTED_EXTENSIONS, detect_faces, load_image, to_png_bytes
 
 _LOCK = threading.RLock()
@@ -98,7 +98,9 @@ def get_project(pid: str) -> dict:
     f = _pdir(pid) / "project.json"
     if not f.exists():
         raise KeyError(pid)
-    return json.loads(f.read_text())
+    meta = json.loads(f.read_text())
+    meta["settings"] = migrate_settings(meta.get("settings", {}))
+    return meta
 
 
 def update_project(pid: str, **fields) -> dict:
