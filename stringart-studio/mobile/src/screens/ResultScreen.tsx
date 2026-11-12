@@ -3,9 +3,10 @@ import BoardView from "../components/BoardView";
 import { fmt, Sheet } from "../components/ui";
 import { artworkPNG, nailsCSV, sequenceCSV, sequenceJSON, shareFile, templateSVG } from "../engine/exporters";
 import { Project } from "../store";
+import { hexRgb, luminance } from "../engine/imageproc";
 
-export default function ResultScreen({ project, onBack, onEdit, onBuild }: {
-  project: Project; onBack: () => void; onEdit: () => void; onBuild: () => void;
+export default function ResultScreen({ project, onBack, onEdit, onBuild, onTryBlackOnWhite }: {
+  project: Project; onBack: () => void; onEdit: () => void; onBuild: () => void; onTryBlackOnWhite?: () => void;
 }) {
   const r = project.result!;
   const [sheet, setSheet] = useState(false);
@@ -34,6 +35,12 @@ export default function ResultScreen({ project, onBack, onEdit, onBuild }: {
         {r.layers.some((L) => L.budget && L.path.length - 1 < L.budget * 0.97 && L.stopReason !== "imported") && (
           <p className="hint">The image was complete at {total.toLocaleString()} of the allowed {r.layers.reduce((a, L) => a + (L.budget ?? 0), 0).toLocaleString()} connections:
             more lines would only darken it. For more lines and finer detail use thinner thread, more nails or a bigger board.</p>)}
+        {onTryBlackOnWhite && project.image && r.layers.length === 1 && luminance(hexRgb(r.layers[0].color)) > luminance(hexRgb(r.background)) && (
+          <div className="tip">
+            <b>Want a more realistic result?</b> Light thread on a dark board fills light areas (sky, skin) with thread. Black thread on a white board
+            reproduces faces much more faithfully.
+            <button className="primary" onClick={onTryBlackOnWhite}>Try black thread on white</button>
+          </div>)}
         <div className={`check ${r.stats.validated ? "ok" : "bad"}`}>
           {r.stats.validated ? "✓ Route verified: continuous thread per colour, no repeated connection" : `⚠ Route check failed (${r.stats.duplicates} duplicates)`}
         </div>

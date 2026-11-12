@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { boardGeometry, nailSpacingMm } from "../engine/geometry";
 import { backgroundOf, generate as generateSync, layersOf, Progress, targets } from "../engine/generate";
-import { intendedRGBA } from "../engine/imageproc";
+import { hexRgb, intendedRGBA, luminance } from "../engine/imageproc";
 import { drawArt } from "../engine/exporters";
 import { migrateSettings, PALETTE_PRESETS, QUALITY, Result, Settings, THREAD_PRESETS } from "../engine/types";
-import { drawFramed, framedPixels, loadPhoto, panFrame, Source, thumbnail } from "../framing";
-import { Project, saveProject } from "../store";
+import { drawFramed, framedPixels, loadPhoto, panFrame, Source, thumbnail, toBlob, toStored } from "../framing";
+import { Project, updateProject } from "../store";
 import { ColorRow, NumberRow, Segmented, Slider, Toggle, fmt, useGestures } from "../components/ui";
 
 type Tab = "frame" | "tone" | "board" | "thread" | "create";
@@ -29,7 +29,26 @@ export default function Editor({ project, onBack, onResult }: { project: Project
   const dpr = Math.min(3, window.devicePixelRatio || 1);
   const running = progress !== null && progress.stage !== "Done";
 
-  useEffect(() => { if (project.image) loadPhoto(project.image).then(setSrc).catch((e) => setError(String(e))); }, [project.id]);
+  const [photoLost, setPhotoLost] = useState(false);
+  const replaceInput = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!project.image) return;
+    loadPhoto(project.image).then(async (c) => {
+      setSrc(c);
+      // re-save old Blob-based projects as plain bytes (avoids the Safari IndexedDB Blob problem)
+      if (project.image instanceof Blob) {
+        try { await updateProject(project.id, { image: await toStored(await toBlob(c)) }); } catch { /* keep going */ }
+      }
+    }).catch(() => setPhotoLost(true));
+  }, [project.id]);
+
+  const replacePhoto = async (f: File) => {
+    try {
+      const c = await loadPhoto(f);
+      await updateProject(project.id, { image: await toStored(await toBlob(c)) });
+      setSrc(c); setPhotoLost(false); setError(null);
+    } catch (e: any) { setError(e.message); }
+  };
 
   useLayoutEffect(() => {
     const el = stage.current!;
@@ -40,7 +59,7 @@ export default function Editor({ project, onBack, onResult }: { project: Project
 
   // autosave settings
   useEffect(() => {
-    const t = setTimeout(() => saveProject({ ...project, settings: s }).catch(() => {}), 500);
+    const t = setTimeout(() => updateProject(project.id, { settings: s }).catch(() => {}), 500);
     return () => clearTimeout(t);
   }, [s]);
 
@@ -127,8 +146,7 @@ export default function Editor({ project, onBack, onResult }: { project: Project
       if (finished) return;
       finished = true;
       const thumb = await thumbnail((ctx, sz) => { ctx.fillStyle = "#111214"; ctx.fillRect(0, 0, sz, sz); drawArt(ctx, result, sz); });
-      const p: Project = { ...project, settings: s, result, thumb, buildStep: 0 };
-      await saveProject(p);
+      const p = (await updateProject(project.id, { settings: s, result, thumb, buildStep: 0 })) ?? { ...project, settings: s, result, thumb, buildStep: 0 };
       setProgress(null);
       onResult(p);
     };
@@ -187,7 +205,12 @@ export default function Editor({ project, onBack, onResult }: { project: Project
       </header>
       <div className="stage" ref={stage}>
         <canvas ref={canvas} style={{ width: size, height: size }} />
-        {!src && <div className="stage-msg">Loading photo…</div>}
+        {!src && !photoLost && <div className="stage-msg">Loading photo…</div>}
+        {photoLost && <div className="stage-msg lost">
+          <p>The saved photo of this project could not be read on this device.<br />Choose it again: your settings and result are kept.</p>
+          <button className="primary" onClick={() => replaceInput.current?.click()}>Choose photo again</button>
+        </div>}
+        <input ref={replaceInput} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) replacePhoto(f); }} />
         <div className="stage-tag">{running ? "Generating…" : tab === "frame" ? "Drag · pinch to frame" : "Thread preview"}</div>
       </div>
       {error && <div className="error">{error}</div>}
@@ -203,6 +226,12 @@ export default function Editor({ project, onBack, onResult }: { project: Project
           <p className="hint">Tip: for portraits, zoom in until the face fills about half of the circle.</p>
         </>}
         {tab === "tone" && <>
+          <Segmented value={s.tone.background ?? "keep"} onChange={(v) => upd("tone", { background: v })}
+            options={[{ value: "keep", label: "Keep background" }, { value: "remove", label: "Remove background" }]} />
+          {s.tone.background === "remove" && <>
+            <Slider label="Background tolerance" value={s.tone.bgTolerance ?? 20} min={6} max={45} step={1} onChange={(v) => upd("tone", { bgTolerance: v })} />
+            <p className="hint">Works best with plain backgrounds (sky, wall). The removed area becomes bare board. Raise the tolerance if parts of the background remain; lower it if it eats into the person.</p>
+          </>}
           <Toggle label="Auto levels" value={s.tone.autoLevels} onChange={(v) => upd("tone", { autoLevels: v })} />
           <Slider label="Exposure" value={s.tone.exposure} min={-2} max={2} step={0.05} onChange={(v) => upd("tone", { exposure: v })} />
           <Slider label="Brightness" value={s.tone.brightness} min={-1} max={1} onChange={(v) => upd("tone", { brightness: v })} />
@@ -234,6 +263,8 @@ export default function Editor({ project, onBack, onResult }: { project: Project
                   <i style={{ background: p.background, boxShadow: `inset 0 0 0 4px ${p.background}, inset 0 0 0 7px ${p.thread}` }} />{p.label}
                 </button>))}
             </div>
+            {luminance(hexRgb(s.thread.threadColor)) > luminance(hexRgb(s.thread.background)) &&
+              <p className="tip">Tip: <b>black thread on a white board</b> usually gives far more realistic portraits. With light thread, every line also brightens the dark board, and light skies or backgrounds get filled with thread.</p>}
             <ColorRow label="Thread" value={s.thread.threadColor} onChange={(v) => upd("thread", { threadColor: v, preset: "custom" })} />
             <ColorRow label="Board" value={s.thread.background} onChange={(v) => upd("thread", { background: v, preset: "custom" })} />
           </> : <>

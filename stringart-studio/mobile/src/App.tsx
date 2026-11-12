@@ -3,7 +3,8 @@ import Build from "./screens/Build";
 import Editor from "./screens/Editor";
 import Home from "./screens/Home";
 import ResultScreen from "./screens/ResultScreen";
-import { getProject, Project, requestPersistence } from "./store";
+import { getProject, Project, requestPersistence, updateProject } from "./store";
+import { THREAD_PRESETS } from "./engine/types";
 
 type Route = { screen: "home" } | { screen: "editor" | "result" | "build"; project: Project };
 
@@ -21,7 +22,13 @@ export default function App() {
     case "editor":
       return <Editor key={route.project.id} project={route.project} onBack={() => go("home")} onResult={(p) => go("result", p)} />;
     case "result":
-      return <ResultScreen project={route.project} onBack={() => go("home")} onEdit={() => route.project.image ? go("editor", route.project) : alert("Imported sequences have no photo to edit.")} onBuild={() => go("build", route.project)} />;
+      return <ResultScreen project={route.project} onBack={() => go("home")} onEdit={() => route.project.image ? go("editor", route.project) : alert("Imported sequences have no photo to edit.")} onBuild={() => go("build", route.project)}
+        onTryBlackOnWhite={async () => {
+          const p = route.project, b = THREAD_PRESETS.black_on_white;
+          const np = { ...p, settings: { ...p.settings, thread: { ...p.settings.thread, mode: "mono" as const, preset: "black_on_white", threadColor: b.thread, background: b.background } } };
+          await updateProject(p.id, { settings: np.settings });
+          go("editor", np);
+        }} />;
     case "build":
       return <Build project={route.project} onExit={(p) => go("result", p)} />;
   }

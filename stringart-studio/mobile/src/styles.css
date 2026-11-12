@@ -148,3 +148,7 @@ input[type=color] { width: 40px; height: 32px; border: 1px solid var(--line); bo
   .home { max-width: 640px; margin: 0 auto; width: 100%; }
 }
 .banner .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin: 0 4px 0 2px; border: 1px solid #fff4; vertical-align: -1px; }
+.tip { background: #1d2430; border: 1px solid #34465f; color: #cfdcef; border-radius: 12px; padding: 10px 12px; font-size: 14px; margin: 8px 0; }
+.tip button { width: 100%; margin-top: 8px; }
+.stage-msg.lost { text-align: center; padding: 20px; max-width: 320px; }
+.stage-msg.lost p { color: #cfd2d6; font-size: 15px; }

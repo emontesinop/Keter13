@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import BoardView from "../components/BoardView";
 import { boardGeometry, clockPosition } from "../engine/geometry";
 import { buildSteps } from "../engine/types";
-import { Project, saveProject } from "../store";
+import { Project, updateProject } from "../store";
 import { Sheet } from "../components/ui";
 
 /** Hands-on building mode: big instructions, large buttons, voice, screen kept awake, progress saved. */
@@ -30,7 +30,7 @@ export default function Build({ project, onExit }: { project: Project; onExit: (
   // persist progress
   const projRef = useRef(project);
   useEffect(() => {
-    const t = setTimeout(() => { projRef.current = { ...projRef.current, buildStep: pos }; saveProject(projRef.current).catch(() => {}); }, 300);
+    const t = setTimeout(() => { projRef.current = { ...projRef.current, buildStep: pos }; updateProject(projRef.current.id, { buildStep: pos }).catch(() => {}); }, 300);
     return () => clearTimeout(t);
   }, [pos]);
 
