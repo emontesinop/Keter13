@@ -4,6 +4,7 @@ import { fmt, Sheet } from "../components/ui";
 import { artworkPNG, nailsCSV, sequenceCSV, sequenceJSON, shareFile, templateSVG } from "../engine/exporters";
 import { Project } from "../store";
 import { hexRgb, luminance } from "../engine/imageproc";
+import { layerSections } from "../engine/types";
 
 export default function ResultScreen({ project, onBack, onEdit, onBuild, onTryBlackOnWhite }: {
   project: Project; onBack: () => void; onEdit: () => void; onBuild: () => void; onTryBlackOnWhite?: () => void;
@@ -27,12 +28,15 @@ export default function ResultScreen({ project, onBack, onEdit, onBuild, onTryBl
         <div className="stats">
           <div><span>Connections</span><b>{total.toLocaleString()}</b></div>
           <div><span>Thread</span><b>{fmt(r.stats.threadM, 0)} m</b></div>
-          <div><span>Sections</span><b>{r.stats.sections}</b></div>
+          <div><span>{r.stats.rimMoves ? "Threads" : "Sections"}</span><b>{r.stats.threads ?? r.stats.sections}</b></div>
           <div><span>Build time</span><b>≈ {fmt(r.stats.buildHours, 1)} h</b></div>
           <div><span>Nails</span><b>{r.nailsMm.length / 2}</b></div>
           <div><span>Image error removed</span><b>{r.layers.every((L) => L.stopReason === "imported") ? "—" : `${fmt(r.stats.errorReduction * 100, 0)}%`}</b></div>
         </div>
-        {r.layers.some((L) => L.budget && L.path.length - 1 < L.budget * 0.97 && L.stopReason !== "imported") && (
+        {r.layers.some((L) => L.stopReason === "max_lines") && (
+          <p className="tip">The line limit ({r.layers[0].budget?.toLocaleString()}) was reached before the image was complete. For a fuller result raise
+            <b> Max connections</b> in Create and generate again (bigger boards need more lines).</p>)}
+        {r.layers.every((L) => L.stopReason !== "max_lines") && r.layers.some((L) => L.budget && layerSections(L).reduce((a, x) => a + x.length - 1, 0) < (L.budget ?? 0) * 0.97 && L.stopReason !== "imported") && r.layers.length === 1 && (
           <p className="hint">The image was complete at {total.toLocaleString()} of the allowed {r.layers.reduce((a, L) => a + (L.budget ?? 0), 0).toLocaleString()} connections:
             more lines would only darken it. For more lines and finer detail use thinner thread, more nails or a bigger board.</p>)}
         {onTryBlackOnWhite && project.image && r.layers.length === 1 && luminance(hexRgb(r.layers[0].color)) > luminance(hexRgb(r.background)) && (
@@ -42,10 +46,12 @@ export default function ResultScreen({ project, onBack, onEdit, onBuild, onTryBl
             <button className="primary" onClick={onTryBlackOnWhite}>Try black thread on white</button>
           </div>)}
         <div className={`check ${r.stats.validated ? "ok" : "bad"}`}>
-          {r.stats.validated ? "✓ Route verified: continuous thread per colour, no repeated connection" : `⚠ Route check failed (${r.stats.duplicates} duplicates)`}
+          {!r.stats.validated ? `⚠ Route check failed (${r.stats.duplicates} duplicates)`
+            : r.stats.rimMoves ? `✓ Route verified: one thread per colour, no repeated connection. ${r.stats.rimMoves.toLocaleString()} moves around the outside of the board join the line groups (no cuts).`
+            : "✓ Route verified: continuous thread per colour, no repeated connection"}
         </div>
         {r.layers.length > 1 && <div className="layer-list">{r.layers.map((L, i) => (
-          <span key={i}><i style={{ background: L.color }} />{L.name}: {(L.path.length - 1).toLocaleString()}</span>))}</div>}
+          <span key={i}><i style={{ background: L.color }} />{L.name}: {layerSections(L).reduce((a, x) => a + x.length - 1, 0).toLocaleString()}</span>))}</div>}
         <label className="toggle-row"><span>Show nail numbers</span><input type="checkbox" checked={numbers} onChange={(e) => setNumbers(e.target.checked)} /><i /></label>
         <button className="primary big" onClick={onBuild}>{project.buildStep > 0 ? `Continue building (step ${project.buildStep + 1})` : "Start building"}</button>
         <button className="big" onClick={() => setSheet(true)}>Export & share…</button>

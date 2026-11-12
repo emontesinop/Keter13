@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import { boardGeometry, nailSpacingMm } from "../engine/geometry";
 import { backgroundOf, generate as generateSync, layersOf, Progress, targets } from "../engine/generate";
 import { hexRgb, intendedRGBA, luminance } from "../engine/imageproc";
+import { autoPalette, THREAD_CATALOG } from "../engine/color";
 import { drawArt } from "../engine/exporters";
 import { migrateSettings, PALETTE_PRESETS, QUALITY, Result, Settings, THREAD_PRESETS } from "../engine/types";
 import { drawFramed, framedPixels, loadPhoto, panFrame, Source, thumbnail, toBlob, toStored } from "../framing";
@@ -63,6 +64,24 @@ export default function Editor({ project, onBack, onResult }: { project: Project
     return () => clearTimeout(t);
   }, [s]);
 
+  const [palBusy, setPalBusy] = useState(false);
+  const [palCount, setPalCount] = useState(5);
+  const runAutoPalette = (k = palCount, base: Settings = s) => {
+    if (!src) return;
+    setPalBusy(true);
+    setTimeout(() => {
+      try {
+        const bg = base.thread.paletteBackground;
+        const res = 160;
+        const rgba = framedPixels(src, res, base.frame);
+        const tg = targets(rgba, res, { ...base, thread: { ...base.thread, mode: "mono", threadColor: "#000000", background: bg } });
+        const pal = autoPalette(tg.pi.color, tg.mask, tg.pi.importance, bg, k);
+        setS((v) => ({ ...v, thread: { ...v.thread, mode: "color", palette: pal.map(([name, hex]) => ({ name, hex, enabled: true })) },
+          gen: { ...v.gen, maxLines: Math.max(v.gen.maxLines, 10000) } }));
+      } catch (e: any) { setError(e.message); }
+      setPalBusy(false);
+    }, 50);
+  };
   const upd = <G extends Exclude<keyof Settings, "version">>(g: G, patch: Partial<Settings[G]>) =>
     setS((v) => ({ ...v, [g]: { ...(v[g] as object), ...patch } }));
 
@@ -102,12 +121,14 @@ export default function Editor({ project, onBack, onResult }: { project: Project
     const ctx = c.getContext("2d")!;
     ctx.fillStyle = "#0d0e10";
     ctx.fillRect(0, 0, S, S);
-    const live = progress?.path && running;
+    const live = (progress?.path || progress?.edges) && running;
     if (live) {
       const L = layersOf(s);
       const g = boardGeometry(s.board);
-      const layers: Result["layers"] = L.map((l, i) => ({ name: l.name, color: l.color, stopReason: "", errorReduction: 0,
-        path: i === progress!.layer ? progress!.path! : [] }));
+      const layers: Result["layers"] = L.map((l, i) => {
+        const sections = progress!.edges ? (progress!.edges[i] ?? []).map(([a, b]) => [a, b]) : (i === progress!.layer ? [progress!.path!] : []);
+        return { name: l.name, color: l.color, stopReason: "", errorReduction: 0, path: sections[0] ?? [], sections };
+      });
       drawArt(ctx, { version: 1, created: 0, board: s.board, nailsMm: Array.from(g.xy), widthMm: g.widthMm, heightMm: g.heightMm,
         background: backgroundOf(s), thicknessMm: s.thread.thickness, opacity: s.thread.opacity, layers, stats: {} as any }, S);
     } else if (tab === "frame" || !intended.current) {
@@ -255,7 +276,14 @@ export default function Editor({ project, onBack, onResult }: { project: Project
           <p className="hint">Spacing {fmt(nailSpacingMm(geom), 2)} mm between nails{nailSpacingMm(geom) < s.board.nailDiameter * 2.2 ? " — very tight, consider fewer nails" : ""}.</p>
         </>}
         {tab === "thread" && <>
-          <Segmented value={s.thread.mode} onChange={(v) => upd("thread", { mode: v })} options={[{ value: "mono", label: "One colour" }, { value: "color", label: "Multi-colour" }]} />
+          <Segmented value={s.thread.mode} onChange={(v) => {
+            if (v === "color" && s.thread.mode !== "color") {
+              // first switch to colour: white board + palette chosen from the photo + room for more lines
+              const base = { ...s, thread: { ...s.thread, mode: "color" as const, paletteBackground: "#ffffff" } };
+              setS(base);
+              runAutoPalette(palCount, base);
+            } else upd("thread", { mode: v });
+          }} options={[{ value: "mono", label: "One colour" }, { value: "color", label: "Multi-colour" }]} />
           {s.thread.mode === "mono" ? <>
             <div className="chips">
               {Object.entries(THREAD_PRESETS).map(([k, p]) => (
@@ -268,6 +296,16 @@ export default function Editor({ project, onBack, onResult }: { project: Project
             <ColorRow label="Thread" value={s.thread.threadColor} onChange={(v) => upd("thread", { threadColor: v, preset: "custom" })} />
             <ColorRow label="Board" value={s.thread.background} onChange={(v) => upd("thread", { background: v, preset: "custom" })} />
           </> : <>
+            <div className="auto-pal">
+              <button className="primary" disabled={!src || palBusy} onClick={() => runAutoPalette()}>
+                {palBusy ? "Choosing colours…" : "✦ Choose thread colours from photo"}</button>
+              <div className="row-buttons">
+                {[3, 4, 5, 6].map((k) => <button key={k} className={palCount === k ? "on" : ""} onClick={() => setPalCount(k)}>{k} colours</button>)}
+              </div>
+              <p className="hint">Picks the best real thread colours for this photo and board from {THREAD_CATALOG.length} common shades
+                (skin tones, browns, blues…). 5 colours is usually best. In multi-colour mode the lines don't need to form one continuous
+                thread: each colour is planned in groups joined by running the thread around the outside of the board.</p>
+            </div>
             <div className="chips">
               {Object.entries(PALETTE_PRESETS).map(([k, p]) => (
                 <button key={k} className="chip" onClick={() => upd("thread", { paletteBackground: p.background, palette: p.colors.map(([name, hex]) => ({ name, hex, enabled: true })) })}>
@@ -294,9 +332,9 @@ export default function Editor({ project, onBack, onResult }: { project: Project
           <p className="hint">Dark thread on a light board gives the most faithful results. Thinner thread allows more lines and finer detail.</p>
         </>}
         {tab === "create" && <>
-          <Segmented value={s.gen.quality} onChange={(v) => upd("gen", { quality: v, maxLines: QUALITY[v].maxLines })}
+          <Segmented value={s.gen.quality} onChange={(v) => upd("gen", { quality: v, maxLines: s.thread.mode === "color" ? Math.max(10000, QUALITY[v].maxLines) : QUALITY[v].maxLines })}
             options={[{ value: "fast", label: "Fast" }, { value: "balanced", label: "Balanced" }, { value: "detailed", label: "Detailed" }]} />
-          <Slider label="Max connections" value={s.gen.maxLines} min={500} max={12000} step={100} onChange={(v) => upd("gen", { maxLines: v })} fmt={(v) => v.toLocaleString()} />
+          <Slider label="Max connections" value={s.gen.maxLines} min={500} max={20000} step={100} onChange={(v) => upd("gen", { maxLines: v })} fmt={(v) => v.toLocaleString()} />
           <Slider label="Overshoot penalty" value={s.gen.overshoot} min={0.3} max={4} step={0.1} onChange={(v) => upd("gen", { overshoot: v })} />
           {running ? (
             <div className="progress">
