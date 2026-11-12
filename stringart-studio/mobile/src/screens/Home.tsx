@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { defaultSettings } from "../engine/types";
 import { importSequenceJSON } from "../engine/exporters";
-import { loadPhoto, thumbnail, toBlob } from "../framing";
+import { loadPhoto, thumbnail, toBlob, toStored } from "../framing";
 import { deleteProject, listProjects, newId, Project, saveProject } from "../store";
 
 export default function Home({ onOpen }: { onOpen: (p: Project) => void }) {
@@ -17,7 +17,7 @@ export default function Home({ onOpen }: { onOpen: (p: Project) => void }) {
     setBusy(true); setError(null);
     try {
       const c = await loadPhoto(f, 1600);
-      const blob = await toBlob(c);
+      const blob = await toStored(await toBlob(c));
       const thumb = await thumbnail((ctx, s) => { const k = Math.min(c.width, c.height); ctx.drawImage(c, (c.width - k) / 2, (c.height - k) / 2, k, k, 0, 0, s, s); });
       const name = (f.name || "Photo").replace(/\.[^.]+$/, "").replace(/^IMG_/, "Photo ");
       const p: Project = { id: newId(), name, created: Date.now(), updated: Date.now(), settings: defaultSettings(), image: blob, thumb, result: null, buildStep: 0 };

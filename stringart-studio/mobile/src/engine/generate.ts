@@ -1,7 +1,7 @@
 // Full on-device generation: processed image -> targets -> optimised continuous paths -> result.
 import { boardGeometry, boardMask, nailsPx } from "./geometry";
 import { decompose } from "./color";
-import { processImage, targetCoverage } from "./imageproc";
+import { hexRgb, l2s, luminance, processImage, targetCoverage } from "./imageproc";
 import { buildCache, optimize } from "./optimizer";
 import { threadLengthMm, validatePath } from "./route";
 import { QUALITY, resolveTone, Result, Settings } from "./types";
@@ -18,9 +18,9 @@ export const backgroundOf = (s: Settings) => (s.thread.mode === "mono" ? s.threa
 /** Per-layer target densities for an already framed RGBA raster. */
 export function targets(rgba: Uint8ClampedArray, res: number, s: Settings) {
   const mask = boardMask(s.board, res);
-  const pi = processImage(rgba, res, s.tone, mask);
   const layers = layersOf(s);
   const bg = backgroundOf(s);
+  const pi = processImage(rgba, res, s.tone, mask, { tone: l2s(luminance(hexRgb(bg))), rgb: hexRgb(bg) });
   let dens: Float32Array[];
   const sum = (h: string) => parseInt(h.slice(1, 3), 16) + parseInt(h.slice(3, 5), 16) + parseInt(h.slice(5, 7), 16);
   const darkest = layers.length ? layers.reduce((a, l) => (sum(l.color) < sum(a.color) ? l : a)).color : "#000000";

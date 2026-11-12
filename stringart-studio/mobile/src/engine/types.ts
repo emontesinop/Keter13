@@ -10,6 +10,7 @@ export type Settings = {
   tone: {
     autoLevels: boolean; exposure: number; brightness: number; contrast: number; gamma: number;
     localContrast: number; sharpness: number; invert: boolean; edgeEmphasis: number; centerFocus: number;
+    background?: "keep" | "remove"; bgTolerance?: number;
   };
   board: {
     shape: "circle" | "square"; diameter: number; nails: number; margin: number; nailDiameter: number;
@@ -50,7 +51,7 @@ export function defaultSettings(): Settings {
     version: SETTINGS_VERSION,
     frame: { zoom: 1, x: 0, y: 0, rotation: 0 },
     tone: { autoLevels: true, exposure: 0, brightness: 0, contrast: 1, gamma: 1, localContrast: 0.6, sharpness: 0.4,
-      invert: false, edgeEmphasis: 0.6, centerFocus: 0.3 },
+      invert: false, edgeEmphasis: 0.6, centerFocus: 0.3, background: "keep", bgTolerance: 20 },
     board: { shape: "circle", diameter: 300, nails: 300, margin: 6, nailDiameter: 1.6, numbering: "clockwise", startAngle: 0 },
     thread: { mode: "mono", preset: "black_on_white", threadColor: "#111111", background: "#f5f3ee", thickness: 0.15,
       opacity: 0.85, autoTone: true, maxCoverage: 0.98, tonePhysics: 1,

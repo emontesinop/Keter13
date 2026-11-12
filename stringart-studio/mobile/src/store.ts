@@ -1,9 +1,10 @@
 // Projects are stored on the device in IndexedDB (photos, settings, results, build progress).
 import type { Result, Settings } from "./engine/types";
+import type { StoredImage } from "./framing";
 
 export type Project = {
   id: string; name: string; created: number; updated: number;
-  settings: Settings; image: Blob | null; thumb: string; result: Result | null; buildStep: number;
+  settings: Settings; image: Blob | StoredImage | null; thumb: string; result: Result | null; buildStep: number;
 };
 
 const DB = "stringart-studio", STORE = "projects";
@@ -30,6 +31,14 @@ async function tx<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBReq
 export const listProjects = async () => ((await tx<Project[]>("readonly", (s) => s.getAll())) ?? []).sort((a, b) => b.updated - a.updated);
 export const getProject = (id: string) => tx<Project | undefined>("readonly", (s) => s.get(id));
 export const saveProject = (p: Project) => tx("readwrite", (s) => s.put({ ...p, updated: Date.now() }));
+/** Merge fields into the stored project (never overwrites fields it is not given, e.g. the photo). */
+export async function updateProject(id: string, patch: Partial<Project>): Promise<Project | undefined> {
+  const cur = await getProject(id);
+  if (!cur) return undefined;
+  const next = { ...cur, ...patch, id };
+  await saveProject(next);
+  return next;
+}
 export const deleteProject = (id: string) => tx("readwrite", (s) => s.delete(id));
 export const newId = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 

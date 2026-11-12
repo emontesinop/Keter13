@@ -3,26 +3,50 @@ import type { Settings } from "./engine/types";
 
 export type Source = HTMLCanvasElement;
 
-/** Decode a photo (EXIF orientation honoured by Safari) and downscale to <= maxSide px. */
-export async function loadPhoto(blob: Blob, maxSide = 1600): Promise<Source> {
-  const url = URL.createObjectURL(blob);
-  try {
+/** Stored photo: raw bytes (Safari can lose Blobs kept in IndexedDB, plain bytes are reliable). */
+export type StoredImage = { buf: ArrayBuffer; type: string };
+
+export async function toStored(b: Blob): Promise<StoredImage> {
+  return { buf: await b.arrayBuffer(), type: b.type || "image/jpeg" };
+}
+
+function asBlob(src: Blob | StoredImage): Blob {
+  return src instanceof Blob ? src : new Blob([src.buf], { type: src.type || "image/jpeg" });
+}
+
+function decodeWithImg(blob: Blob): Promise<HTMLImageElement> {
+  // onload/onerror instead of img.decode(): decode() rejects with "EncodingError" in some Safari versions
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(blob);
     const img = new Image();
-    img.decoding = "async";
+    img.onload = () => { URL.revokeObjectURL(url); res(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("This photo could not be read.")); };
     img.src = url;
-    await img.decode();
-    const s = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
-    const c = document.createElement("canvas");
-    c.width = Math.max(1, Math.round(img.naturalWidth * s));
-    c.height = Math.max(1, Math.round(img.naturalHeight * s));
-    const ctx = c.getContext("2d")!;
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, c.width, c.height);
-    ctx.drawImage(img, 0, 0, c.width, c.height);
-    return c;
-  } finally {
-    URL.revokeObjectURL(url);
+  });
+}
+
+/** Decode a photo (EXIF orientation honoured by Safari) and downscale to <= maxSide px. */
+export async function loadPhoto(src: Blob | StoredImage, maxSide = 1600): Promise<Source> {
+  const blob = asBlob(src);
+  let el: CanvasImageSource, w: number, h: number;
+  try {
+    const img = await decodeWithImg(blob);
+    el = img; w = img.naturalWidth; h = img.naturalHeight;
+  } catch (e) {
+    if (typeof createImageBitmap !== "function") throw e;
+    const bmp = await createImageBitmap(blob);     // second decoder path
+    el = bmp; w = bmp.width; h = bmp.height;
   }
+  if (!w || !h) throw new Error("This photo could not be read.");
+  const s = Math.min(1, maxSide / Math.max(w, h));
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(w * s));
+  c.height = Math.max(1, Math.round(h * s));
+  const ctx = c.getContext("2d")!;
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.drawImage(el, 0, 0, c.width, c.height);
+  return c;
 }
 
 export function toBlob(c: HTMLCanvasElement, type = "image/jpeg", q = 0.9): Promise<Blob> {

@@ -1,5 +1,6 @@
 // Image processing on a framed square RGBA raster (port of the desktop imaging module).
 import type { Settings } from "./types";
+import { backgroundMask } from "./background";
 
 export const s2l = (c: number) => { c = Math.min(1, Math.max(0, c)); return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
 export const l2s = (c: number) => { c = Math.min(1, Math.max(0, c)); return c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055; };
@@ -44,6 +45,8 @@ function percentile(vals: Float32Array, mask: Uint8Array, q: number[]): number[]
   return q.map((p) => arr.length ? arr[Math.min(arr.length - 1, Math.floor((p / 100) * arr.length))] : 0);
 }
 
+export type BoardLook = { tone: number; rgb: [number, number, number] };   // what bare board looks like
+
 export type Processed = {
   res: number;
   tone: Float32Array;       // 1 = white
@@ -51,9 +54,11 @@ export type Processed = {
   importance: Float32Array; // mean 1 inside board
   edges: Float32Array;
   mask: Uint8Array;
+  background: Float32Array | null; // 1 = removed background
+  backgroundFraction: number;
 };
 
-export function processImage(rgba: Uint8ClampedArray, res: number, t: Settings["tone"], mask: Uint8Array): Processed {
+export function processImage(rgba: Uint8ClampedArray, res: number, t: Settings["tone"], mask: Uint8Array, board?: BoardLook): Processed {
   const N = res * res;
   let gray = new Float32Array(N);
   let color = new Float32Array(3 * N);
@@ -91,6 +96,17 @@ export function processImage(rgba: Uint8ClampedArray, res: number, t: Settings["
     const bl = blur(gray, res, res, Math.max(0.6, res / 400));
     for (let i = 0; i < N; i++) gray[i] = Math.min(1, Math.max(0, gray[i] + t.sharpness * (gray[i] - bl[i])));
   }
+  let bgMask: Float32Array | null = null, bgFraction = 0;
+  if (t.background === "remove" && board) {
+    const r = backgroundMask(rgba, res, mask, t.bgTolerance ?? 20);
+    bgMask = r.bg; bgFraction = r.fraction;
+    for (let i = 0; i < N; i++) {
+      const b = bgMask[i];
+      if (b <= 0) continue;
+      gray[i] = gray[i] * (1 - b) + board.tone * b;
+      for (let c = 0; c < 3; c++) color[3 * i + c] = color[3 * i + c] * (1 - b) + board.rgb[c] * b;
+    }
+  }
   if (t.invert) {
     for (let i = 0; i < N; i++) gray[i] = 1 - gray[i];
     for (let i = 0; i < 3 * N; i++) color[i] = 1 - color[i];
@@ -114,12 +130,12 @@ export function processImage(rgba: Uint8ClampedArray, res: number, t: Settings["
     if (!mask[i]) continue;
     const dx = (x - res / 2) / (res / 2), dy = (y - res / 2) / (res / 2);
     const centre = 1 + t.centerFocus * Math.max(0, 1 - Math.hypot(dx, dy) * 1.2);
-    imp[i] = (1 + t.edgeEmphasis * eb[i]) * centre;
+    imp[i] = (1 + t.edgeEmphasis * eb[i]) * centre * (bgMask ? 1 - 0.6 * bgMask[i] : 1);
     sum += imp[i]; cnt++;
   }
   const mean = cnt ? sum / cnt : 1;
   for (let i = 0; i < N; i++) imp[i] /= mean;
-  return { res, tone: gray, color, importance: imp, edges, mask };
+  return { res, tone: gray, color, importance: imp, edges, mask, background: bgMask, backgroundFraction: bgFraction };
 }
 
 /** Required thread coverage per pixel (see desktop docs: not a naive inversion). */
