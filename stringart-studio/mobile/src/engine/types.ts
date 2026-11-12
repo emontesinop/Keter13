@@ -11,6 +11,7 @@ export type Settings = {
     autoLevels: boolean; exposure: number; brightness: number; contrast: number; gamma: number;
     localContrast: number; sharpness: number; invert: boolean; edgeEmphasis: number; centerFocus: number;
     background?: "keep" | "remove"; bgTolerance?: number;
+    lineArt?: boolean;      // drawing mode: thicken dark outlines so straight threads can carry them
   };
   board: {
     shape: "circle" | "square"; diameter: number; nails: number; margin: number; nailDiameter: number;

@@ -55,6 +55,7 @@ export type Processed = {
   edges: Float32Array;
   mask: Uint8Array;
   background: Float32Array | null; // 1 = removed background
+  lightFraction: number;            // share of near-white board pixels (drawings / line art are high)
   backgroundFraction: number;
 };
 
@@ -66,6 +67,28 @@ export function processImage(rgba: Uint8ClampedArray, res: number, t: Settings["
     const r = rgba[4 * i] / 255, g = rgba[4 * i + 1] / 255, b = rgba[4 * i + 2] / 255;
     color[3 * i] = r; color[3 * i + 1] = g; color[3 * i + 2] = b;
     gray[i] = l2s(0.2126 * s2l(r) + 0.7152 * s2l(g) + 0.0722 * s2l(b));
+  }
+  if (t.lineArt) {
+    // Drawing mode: grey-scale erosion (dilates dark strokes). Thin curved outlines carry almost no
+    // tone mass, so straight threads ignore them; ~1.4 % of the board width makes them "drawable".
+    const r = Math.max(1, Math.round(res / 160));
+    const erode = (src: Float32Array, stride: number, off: number) => {
+      const tmp = new Float32Array(N), out = new Float32Array(N);
+      for (let y = 0; y < res; y++) for (let x = 0; x < res; x++) {
+        let m = 1;
+        for (let k = -r; k <= r; k++) { const xx = Math.min(res - 1, Math.max(0, x + k)); m = Math.min(m, src[(y * res + xx) * stride + off]); }
+        tmp[y * res + x] = m;
+      }
+      for (let y = 0; y < res; y++) for (let x = 0; x < res; x++) {
+        let m = 1;
+        for (let k = -r; k <= r; k++) { const yy = Math.min(res - 1, Math.max(0, y + k)); m = Math.min(m, tmp[yy * res + x]); }
+        out[y * res + x] = m;
+      }
+      return out;
+    };
+    gray = erode(gray, 1, 0);
+    const er = erode(color, 3, 0), eg = erode(color, 3, 1), eb = erode(color, 3, 2);
+    for (let i = 0; i < N; i++) { color[3 * i] = er[i]; color[3 * i + 1] = eg[i]; color[3 * i + 2] = eb[i]; }
   }
   if (t.autoLevels) {
     const [lo, hi] = percentile(gray, mask, [1, 99]);
@@ -135,7 +158,10 @@ export function processImage(rgba: Uint8ClampedArray, res: number, t: Settings["
   }
   const mean = cnt ? sum / cnt : 1;
   for (let i = 0; i < N; i++) imp[i] /= mean;
-  return { res, tone: gray, color, importance: imp, edges, mask, background: bgMask, backgroundFraction: bgFraction };
+  let light = 0, inside = 0;
+  for (let i = 0; i < N; i++) if (mask[i]) { inside++; if (gray[i] > 0.85) light++; }
+  return { res, tone: gray, color, importance: imp, edges, mask, background: bgMask, backgroundFraction: bgFraction,
+    lightFraction: inside ? light / inside : 0 };
 }
 
 /** Required thread coverage per pixel (see desktop docs: not a naive inversion). */
