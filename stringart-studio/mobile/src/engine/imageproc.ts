@@ -153,7 +153,14 @@ export function processImage(rgba: Uint8ClampedArray, res: number, t: Settings["
     if (!mask[i]) continue;
     const dx = (x - res / 2) / (res / 2), dy = (y - res / 2) / (res / 2);
     const centre = 1 + t.centerFocus * Math.max(0, 1 - Math.hypot(dx, dy) * 1.2);
-    imp[i] = (1 + t.edgeEmphasis * eb[i]) * centre * (bgMask ? 1 - 0.6 * bgMask[i] : 1);
+    let fw = 1;
+    if (t.focus) {
+      const fx = (x + 0.5) / res - t.focus.x, fy = (y + 0.5) / res - t.focus.y;
+      const d = Math.sqrt(fx * fx + fy * fy) / Math.max(0.02, t.focus.r);
+      const inside = Math.min(1, Math.max(0, (1.25 - d) / 0.5));         // soft edge
+      fw = 1 + (t.focus.strength - 1) * inside;
+    }
+    imp[i] = (1 + t.edgeEmphasis * eb[i]) * centre * fw * (bgMask ? 1 - 0.6 * bgMask[i] : 1);
     sum += imp[i]; cnt++;
   }
   const mean = cnt ? sum / cnt : 1;
