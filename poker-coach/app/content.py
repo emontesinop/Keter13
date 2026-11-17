@@ -41,6 +41,9 @@ class Content:
     vs_limpers: dict              # group -> {"iso": set, "overlimp": set}
     vs_limpers_groups: dict
     range_text: dict = field(default_factory=dict)  # 'rfi.UTG' -> texto original
+    population: dict = field(default_factory=dict)  # nombre -> frozenset
+    leaks: dict = field(default_factory=dict)       # tag -> {label, concept, category, advice}
+    profiles: dict = field(default_factory=dict)    # id -> {label, call, bet_value, bet_bluff}
 
     def lessons_for_level(self, level: int) -> list:
         return [l for l in self.lessons.values() if l["level"] == level]
@@ -123,8 +126,28 @@ def load_content(base: Path = CONTENT_DIR) -> Content:
         texts[f"vs_limpers.{grp}.iso"] = acts.get("iso") or "—"
         texts[f"vs_limpers.{grp}.overlimp"] = acts.get("overlimp") or "—"
 
+    pop_raw = _load(base / "ranges" / "population.yaml")["ranges"]
+    population = {k: _rng(v, f"population.{k}") for k, v in pop_raw.items()}
+    texts.update({f"population.{k}": v for k, v in pop_raw.items()})
+    for a, b in (("vs3bet_4bet", "vs3bet_call_ip"), ("vs3bet_4bet", "vs3bet_call_oop")):
+        if population[a] & population[b]:
+            raise ContentError(f"population: {a} y {b} se solapan")
+
+    leaks = _load(base / "leaks.yaml")
+    for tag, l in leaks.items():
+        if l["concept"] not in lessons:
+            raise ContentError(f"leaks.{tag}: concepto desconocido '{l['concept']}'")
+
+    profiles = _load(base / "profiles.yaml")
+    for pid, p in profiles.items():
+        for k in ("call", "bet_value", "bet_bluff"):
+            if not 0 <= p[k] <= 1:
+                raise ContentError(f"profiles.{pid}.{k} debe estar entre 0 y 1")
+        if p["bet_value"] + p["bet_bluff"] > 1:
+            raise ContentError(f"profiles.{pid}: valor + farol > 100 %")
+
     return Content(sources, levels, config, lessons, questions, rfi, order,
-                   vs_open, vo_raw["groups"], vs_limpers, vl_raw["groups"], texts)
+                   vs_open, vo_raw["groups"], vs_limpers, vl_raw["groups"], texts, population, leaks, profiles)
 
 
 @lru_cache(maxsize=1)

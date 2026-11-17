@@ -14,7 +14,8 @@
   <a href="/" class="{{ 'on' if p == '/' }}">Hoy</a>
   <a href="/ruta" class="{{ 'on' if p.startswith('/ruta') or p.startswith('/nivel') or p.startswith('/leccion') }}">Ruta</a>
   <a href="/practicar" class="{{ 'on' if p.startswith('/practicar') or p.startswith('/run') }}">Practicar</a>
-  <a href="/sesiones" class="{{ 'on' if p.startswith('/sesiones') }}">Sesiones</a>
+  <a href="/manos" class="{{ 'on' if p.startswith('/manos') or p.startswith('/leaks') }}">Manos</a>
+  <a href="/sesiones" class="{{ 'on' if p.startswith('/sesiones') or p.startswith('/mental') or p.startswith('/checkin') }}">Sesiones</a>
 </nav>
 </body>
 </html>

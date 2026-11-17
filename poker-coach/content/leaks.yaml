@@ -1,0 +1,18 @@
+# Catálogo de leaks. El analizador de manos etiqueta cada error con uno de estos.
+# concept = lección para estudiarlo.
+open_limp:        {label: "Open-limp", concept: l1_rfi, category: preflop, advice: "Si nadie entró, sube o foldea."}
+preflop_loose:    {label: "Abrir demasiado amplio", concept: l1_rfi, category: preflop, advice: "Respeta el rango de tu posición; las manos marginales pierden fuera de posición."}
+preflop_tight:    {label: "Foldear manos jugables preflop", concept: l1_rfi, category: preflop, advice: "Estás dejando EV en manos que el rango juega."}
+loose_call_pre:   {label: "Pagar opens con manos débiles", concept: l1_vs_open, category: preflop, advice: "Contra opens grandes en vivo, el call débil queda dominado."}
+passive_3bet:     {label: "Pagar en vez de 3-betear valor", concept: l1_vs_open, category: preflop, advice: "Con manos premium sube: en vivo te pagan peor."}
+vs3bet:           {label: "Mala respuesta al 3-bet", concept: l1_4bet, category: preflop, advice: "4-bet QQ+/AK, paga lo que juega bien postflop, foldea el resto."}
+iso_passive:      {label: "Limp detrás con manos para aislar", concept: l1_limpers, category: preflop, advice: "Castiga a los limpers con 5 bb + 1 por limper."}
+sizing_pre:       {label: "Tamaño preflop", concept: l1_sizing, category: preflop, advice: "Open 5 bb, iso +1 por limper, 3-bet 3x IP / 4x OOP."}
+overcall:         {label: "Pagar demasiado postflop", concept: l2_mdf, category: postflop, advice: "Compara tu equity contra su rango de apuesta con las pot odds."}
+overfold:         {label: "Foldear demasiado postflop", concept: l2_mdf, category: postflop, advice: "Con esa equity y ese precio, el call era rentable."}
+missed_value:     {label: "Perder valor", concept: l2_value_bluff, category: postflop, advice: "Contra quien paga, apuesta tus manos buenas."}
+bad_bluff:        {label: "Farol en mal spot", concept: l2_value_bluff, category: postflop, advice: "Si el rival no foldea suficiente, el farol pierde."}
+missed_bluff:     {label: "Farol rentable no hecho", concept: l2_value_bluff, category: postflop, advice: "Contra rivales que foldean mucho, la apuesta sin showdown gana."}
+multiway_bluff:   {label: "Farol multiway", concept: l2_cbet, category: postflop, advice: "Contra varios rivales casi siempre alguien ligó."}
+spr_stackoff:     {label: "Meter el stack con una pareja y SPR alto", concept: l2_spr, category: postflop, advice: "Con SPR > 6 una pareja rara vez es buena por 100 bb."}
+sizing_post:      {label: "Tamaño postflop", concept: l2_sizing, category: postflop, advice: "Contra quien paga, apuesta grande por valor."}

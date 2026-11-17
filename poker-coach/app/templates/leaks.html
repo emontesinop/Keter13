@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block body %}
+<p class="small"><a href="/manos">← Manos</a></p>
+<h1>Tus leaks</h1>
+{% if prios %}
+<div class="box"><ul class="list">
+{% for p in prios %}
+  <li><div class="row"><b>{{ loop.index }}. <a href="/leccion/{{ p.concept }}">{{ c.lessons[p.concept].title }}</a></b><span class="small muted">{{ p.score|num }}</span></div>
+  {% for r in p.reasons %}<p class="small muted" style="margin:2px 0 0">· {{ r }}</p>{% endfor %}</li>
+{% endfor %}</ul></div>
+{% else %}
+<div class="box"><p>Aún no hay leaks claros. Se detectan con ≥ 5 ejercicios por concepto por debajo del 85 % (últimos 30 días) o con errores en tus manos analizadas (últimos 60 días).</p></div>
+{% endif %}
+<h2>Plan para esta semana</h2>
+<div class="box"><ul class="list">
+{% for d in plan %}<li class="row"><span><b>{{ d.day }}</b> · {{ d.task }}</span><a class="small" href="{{ d.href }}">ir</a></li>{% endfor %}
+</ul></div>
+{% if hand %}
+<h2>En manos reales</h2>
+<div class="box"><ul class="list">
+{% for h in hand %}<li class="row"><span>{{ c.leaks[h.tag].label }}</span><span class="small"><span class="tag error-t">{{ h.errors }}</span> <span class="tag dudoso-t">{{ h.doubts }}</span></span></li>{% endfor %}
+</ul></div>
+{% endif %}
+{% if drill %}
+<h2>En ejercicios</h2>
+<div class="box"><ul class="list">
+{% for d in drill %}<li class="row"><span>{{ c.lessons[d.concept].title }}</span><span class="small muted">{{ (d.accuracy * 100)|round|int }} % · {{ d.n }}</span></li>{% endfor %}
+</ul></div>
+{% endif %}
+{% endblock %}

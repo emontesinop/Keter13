@@ -89,3 +89,31 @@ class MentalCheckin(SQLModel, table=True):
     focus: int                         # 1 disperso … 5 enfocado
     note: str = ""
     session_id: int | None = Field(default=None, index=True)
+
+
+class Hand(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    created: datetime = Field(default_factory=_utcnow, index=True)
+    date: str = Field(index=True)
+    stakes: str = ""
+    position: str
+    cards: str                         # "AhKd"
+    profile: str
+    data: str                          # JSON del formulario (HandInput + extra)
+    result_bb: float | None = None
+    villain_cards: str = ""
+    notes: str = ""
+    n_errors: int = 0
+    n_doubts: int = 0
+
+
+class HandFinding(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    hand_id: int = Field(index=True)
+    created: datetime = Field(default_factory=_utcnow, index=True)
+    street: str
+    decision: str
+    verdict: str
+    leak: str | None = Field(default=None, index=True)
+    explanation: str
+    concept_id: str | None = None

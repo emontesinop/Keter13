@@ -63,3 +63,14 @@ details summary{cursor:pointer;font-weight:600;margin:20px 0 10px}
 .scale input:checked+label{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 .scale input:focus-visible+label{outline:2px solid var(--accent);outline-offset:2px}
 form.grid .grid{display:grid;grid-template-columns:1fr;gap:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid2 .full{grid-column:1/-1}
+.tag.ok-t{color:var(--ok);border-color:var(--ok)}
+.tag.error-t,.tag.bad-t{color:var(--bad);border-color:var(--bad)}
+.tag.dudoso-t,.tag.warn-t{color:#a15c00;border-color:#d9a54a}
+.tag.info-t{color:var(--muted)}
+.finding.error{border-left:4px solid var(--bad)}
+.finding.dudoso{border-left:4px solid #d9a54a}
+.finding.ok{border-left:4px solid var(--ok)}
+nav.tabs a{padding:8px 4px}
+@media (prefers-color-scheme:dark){.tag.dudoso-t,.tag.warn-t{color:#f0b85a;border-color:#a77a2c}}

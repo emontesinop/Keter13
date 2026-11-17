@@ -53,7 +53,12 @@ El diagnóstico puede convalidar un nivel: si aciertas ≥ 85 % de sus preguntas
 - Iteración 1 (MVP): diagnóstico, niveles 0-1, drills de matemática y preflop, gate y examen, sesiones en vivo.
 - Iteración 2: repetición espaciada SM-2 (`/repasar` e intercalada en la práctica), check-in mental pre/post y panel de correlación con resultados.
 - Iteración 3: nivel 2 (postflop) y nivel 3 (lectura de manos) con drills calculados con treys.
-- Próximas: analizador de manos y panel de leaks, niveles 4-5.
+- Iteración 4: analizador de manos (`/manos`) y panel de leaks con plan semanal (`/leaks`).
+- Próxima: niveles 4-5 (explotación en vivo, mental y bankroll) y criterio «listo para jugar con dinero».
+
+## Analizador de manos
+
+Formulario rápido con preflop más una decisión tuya por calle. El preflop se compara con las tablas de `content/ranges`. En el postflop, el rango del rival se estima a partir de su acción preflop (`population.yaml`, `vs_open.yaml`) y de su perfil (`profiles.yaml`). Con eso, treys calcula tu equity contra su rango de apuesta o el EV de apostar o pasar en el river. Cada error o decisión dudosa se etiqueta con un leak de `content/leaks.yaml`, que enlaza a su lección. El panel de leaks junta esos errores con los de los ejercicios y propone un plan de 7 días.
 
 ## Cómo se calculan las respuestas postflop
 

@@ -130,3 +130,38 @@ def strong_share(classes, board, max_class: int = 7) -> float:
 
 def pair_combos(k: int) -> int:
     return comb(k, 2)
+
+
+def equity_vs_combos(hero, combos, board, rng: random.Random, iterations: int = 3000) -> float:
+    """Equity de hero contra una lista de combos (uniforme por combo) hasta el river.
+
+    River: exacta. Turn: exacta (todas las cartas del river). Flop: Monte Carlo.
+    """
+    from .cards import FULL_DECK
+    combos = [c for c in combos if not (set(c) & set(hero))]
+    if not combos:
+        return 0.0
+    k = 5 - len(board)
+    if k == 0:
+        return showdown(hero, on_board(combos, board), board).equity
+    dead = set(hero) | set(board)
+    total = n = 0.0
+    if k == 1:
+        for v in combos:
+            for card in FULL_DECK:
+                if card in dead or card in v:
+                    continue
+                full = list(board) + [card]
+                a, b = strength(hero, full), strength(v, full)
+                total += 1.0 if a < b else (0.5 if a == b else 0.0)
+                n += 1
+        return total / n
+    deck = [c for c in FULL_DECK if c not in dead]
+    for _ in range(iterations):
+        v = rng.choice(combos)
+        rest = [c for c in deck if c not in v]
+        full = list(board) + rng.sample(rest, k)
+        a, b = strength(hero, full), strength(v, full)
+        total += 1.0 if a < b else (0.5 if a == b else 0.0)
+        n += 1
+    return total / n

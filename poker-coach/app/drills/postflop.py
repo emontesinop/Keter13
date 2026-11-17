@@ -17,9 +17,16 @@ from .base import Question, dec, numeric_options, pct
 
 OPENER_GROUP = {"UTG": "EP", "UTG1": "EP", "MP": "EP", "LJ": "MP", "HJ": "MP", "CO": "LATE", "BTN": "LATE"}
 
-# Perfiles del rival en el river (modelo simplificado y editable aquí).
-CALL_PROFILES = {"nit": 0.25, "regular": 0.45, "calling station": 0.70}
-BET_PROFILES = {"nit": (0.15, 0.0), "regular": (0.25, 0.08), "agresivo (LAG)": (0.30, 0.20)}
+
+
+def call_profiles(c) -> dict:
+    """{etiqueta: fracción que paga} de los perfiles marcados para drills (content/profiles.yaml)."""
+    return {p["label"]: p["call"] for p in c.profiles.values() if p.get("drill_call")}
+
+
+def bet_profiles(c) -> dict:
+    return {p["label"]: (p["bet_value"], p["bet_bluff"]) for p in c.profiles.values() if p.get("drill_bet")}
+
 BET_SIZES = [(0.5, "medio bote"), (0.66, "2/3 del bote"), (0.75, "3/4 del bote"), (1.0, "el bote")]
 
 
@@ -128,8 +135,9 @@ def gen_river_decision(rng, c) -> Question:
         board = rng.sample(FULL_DECK, 5)
         hero = _hero_combo(rng, orng, board)
         R = on_board(live_combos(brng, board + hero), board)
-        prof = rng.choice(list(CALL_PROFILES))
-        C = top_fraction(R, CALL_PROFILES[prof])
+        profiles = call_profiles(c)
+        prof = rng.choice(list(profiles))
+        C = top_fraction(R, profiles[prof])
         pot = rng.randrange(16, 61, 2)
         frac, label = rng.choice(BET_SIZES[:3])
         bet = round(pot * frac)
@@ -141,9 +149,9 @@ def gen_river_decision(rng, c) -> Question:
         if ans == target and abs(ev_bet - ev_check) > 0.06 * pot:
             break
     desc = hand_desc(hero, board)
-    fold_pct = 1 - CALL_PROFILES[prof]
+    fold_pct = 1 - profiles[prof]
     exp = (f"Tienes {desc}. Modelo: la BB llega al river con su rango de call preflop ({len(R)} combos vivos) "
-           f"y, como {prof}, paga con su mejor {pct(CALL_PROFILES[prof])} y foldea el resto. "
+           f"y, como {prof}, paga con su mejor {pct(profiles[prof])} y foldea el resto. "
            f"Tu equity contra todo su rango: {pct(sd_all.equity)}; contra las manos que pagan: {pct(sd_c.equity)}. "
            f"EV(check) ≈ {dec(ev_check, 1)} bb; EV(apostar {bet} bb) ≈ {dec(ev_bet, 1)} bb. ")
     exp += {
@@ -170,8 +178,9 @@ def gen_facing_bet(rng, c) -> Question:
         board = rng.sample(FULL_DECK, 5)
         hero = _hero_combo(rng, brng, board)
         R = on_board(live_combos(orng, board + hero), board)
-        prof = rng.choice(list(BET_PROFILES))
-        v, b = BET_PROFILES[prof]
+        profiles = bet_profiles(c)
+        prof = rng.choice(list(profiles))
+        v, b = profiles[prof]
         value, bluffs = top_fraction(R, v), bottom_fraction(R, b)
         betting = value + [x for x in bluffs if x not in value]
         sd = showdown(hero, betting, board)

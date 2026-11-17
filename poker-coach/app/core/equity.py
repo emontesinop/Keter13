@@ -18,7 +18,7 @@ _EVAL = Evaluator()
 _TREYS = {c: Card.new(c) for c in FULL_DECK}
 
 RANK_CLASS_ES = {
-    1: "Escalera de color", 2: "Póker", 3: "Full", 4: "Color", 5: "Escalera",
+    0: "Escalera real", 1: "Escalera de color", 2: "Póker", 3: "Full", 4: "Color", 5: "Escalera",
     6: "Trío", 7: "Doble pareja", 8: "Pareja", 9: "Carta alta",
 }
 

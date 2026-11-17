@@ -68,3 +68,7 @@ def test_draw_outs():
     assert len(combo.all) == 15 and combo.shared == 2
     gut = draw_outs(["9s", "8d"], ["6c", "5h", "Ks"])
     assert len(gut.all) == 4
+
+
+def test_royal_flush_name():
+    assert hand_name(["Ah", "Kh"], ["Qh", "Jh", "Th"]) == "Escalera real"

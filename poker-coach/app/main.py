@@ -14,13 +14,17 @@ from fastapi.templating import Jinja2Templates
 from sqlmodel import Session as DB
 from sqlmodel import select
 
-from . import drills, mental, progress, review
+import json
+
+from . import analyzer, drills, leaks, mental, progress, review
 from .charts import line_chart, radar
+from .content import POSITIONS_9 as POSITIONS_9_LIST
 from .content import get_content, pos_label
 from .core.cards import fmt_card
 from .core.stats import SessionData, bankroll_curve, buyins, summarize
 from .db import get_db, get_engine, init_db
-from .models import Attempt, MentalCheckin, Run, Session, SrsCard
+from .core.cards import CardError, parse_cards
+from .models import Attempt, Hand, HandFinding, MentalCheckin, Run, Session, SrsCard
 
 BASE = Path(__file__).resolve().parent
 
@@ -86,7 +90,7 @@ def home(request: Request, db: DB = Depends(get_db)):
     return render(request, "home.html",
                   rec=progress.recommendation(db, c), level=lvl, gate=progress.gate(db, lvl, c),
                   radar=radar({k: v[0] for k, v in scores.items()}, drills.SKILL_LABEL),
-                  scores=scores, summ=summ, due=review.due_count(db),
+                  scores=scores, summ=summ, due=review.due_count(db), prios=leaks.priorities(db, c, top=2),
                   checkin_today=db.exec(select(MentalCheckin).where(
                       MentalCheckin.date == date.today().isoformat(), MentalCheckin.phase == "pre")).first())
 
@@ -406,3 +410,148 @@ def settings_save(initial_bankroll: float = Form(0), stop_loss_bi: str = Form(""
     progress.set_setting(db, "initial_bankroll", str(max(0.0, initial_bankroll)))
     progress.set_setting(db, "stop_loss_bi", stop_loss_bi.strip())
     return RedirectResponse("/sesiones", status_code=303)
+
+
+# ---------------- Analizador de manos ----------------
+
+PROFILE_ORDER = ["unknown", "nit", "regular", "calling_station", "lag", "maniac"]
+PRE_SITUATIONS = [("rfi", "Todos foldean hasta mí"), ("limpers", "Hay limpers delante"),
+                  ("vs_open", "Un rival abre (raise)"), ("vs_3bet", "Abrí y me hicieron 3-bet")]
+HERO_PRE = [("raise", "Subo / 3-bet / 4-bet"), ("call", "Pago"), ("limp", "Limp"), ("check", "Paso (BB)"),
+            ("fold", "Fold"), ("allin", "All-in")]
+VILLAIN_ACTS = [("", "—"), ("check", "Pasa"), ("bet", "Apuesta"), ("raise", "Sube"), ("allin", "All-in")]
+HERO_ACTS = [("", "—"), ("check", "Paso"), ("bet", "Apuesto"), ("call", "Pago"), ("raise", "Subo"),
+             ("fold", "Fold"), ("allin", "All-in")]
+BOARD_N = {"flop": 3, "turn": 1, "river": 1}
+
+
+def _num(v: str | None) -> float | None:
+    if v is None or str(v).strip() == "":
+        return None
+    try:
+        return float(str(v).replace(",", "."))
+    except ValueError:
+        raise ValueError(f"Número inválido: '{v}'")
+
+
+def parse_hand_form(f: dict, c) -> tuple[analyzer.HandInput, dict]:
+    """Convierte el formulario en HandInput. Lanza ValueError con un mensaje legible."""
+    hero = parse_cards(f.get("cards", ""))
+    if len(hero) != 2:
+        raise ValueError("Tus cartas: escribe exactamente 2, p. ej. AhKd.")
+    pos = f.get("position", "")
+    if pos not in POSITIONS_9_LIST:
+        raise ValueError("Elige tu posición.")
+    seen = set(hero)
+    streets = []
+    prev_ok = True
+    for st, n in BOARD_N.items():
+        raw = f.get(f"{st}_cards", "").strip()
+        if not raw:
+            prev_ok = False
+            continue
+        if not prev_ok:
+            raise ValueError(f"Para el {st} hace falta la calle anterior.")
+        cs = parse_cards(raw)
+        if len(cs) != n:
+            raise ValueError(f"{st.capitalize()}: {n} carta{'s' if n > 1 else ''}.")
+        if seen & set(cs):
+            raise ValueError(f"Carta repetida en el {st}.")
+        seen |= set(cs)
+        streets.append(analyzer.Street(
+            st, cs, _num(f.get(f"{st}_pot")),
+            analyzer.Action(f.get(f"{st}_v_kind", ""), _num(f.get(f"{st}_v_size"))),
+            analyzer.Action(f.get(f"{st}_h_kind", ""), _num(f.get(f"{st}_h_size")))))
+    vc = f.get("villain_cards", "").strip()
+    if vc:
+        vcs = parse_cards(vc)
+        if len(vcs) != 2 or seen & set(vcs):
+            raise ValueError("Cartas del rival: 2 cartas que no estén ya en la mano.")
+    profile = f.get("profile", "unknown")
+    if profile not in c.profiles:
+        profile = "unknown"
+    h = analyzer.HandInput(
+        position=pos, stack_bb=_num(f.get("stack_bb")) or 100, hero=hero, profile=profile,
+        players=int(_num(f.get("players")) or 2), pre_situation=f.get("pre_situation", "rfi"),
+        villain_pos=f.get("villain_pos") or None, limpers=int(_num(f.get("limpers")) or 0),
+        villain_size=_num(f.get("villain_size")),
+        hero_pre=analyzer.Action(f.get("hero_pre_kind", ""), _num(f.get("hero_pre_size"))), streets=streets)
+    return h, {"result_bb": _num(f.get("result_bb"))}
+
+
+def _hand_form_ctx(**kw):
+    c = get_content()
+    return dict(positions=POSITIONS_9_LIST, profiles=[(p, c.profiles[p]["label"]) for p in PROFILE_ORDER if p in c.profiles],
+                pre_situations=PRE_SITUATIONS, hero_pre=HERO_PRE, villain_acts=VILLAIN_ACTS, hero_acts=HERO_ACTS,
+                today=date.today().isoformat(), **kw)
+
+
+@app.get("/manos", response_class=HTMLResponse)
+def hands_list(request: Request, db: DB = Depends(get_db)):
+    rows = db.exec(select(Hand).order_by(Hand.created.desc()).limit(100)).all()
+    return render(request, "manos.html", rows=rows)
+
+
+@app.get("/manos/nueva", response_class=HTMLResponse)
+def hand_new(request: Request):
+    return render(request, "mano_form.html", **_hand_form_ctx(f={}, error=None))
+
+
+@app.post("/manos", response_class=HTMLResponse)
+async def hand_create(request: Request, db: DB = Depends(get_db)):
+    c = get_content()
+    form = dict(await request.form())
+    try:
+        h, extra = parse_hand_form(form, c)
+    except (ValueError, CardError) as e:
+        return render(request, "mano_form.html", **_hand_form_ctx(f=form, error=str(e)))
+    findings = analyzer.analyze(h, c)
+    hand = Hand(date=form.get("date") or date.today().isoformat(), stakes=form.get("stakes", "").strip(),
+                position=h.position, cards="".join(h.hero), profile=h.profile, data=json.dumps(form),
+                result_bb=extra["result_bb"], villain_cards=form.get("villain_cards", "").strip(),
+                notes=form.get("notes", "").strip(),
+                n_errors=sum(f.verdict == "error" for f in findings),
+                n_doubts=sum(f.verdict == "dudoso" for f in findings))
+    db.add(hand)
+    db.commit()
+    db.refresh(hand)
+    for f in findings:
+        db.add(HandFinding(hand_id=hand.id, street=f.street, decision=f.decision, verdict=f.verdict,
+                           leak=f.leak, explanation=f.explanation, concept_id=f.concept_id))
+    db.commit()
+    return RedirectResponse(f"/manos/{hand.id}", status_code=303)
+
+
+@app.get("/manos/{hid}", response_class=HTMLResponse)
+def hand_view(request: Request, hid: int, db: DB = Depends(get_db)):
+    hand = db.get(Hand, hid)
+    if not hand:
+        raise HTTPException(404)
+    form = json.loads(hand.data)
+    findings = db.exec(select(HandFinding).where(HandFinding.hand_id == hid).order_by(HandFinding.id)).all()
+    board = []
+    for st in BOARD_N:
+        if form.get(f"{st}_cards"):
+            board += parse_cards(form[f"{st}_cards"])
+    return render(request, "mano.html", hand=hand, form=form, findings=findings, board=board,
+                  hero=parse_cards(hand.cards), street_es=analyzer.STREET_ES)
+
+
+@app.post("/manos/{hid}/borrar")
+def hand_delete(hid: int, db: DB = Depends(get_db)):
+    for f in db.exec(select(HandFinding).where(HandFinding.hand_id == hid)).all():
+        db.delete(f)
+    h = db.get(Hand, hid)
+    if h:
+        db.delete(h)
+    db.commit()
+    return RedirectResponse("/manos", status_code=303)
+
+
+# ---------------- Panel de leaks ----------------
+
+@app.get("/leaks", response_class=HTMLResponse)
+def leaks_page(request: Request, db: DB = Depends(get_db)):
+    c = get_content()
+    return render(request, "leaks.html", prios=leaks.priorities(db, c), drill=leaks.drill_leaks(db, c),
+                  hand=leaks.hand_leaks(db), plan=leaks.weekly_plan(db, c))

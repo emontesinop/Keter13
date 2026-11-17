@@ -14,6 +14,11 @@
   <p class="small muted">{{ gate.count }}/{{ gate.window }} ejercicios recientes · precisión {{ gate.accuracy|pct }} (necesitas ≥ {{ gate.min_accuracy|pct }} y aprobar el examen)</p>
   {% else %}<p class="small muted">Contenido de este nivel: próximas iteraciones.</p>{% endif %}
 </div>
+{% if prios %}
+<h2>Leaks principales</h2>
+<div class="box"><ul class="list">{% for p in prios %}<li class="row"><a href="/leccion/{{ p.concept }}">{{ c.lessons[p.concept].title }}</a><span class="small muted">{{ p.reasons[0] }}</span></li>{% endfor %}</ul>
+<a class="small" href="/leaks">Ver panel y plan semanal →</a></div>
+{% endif %}
 <h2>Habilidades</h2>
 <div class="box">{{ radar|safe }}<p class="small muted">Precisión en tus últimos 100 ejercicios por habilidad (sin contar el diagnóstico).</p></div>
 {% if summ %}
