@@ -4,3 +4,8 @@
 </p>
 {%- endmacro %}
 {% macro bar(frac) -%}<div class="bar"><span style="width:{{ ((frac or 0) * 100)|round|int }}%"></span></div>{%- endmacro %}
+
+{% macro scale(name, label, lo, hi, value=None, required=True) -%}
+<div class="full"><label>{{ label }} <span class="muted">(1 = {{ lo }} · 5 = {{ hi }})</span></label>
+<div class="scale">{% for i in range(1, 6) %}<input type="radio" id="{{ name }}{{ i }}" name="{{ name }}" value="{{ i }}" {{ 'checked' if value == i }} {{ 'required' if required }}><label for="{{ name }}{{ i }}">{{ i }}</label>{% endfor %}</div></div>
+{%- endmacro %}

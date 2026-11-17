@@ -14,13 +14,13 @@ from fastapi.templating import Jinja2Templates
 from sqlmodel import Session as DB
 from sqlmodel import select
 
-from . import drills, progress
+from . import drills, mental, progress, review
 from .charts import line_chart, radar
 from .content import get_content, pos_label
 from .core.cards import fmt_card
 from .core.stats import SessionData, bankroll_curve, buyins, summarize
 from .db import get_db, get_engine, init_db
-from .models import Attempt, Run, Session
+from .models import Attempt, MentalCheckin, Run, Session, SrsCard
 
 BASE = Path(__file__).resolve().parent
 
@@ -62,7 +62,8 @@ def _now_ms() -> int:
 
 
 def _record(db: DB, q: drills.Question, answer: str, ok: bool, issued: int | None,
-            mode: str, run_id: str | None = None) -> None:
+            mode: str, run_id: str | None = None, card_id: int | None = None):
+    """Guarda el intento y actualiza la repetición espaciada. Devuelve la tarjeta SRS si cambió."""
     ms = None
     if issued:
         ms = max(0, min(_now_ms() - issued, 30 * 60 * 1000))
@@ -70,6 +71,7 @@ def _record(db: DB, q: drills.Question, answer: str, ok: bool, issued: int | Non
                    seed=q.seed, user_answer=answer, correct_answer=q.answer, correct=ok,
                    ms_taken=ms, mode=mode, run_id=run_id))
     db.commit()
+    return review.on_answer(db, q, ok, ms, card_id)
 
 
 # ---------------- Hoy ----------------
@@ -84,7 +86,9 @@ def home(request: Request, db: DB = Depends(get_db)):
     return render(request, "home.html",
                   rec=progress.recommendation(db, c), level=lvl, gate=progress.gate(db, lvl, c),
                   radar=radar({k: v[0] for k, v in scores.items()}, drills.SKILL_LABEL),
-                  scores=scores, summ=summ)
+                  scores=scores, summ=summ, due=review.due_count(db),
+                  checkin_today=db.exec(select(MentalCheckin).where(
+                      MentalCheckin.date == date.today().isoformat(), MentalCheckin.phase == "pre")).first())
 
 
 # ---------------- Diagnóstico y exámenes ----------------
@@ -222,21 +226,26 @@ def practice(request: Request, level: int | None = None, concept: str | None = N
         lvl = level
     if not progress.is_open(db, lvl):
         return RedirectResponse("/ruta", status_code=303)
-    try:
-        t = drills.pick(random.Random(), level=level, concept=concept, c=c)
-    except LookupError:
-        return render(request, "empty.html", level=lvl)
-    q = drills.generate(t, drills.new_seed(), c)
+    rng = random.Random()
+    card = review.maybe_review_in_practice(db, rng, lvl if not concept else None, concept)
+    if card:
+        q = review.card_question(card)
+    else:
+        try:
+            t = drills.pick(rng, level=level, concept=concept, c=c)
+        except LookupError:
+            return render(request, "empty.html", level=lvl)
+        q = drills.generate(t, drills.new_seed(), c)
     return render(request, "question.html", q=q, action="/practicar", issued=_now_ms(),
                   filters=_filters(level, concept, timer), level=level, concept=concept,
-                  timer=timer, feedback=None, gate=progress.gate(db, lvl, c))
+                  timer=timer, feedback=None, gate=progress.gate(db, lvl, c), card=card)
 
 
 @app.post("/practicar", response_class=HTMLResponse)
 def practice_answer(request: Request, drill_type: str = Form(...), seed: int = Form(...),
                     answer: str = Form(...), issued: int | None = Form(None),
                     level: int | None = Form(None), concept: str | None = Form(None),
-                    timer: int = Form(0), db: DB = Depends(get_db)):
+                    timer: int = Form(0), card_id: int | None = Form(None), db: DB = Depends(get_db)):
     c = get_content()
     try:
         q, ok = drills.grade(drill_type, seed, answer)
@@ -244,11 +253,49 @@ def practice_answer(request: Request, drill_type: str = Form(...), seed: int = F
         raise HTTPException(400, "Ejercicio desconocido")
     if not progress.is_open(db, q.level):
         return RedirectResponse("/ruta", status_code=303)
-    _record(db, q, answer, ok, issued, "practice")
+    card = _record(db, q, answer, ok, issued, "review" if card_id else "practice", card_id=card_id)
     lesson = c.lessons.get(q.concept_id)
     return render(request, "question.html", q=q, action=None, feedback={"ok": ok, "answer": answer},
                   lesson=lesson, filters=_filters(level, concept or None, timer), level=level,
-                  concept=concept, timer=timer, gate=progress.gate(db, q.level, c))
+                  concept=concept, timer=timer, gate=progress.gate(db, q.level, c),
+                  card=card if card_id else None, srs=_srs_note(card, ok))
+
+
+def _srs_note(card, ok: bool) -> str | None:
+    if card is None:
+        return None
+    if not ok:
+        return "Guardado para repaso: esta situación vuelve en unos 10 minutos y luego con intervalos crecientes."
+    d = card.interval
+    return f"Repaso superado. Próximo repaso en {d} día{'s' if d != 1 else ''}."
+
+
+# ---------------- Repaso espaciado ----------------
+
+@app.get("/repasar", response_class=HTMLResponse)
+def review_page(request: Request, db: DB = Depends(get_db)):
+    card = review.next_due(db)
+    if not card:
+        nxt = review.next_scheduled(db)
+        total = db.exec(select(SrsCard)).all()
+        return render(request, "repasar_vacio.html", nxt=nxt, total=len(total))
+    q = review.card_question(card)
+    return render(request, "question.html", q=q, action="/repasar", issued=_now_ms(), feedback=None,
+                  card=card, due=review.due_count(db), review_mode=True)
+
+
+@app.post("/repasar", response_class=HTMLResponse)
+def review_answer(request: Request, card_id: int = Form(...), drill_type: str = Form(...), seed: int = Form(...),
+                  answer: str = Form(...), issued: int | None = Form(None), db: DB = Depends(get_db)):
+    c = get_content()
+    card = db.get(SrsCard, card_id)
+    if not card or card.drill_type != drill_type:
+        raise HTTPException(400, "Tarjeta inválida")
+    q, ok = drills.grade(drill_type, seed, answer)
+    card = _record(db, q, answer, ok, issued, "review", card_id=card_id)
+    return render(request, "question.html", q=q, action=None, feedback={"ok": ok, "answer": answer},
+                  lesson=c.lessons.get(q.concept_id), card=card, review_mode=True,
+                  due=review.due_count(db), srs=_srs_note(card, ok), next_href="/repasar")
 
 
 # ---------------- Sesiones en vivo ----------------
@@ -287,13 +334,62 @@ def sessions_page(request: Request, db: DB = Depends(get_db)):
 @app.post("/sesiones")
 def sessions_add(date_: str = Form(..., alias="date"), stakes: str = Form(...), hours: float = Form(...),
                  buy_in: float = Form(...), cash_out: float = Form(...), location: str = Form(""),
-                 notes: str = Form(""), db: DB = Depends(get_db)):
+                 notes: str = Form(""), post_tilt: int | None = Form(None), post_energy: int | None = Form(None),
+                 post_focus: int | None = Form(None), db: DB = Depends(get_db)):
     if hours <= 0 or hours > 48 or buy_in < 0 or cash_out < 0:
         raise HTTPException(400, "Revisa horas y montos")
-    db.add(Session(date=date_, stakes=stakes.strip(), bb=_parse_stakes(stakes), hours=hours,
-                   buy_in=buy_in, cash_out=cash_out, location=location.strip(), notes=notes.strip()))
+    s = Session(date=date_, stakes=stakes.strip(), bb=_parse_stakes(stakes), hours=hours,
+                buy_in=buy_in, cash_out=cash_out, location=location.strip(), notes=notes.strip())
+    db.add(s)
     db.commit()
+    db.refresh(s)
+    mental.link_pending_pre(db, s)
+    post = (post_tilt, post_energy, post_focus)
+    if all(v is not None for v in post):
+        _check_scale(*post)
+        db.add(MentalCheckin(date=date_, phase="post", tilt=post_tilt, energy=post_energy,
+                             focus=post_focus, session_id=s.id))
+    db.commit()
+    if all(v is not None for v in post):
+        return RedirectResponse(f"/mental?post={s.id}", status_code=303)
     return RedirectResponse("/sesiones", status_code=303)
+
+
+def _check_scale(*vals: int) -> None:
+    if any(not 1 <= v <= 5 for v in vals):
+        raise HTTPException(400, "Los valores van de 1 a 5")
+
+
+# ---------------- Check-in mental ----------------
+
+@app.get("/checkin", response_class=HTMLResponse)
+def checkin_page(request: Request):
+    return render(request, "checkin.html", tips=None)
+
+
+@app.post("/checkin", response_class=HTMLResponse)
+def checkin_save(request: Request, tilt: int = Form(...), energy: int = Form(...), focus: int = Form(...),
+                 note: str = Form(""), db: DB = Depends(get_db)):
+    _check_scale(tilt, energy, focus)
+    db.add(MentalCheckin(date=date.today().isoformat(), phase="pre", tilt=tilt, energy=energy,
+                         focus=focus, note=note.strip()))
+    db.commit()
+    tips = mental.advice("pre", tilt, energy, focus, progress.get_setting(db, "stop_loss_bi"))
+    return render(request, "checkin.html", tips=tips, vals=(tilt, energy, focus))
+
+
+@app.get("/mental", response_class=HTMLResponse)
+def mental_page(request: Request, post: int | None = None, db: DB = Depends(get_db)):
+    tips = None
+    if post:
+        pc = db.exec(select(MentalCheckin).where(MentalCheckin.session_id == post,
+                                                 MentalCheckin.phase == "post")).first()
+        if pc:
+            tips = mental.advice("post", pc.tilt, pc.energy, pc.focus, None)
+    history = db.exec(select(MentalCheckin).order_by(MentalCheckin.ts.desc()).limit(20)).all()
+    sessions = {s.id: s for s in db.exec(select(Session)).all()}
+    return render(request, "mental.html", tips=tips, corr=mental.correlations(db), history=history,
+                  sessions=sessions, metrics=mental.METRICS, strength=mental.strength_label)
 
 
 @app.post("/sesiones/{sid}/borrar")

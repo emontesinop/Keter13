@@ -59,3 +59,33 @@ class Session(SQLModel, table=True):
 class Setting(SQLModel, table=True):
     key: str = Field(primary_key=True)
     value: str
+
+
+class SrsCard(SQLModel, table=True):
+    """Tarjeta de repaso: nace de un error. Una por tipo de ejercicio (plantilla)."""
+    id: int | None = Field(default=None, primary_key=True)
+    drill_type: str = Field(index=True, unique=True)
+    level: int = Field(index=True)
+    skill: str
+    concept_id: str = Field(index=True)
+    seed: int                          # situación exacta del último error
+    show_exact: bool = True            # el primer repaso repite esa situación
+    easiness: float = 2.5
+    interval: int = 0
+    repetitions: int = 0
+    lapses: int = 0
+    due: datetime = Field(default_factory=_utcnow, index=True)
+    last_reviewed: datetime | None = None
+    created: datetime = Field(default_factory=_utcnow)
+
+
+class MentalCheckin(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    ts: datetime = Field(default_factory=_utcnow)
+    date: str = Field(index=True)
+    phase: str                         # pre | post
+    tilt: int                          # 1 calma … 5 tilt fuerte
+    energy: int                        # 1 agotado … 5 lleno
+    focus: int                         # 1 disperso … 5 enfocado
+    note: str = ""
+    session_id: int | None = Field(default=None, index=True)

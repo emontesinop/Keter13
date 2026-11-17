@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block body %}
+<p class="small"><a href="/sesiones">← Sesiones</a></p>
+<h1>Juego mental</h1>
+{% if tips %}<div class="box">{% for t in tips %}<p>{{ t }}</p>{% endfor %}</div>{% endif %}
+<h2>Estado vs. resultados</h2>
+{% set n = corr[0].n if corr else 0 %}
+<p class="small muted">Correlación entre tu check-in y tu bb/h en cada sesión.
+{% if n < 10 %}Con {{ n }} {{ 'sesión vinculada' if n == 1 else 'sesiones vinculadas' }}, la varianza domina: no saques conclusiones hasta tener al menos 10-20.{% endif %}</p>
+{% for phase in ('pre', 'post') %}
+<div class="box">
+  <b>{{ 'Antes de jugar' if phase == 'pre' else 'Al terminar' }}</b>
+  <ul class="list">
+  {% for x in corr if x.phase == phase %}
+    <li><div class="row"><span>{{ metrics[x.metric] }}</span><span class="small">{% if x.r is not none %}r = {{ x.r|num(2) }} · {{ strength(x.r) }}{% else %}<span class="muted">{{ strength(x.r) }} (n={{ x.n }})</span>{% endif %}</span></div>
+    {% if x.n_high or x.n_low %}<p class="small muted" style="margin:2px 0 0">Alto (4-5): {{ x.high_bbh|num }} bb/h (n={{ x.n_high }}) · Bajo (1-2): {{ x.low_bbh|num }} bb/h (n={{ x.n_low }})</p>{% endif %}</li>
+  {% endfor %}
+  </ul>
+</div>
+{% endfor %}
+<p class="note">Una correlación no prueba la causa: perder también puede subir el tilt de salida. Lo útil es detectar patrones, como «con energía ≤ 2 pierdo», y convertirlos en reglas para no jugar.</p>
+{% if history %}
+<h2>Historial</h2>
+<div class="box"><ul class="list">
+{% for h in history %}
+  <li class="row small"><span>{{ h.date }} · {{ 'pre' if h.phase == 'pre' else 'post' }}{% if h.session_id in sessions %} · {{ (sessions[h.session_id].cash_out - sessions[h.session_id].buy_in)|money }}{% endif %}</span>
+  <span class="muted">T{{ h.tilt }} E{{ h.energy }} F{{ h.focus }}</span></li>
+{% endfor %}</ul></div>
+{% endif %}
+{% endblock %}

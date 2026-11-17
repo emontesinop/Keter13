@@ -16,6 +16,7 @@ from .content import Content, get_content
 from .models import Attempt, LevelProgress, Run, Setting
 
 MAX_LEVEL = 5
+TRAINING_MODES = ("practice", "review")  # cuentan para el gate
 
 
 # ---------- niveles ----------
@@ -56,7 +57,7 @@ class Gate:
 def gate(db: DB, level: int, c: Content | None = None) -> Gate:
     c = c or get_content()
     g = c.config["gate"]
-    rows = db.exec(select(Attempt).where(Attempt.level == level, Attempt.mode == "practice")
+    rows = db.exec(select(Attempt).where(Attempt.level == level, Attempt.mode.in_(TRAINING_MODES))
                    .order_by(Attempt.ts.desc(), Attempt.id.desc()).limit(g["window"])).all()
     acc = sum(r.correct for r in rows) / len(rows) if rows else None
     status = level_status(db, level)
@@ -215,7 +216,7 @@ def skill_scores(db: DB, last: int = 100) -> dict:
 
 
 def concept_accuracy(db: DB, level: int, last: int = 30, min_n: int = 5) -> list:
-    rows = db.exec(select(Attempt).where(Attempt.level == level, Attempt.mode == "practice")
+    rows = db.exec(select(Attempt).where(Attempt.level == level, Attempt.mode.in_(TRAINING_MODES))
                    .order_by(Attempt.id.desc()).limit(300)).all()
     per = defaultdict(list)
     for r in rows:
@@ -237,6 +238,12 @@ def recommendation(db: DB, c: Content | None = None) -> Recommendation:
     if not get_setting(db, "diagnostic_done"):
         return Recommendation("Empieza por el diagnóstico (unos 10 min). Te ubica en tu nivel y detecta tus puntos débiles.",
                               "/diagnostico", "Hacer diagnóstico")
+    from .review import due_count
+    due = due_count(db)
+    if due >= 3:
+        return Recommendation(f"Hoy primero: {due} repasos pendientes (≈ {max(2, due // 2)} min). "
+                              "Son situaciones en las que fallaste; volver a ellas a tiempo es lo que fija el concepto.",
+                              "/repasar", "Repasar")
     lvl = current_level(db)
     g = gate(db, lvl, c)
     if not g.has_content:

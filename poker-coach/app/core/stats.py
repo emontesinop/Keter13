@@ -96,3 +96,17 @@ def summarize(sessions: list[SessionData], initial_bankroll: float = 0.0) -> Sum
 
 def buyins(bankroll: float, bb: float, depth_bb: int = 100) -> float:
     return bankroll / (bb * depth_bb)
+
+
+def pearson(xs: list[float], ys: list[float]) -> float | None:
+    """Correlación de Pearson. None si hay < 3 puntos o varianza cero."""
+    n = len(xs)
+    if n != len(ys) or n < 3:
+        return None
+    mx, my = sum(xs) / n, sum(ys) / n
+    sxx = sum((x - mx) ** 2 for x in xs)
+    syy = sum((y - my) ** 2 for y in ys)
+    if sxx == 0 or syy == 0:
+        return None
+    sxy = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
+    return sxy / sqrt(sxx * syy)

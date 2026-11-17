@@ -1,6 +1,7 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% from "_macros.html" import scale %}
 {% block body %}
 <h1>Sesiones en vivo</h1>
+<div class="row" style="margin-bottom:12px"><a class="btn inline" href="/checkin">Check-in previo</a><a class="btn inline" href="/mental">Panel mental</a></div>
 {% if summ.n_sessions %}
 <div class="stats">
   <div class="stat"><b>{{ summ.profit|money }}</b><span>resultado</span></div>
@@ -31,6 +32,12 @@
   <div><label>Buy-in total $</label><input type="number" name="buy_in" step="1" min="0" inputmode="decimal" required></div>
   <div><label>Cash-out $</label><input type="number" name="cash_out" step="1" min="0" inputmode="decimal" required></div>
   <div class="full"><label>Notas</label><textarea name="notes" rows="2"></textarea></div>
+  <details class="full"><summary>Check-in de salida (opcional)</summary>
+  <div class="grid">
+  {{ scale('post_tilt', 'Tilt', 'calma', 'tilt fuerte', required=False) }}
+  {{ scale('post_energy', 'Energía', 'agotado', 'lleno', required=False) }}
+  {{ scale('post_focus', 'Enfoque', 'disperso', 'enfocado', required=False) }}
+  </div></details>
   <div class="full"><button class="btn primary">Guardar sesión</button></div>
 </form>
 </div>

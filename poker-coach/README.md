@@ -51,4 +51,9 @@ El diagnóstico puede convalidar un nivel: si aciertas ≥ 85 % de sus preguntas
 ## Estado
 
 - Iteración 1 (MVP): diagnóstico, niveles 0-1, drills de matemática y preflop, gate y examen, sesiones en vivo.
-- Próximas: repetición espaciada (SM-2), check-in mental, niveles 2-5, analizador de manos y panel de leaks.
+- Iteración 2: repetición espaciada SM-2 (`/repasar` e intercalada en la práctica), check-in mental pre/post y panel de correlación con resultados.
+- Próximas: niveles 2-3 (postflop, lectura), analizador de manos y panel de leaks, niveles 4-5.
+
+## Repetición espaciada
+
+Cada error crea (o reinicia) una tarjeta por tipo de ejercicio. La situación exacta vuelve en unos 10 minutos. Después vuelven variantes nuevas a 1, 6, 15… días según el algoritmo SM-2. La calidad de la respuesta sale del acierto y del tiempo: rápido = 5, normal = 4, lento = 3, error = 1. Los repasos cuentan para el gate del nivel.

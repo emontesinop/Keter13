@@ -57,3 +57,9 @@ nav.tabs a.on{color:var(--fg);font-weight:700}
 .note{font-size:.85rem;color:var(--muted);border-left:3px solid var(--line);padding-left:10px;margin:12px 0}
 .btn.ok:disabled,.btn.bad:disabled{opacity:1}
 details summary{cursor:pointer;font-weight:600;margin:20px 0 10px}
+.scale{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:4px}
+.scale input{position:absolute;opacity:0;pointer-events:none}
+.scale label{display:block;text-align:center;padding:10px 0;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg);font-weight:600;font-size:1rem;cursor:pointer}
+.scale input:checked+label{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.scale input:focus-visible+label{outline:2px solid var(--accent);outline-offset:2px}
+form.grid .grid{display:grid;grid-template-columns:1fr;gap:8px}

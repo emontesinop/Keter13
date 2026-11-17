@@ -50,3 +50,12 @@ def test_curve_and_drawdown():
 
 def test_buyins():
     assert buyins(4000, 2) == 20
+
+
+def test_pearson():
+    from app.core.stats import pearson
+    assert pearson([1, 2, 3, 4], [2, 4, 6, 8]) == pytest.approx(1.0)
+    assert pearson([1, 2, 3, 4], [8, 6, 4, 2]) == pytest.approx(-1.0)
+    assert pearson([1, 2, 3], [1, 3, 2]) == pytest.approx(0.5)
+    assert pearson([1, 2], [1, 2]) is None
+    assert pearson([3, 3, 3], [1, 2, 3]) is None

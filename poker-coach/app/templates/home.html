@@ -5,6 +5,8 @@
   <p>{{ rec.text }}</p>
   <a class="btn primary" href="{{ rec.href }}">{{ rec.cta }}</a>
 </div>
+{% if due %}<a class="btn" href="/repasar">↻ {{ due }} repaso{{ 's' if due != 1 }} pendiente{{ 's' if due != 1 }}</a>{% endif %}
+<a class="btn" href="{{ '/mental' if checkin_today else '/checkin' }}">{{ 'Check-in de hoy hecho · ver panel mental' if checkin_today else '¿Juegas hoy? Check-in previo (30 s)' }}</a>
 <div class="box">
   <div class="row"><b>Nivel {{ level }} · {{ c.level_name(level) }}</b><span class="tag">{{ {'unlocked':'en curso','placed':'convalidado','passed':'aprobado','locked':'bloqueado'}[gate.status] }}</span></div>
   {% if gate.has_content %}
