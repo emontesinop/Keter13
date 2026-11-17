@@ -149,7 +149,7 @@ def eval_preflop(h: HandInput, c: Content) -> list[Finding]:
                 out.append(_f(st, f"Abrir {hc} desde {pos_label(pos)}", verdict, "preflop_loose",
                               f"Fuera del rango de {pos_label(pos)} ({rtxt}). {where}", c))
             if size and a == "raise" and abs(size - s["open_bb"]) > 1.5:
-                out.append(_f(st, f"Open a {size:g} bb", "dudoso", "sizing_pre",
+                out.append(_f(st, f"Open a {_n(size)} bb", "dudoso", "sizing_pre",
                               f"El tamaño de referencia en vivo es {s['open_bb']} bb.", c))
         elif a == "fold":
             if in_range:
@@ -179,7 +179,7 @@ def eval_preflop(h: HandInput, c: Content) -> list[Finding]:
         if did == "iso" and size and h.limpers:
             target = s["open_bb"] + s["per_limper_bb"] * h.limpers + (s["oop_extra_bb"] if pos in ("SB", "BB") else 0)
             if abs(size - target) > 1.5:
-                out.append(_f(st, f"Iso a {size:g} bb", "dudoso", "sizing_pre",
+                out.append(_f(st, f"Iso a {_n(size)} bb", "dudoso", "sizing_pre",
                               f"Referencia: {target} bb ({s['open_bb']} + {s['per_limper_bb']} por limper).", c))
         return out
 
@@ -207,8 +207,8 @@ def eval_preflop(h: HandInput, c: Content) -> list[Finding]:
             x = s["threebet_ip_x" if kind == "IP" else "threebet_oop_x"]
             target = x * h.villain_size
             if abs(size - target) > 0.25 * target:
-                out.append(_f(st, f"3-bet a {size:g} bb", "dudoso", "sizing_pre",
-                              f"Referencia: {x}x el open = {target:g} bb.", c))
+                out.append(_f(st, f"3-bet a {_n(size)} bb", "dudoso", "sizing_pre",
+                              f"Referencia: {x}x el open = {_n(target)} bb.", c))
         return out
 
     if h.pre_situation == "vs_3bet":
@@ -305,7 +305,7 @@ def _eval_initiative(h, c, prof, name, board, R, a, pot, out):
                 kind = "valor" if sd_c.equity >= 0.5 else "farol"
                 out.append(_f(name, f"Apostar ({kind})", "ok", None, model, c))
                 if kind == "valor" and h.profile == "calling_station" and size < 0.45 * pot:
-                    out.append(_f(name, f"Tamaño {size:g} bb", "dudoso", "sizing_post",
+                    out.append(_f(name, f"Tamaño {_n(size)} bb", "dudoso", "sizing_post",
                                   "Contra una calling station apuesta más grande por valor.", c))
             else:
                 out.append(_f(name, "Apostar", "error", "bad_bluff", model + " Te pagan sobre todo manos mejores.", c))
@@ -326,7 +326,7 @@ def _eval_initiative(h, c, prof, name, board, R, a, pot, out):
             out.append(_f(name, "Farol contra calling station", "error", "bad_bluff",
                           f"Tienes {hd} con {outs} outs y el rival casi nunca foldea.", c))
         elif strong and h.profile == "calling_station" and size < 0.45 * pot:
-            out.append(_f(name, f"Apuesta pequeña ({size:g} bb)", "dudoso", "sizing_post",
+            out.append(_f(name, f"Apuesta pequeña ({_n(size)} bb)", "dudoso", "sizing_post",
                           f"Tienes {hd}: contra quien paga, apuesta 2/3 o más.", c))
         else:
             out.append(_f(name, f"Apostar con {hd}", "ok", None,
