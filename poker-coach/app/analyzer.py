@@ -68,6 +68,11 @@ class Finding:
     concept_id: str | None = None
 
 
+def _n(x: float) -> str:
+    """Número corto con coma decimal: 61.5 → '61,5'."""
+    return f"{x:g}".replace(".", ",")
+
+
 def _f(street, decision, verdict, leak, text, c: Content):
     concept = c.leaks[leak]["concept"] if leak else None
     return Finding(street, decision, verdict, leak, text, concept)
@@ -90,7 +95,7 @@ def _act_label(a: Action) -> str:
     names = {"fold": "fold", "check": "check", "limp": "limp", "call": "call", "bet": "apuesta",
              "raise": "subida", "allin": "all-in"}
     base = names.get(a.kind, a.kind)
-    return f"{base} {a.size:g} bb" if a.size and a.kind in ("bet", "raise", "allin", "limp", "call") else base
+    return f"{base} {_n(a.size)} bb" if a.size and a.kind in ("bet", "raise", "allin", "limp", "call") else base
 
 
 # ---------------- rango estimado del rival ----------------
@@ -248,7 +253,7 @@ def _eval_facing(h, c, prof, vdesc, name, board, R, a, v, to_call, pot_total, ra
     what = "sube" if raised else "apuesta"
     model = (f"Tienes {hd}{f' + {outs} outs' if outs >= 4 else ''}. Rival ({prof['label']}, {vdesc}): "
              f"{what} con su mejor {vf:.0%}{f' y farolea con su peor {bf:.0%}' if bf else ''}. "
-             f"Tu equity contra ese rango ≈ {eq:.0%}; pagar {to_call:g} bb para un bote de {pot_total + to_call:g} pide {req:.0%}.")
+             f"Tu equity contra ese rango ≈ {eq:.0%}; pagar {_n(to_call)} bb para un bote de {_n(pot_total + to_call)} pide {req:.0%}.")
     dec = f"{_act_label(a).capitalize()} ante {_act_label(v)}"
     if a.kind == "call":
         if eq >= req:
@@ -275,7 +280,7 @@ def _eval_facing(h, c, prof, vdesc, name, board, R, a, v, to_call, pot_total, ra
             out.append(_f(name, dec, verdict, "bad_bluff", model + " Subida sin equity suficiente: solo funciona si el rival foldea mucho.", c))
     if a.kind in ("call", "allin", "raise") and cls == 8 and spr_flop and spr_flop > 6 and "allin" in (a.kind, v.kind):
         out.append(_f(name, "Stack con una pareja", "dudoso", "spr_stackoff",
-                      f"SPR en el flop ≈ {spr_flop:.1f}. Con SPR alto, una pareja rara vez es favorita cuando entra todo el dinero.", c))
+                      f"SPR en el flop ≈ {_n(round(spr_flop, 1))}. Con SPR alto, una pareja rara vez es favorita cuando entra todo el dinero.", c))
     return betting
 
 
@@ -292,8 +297,8 @@ def _eval_initiative(h, c, prof, name, board, R, a, pot, out):
         ev_check = sd_all.equity * pot
         ev_bet = (folds * pot + sd_c.win * (pot + size) - sd_c.lose * size + sd_c.tie * pot / 2) / len(R)
         model = (f"Tienes {hd}. Rival ({prof['label']}, {len(R)} combos posibles a estas alturas) paga con su mejor "
-                 f"{prof['call']:.0%}. Equity contra lo que paga: {sd_c.equity:.0%}. EV(check) ≈ {ev_check:.1f} bb, "
-                 f"EV(apostar {size:g}) ≈ {ev_bet:.1f} bb.")
+                 f"{prof['call']:.0%}. Equity contra lo que paga: {sd_c.equity:.0%}. EV(check) ≈ {_n(round(ev_check, 1))} bb, "
+                 f"EV(apostar {_n(size)}) ≈ {_n(round(ev_bet, 1))} bb.")
         tol = 0.03 * pot
         if a.kind in ("bet", "allin"):
             if ev_bet >= ev_check - tol:

@@ -7,8 +7,8 @@ from datetime import date
 from pathlib import Path
 from urllib.parse import urlencode
 
-from fastapi import Depends, FastAPI, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session as DB
@@ -16,7 +16,7 @@ from sqlmodel import select
 
 import json
 
-from . import analyzer, drills, leaks, mental, progress, readiness, review
+from . import analyzer, backup, drills, leaks, mental, progress, readiness, review
 from .charts import line_chart, paths_chart, radar
 from .core.variance import hours_for_significance, prob_losing, risk_of_ruin, simulate
 from .content import POSITIONS_9 as POSITIONS_9_LIST
@@ -597,3 +597,46 @@ def variance_page(request: Request, wr: float | None = None, sd: float | None = 
     return render(request, "varianza.html", wr=wr, sd=sd, hours=hours, bankroll_bb=bankroll_bb, own=own, sim=sim,
                   chart=paths_chart(sim.paths, wr * hours), p_loss_theory=prob_losing(wr, sd, hours),
                   ror=risk_of_ruin(wr, sd, bankroll_bb), h_sig=hours_for_significance(wr, sd))
+
+
+# ---------------- Datos: exportar / importar ----------------
+
+@app.get("/datos", response_class=HTMLResponse)
+def data_page(request: Request, db: DB = Depends(get_db)):
+    counts = {name: len(db.exec(select(model)).all()) for name, model in backup.TABLES.items()}
+    return render(request, "datos.html", counts=counts, msg=None, error=None)
+
+
+@app.get("/datos/exportar")
+def data_export(db: DB = Depends(get_db)):
+    fname = f"poker-coach-{date.today().isoformat()}.json"
+    return JSONResponse(backup.export_data(db), headers={"Content-Disposition": f'attachment; filename="{fname}"'})
+
+
+@app.get("/datos/sesiones.csv")
+def data_sessions_csv(db: DB = Depends(get_db)):
+    return Response(backup.sessions_csv(db), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": 'attachment; filename="sesiones.csv"'})
+
+
+@app.post("/datos/importar", response_class=HTMLResponse)
+async def data_import(request: Request, archivo: UploadFile = File(...), confirmar: str = Form(""),
+                      db: DB = Depends(get_db)):
+    def page(msg=None, error=None):
+        counts = {name: len(db.exec(select(model)).all()) for name, model in backup.TABLES.items()}
+        return render(request, "datos.html", counts=counts, msg=msg, error=error)
+    if confirmar != "si":
+        return page(error="Marca la casilla de confirmación: importar reemplaza todos tus datos actuales.")
+    raw = await archivo.read()
+    if len(raw) > 50 * 1024 * 1024:
+        return page(error="Archivo demasiado grande.")
+    try:
+        data = json.loads(raw.decode("utf-8"))
+        n = backup.import_data(db, data)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return page(error="El archivo no es un JSON válido.")
+    except backup.BackupError as e:
+        return page(error=str(e))
+    progress.ensure_levels(db)
+    return page(msg=f"Importado: {sum(n.values())} registros ({n['sessions']} sesiones, {n['hands']} manos, "
+                    f"{n['attempts']} ejercicios).")

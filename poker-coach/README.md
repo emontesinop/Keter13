@@ -56,6 +56,10 @@ El diagnóstico puede convalidar un nivel: si aciertas ≥ 85 % de sus preguntas
 - Iteración 4: analizador de manos (`/manos`) y panel de leaks con plan semanal (`/leaks`).
 - Iteración 5: nivel 4 (explotación en vivo: perfiles, ajustes, tells), nivel 5 (bankroll, varianza, tilt, stop-loss), criterio «listo para jugar con dinero» (`/listo`) y simulador de varianza (`/varianza`).
 
+## Tus datos
+
+En `/datos` puedes exportar una copia completa en JSON, que permite volver a importarla y reemplaza todos los datos, y tus sesiones en CSV para abrirlas en una hoja de cálculo. Todo se guarda localmente en `data/poker.db`.
+
 ## Listo para jugar con dinero
 
 Se cumple con tres condiciones:
@@ -67,11 +71,11 @@ Las reglas de subir y bajar de límite y la escalera de límites están en `cont
 
 ## Analizador de manos
 
-Formulario rápido con preflop más una decisión tuya por calle. El preflop se compara con las tablas de `content/ranges`. En el postflop, el rango del rival se estima a partir de su acción preflop (`population.yaml`, `vs_open.yaml`) y de su perfil (`profiles.yaml`). Con eso, treys calcula tu equity contra su rango de apuesta o el EV de apostar o pasar en el river. Cada error o decisión dudosa se etiqueta con un leak de `content/leaks.yaml`, que enlaza a su lección. El panel de leaks junta esos errores con los de los ejercicios y propone un plan de 7 días.
+Formulario rápido con preflop y hasta dos decisiones tuyas por calle (apuesto → me suben → pago). Los tamaños son el total puesto en la calle. El preflop se compara con las tablas de `content/ranges`. En el postflop, el rango del rival se estima a partir de su acción preflop (`population.yaml`, `vs_open.yaml`) y de su perfil (`profiles.yaml`). Con eso, treys calcula tu equity contra su rango de apuesta o el EV de apostar o pasar en el river. Cada error o decisión dudosa se etiqueta con un leak de `content/leaks.yaml`, que enlaza a su lección. El panel de leaks junta esos errores con los de los ejercicios y propone un plan de 7 días.
 
 ## Cómo se calculan las respuestas postflop
 
-No hay solver. Cada spot postflop usa un **modelo explícito del rival**: su rango de call preflop de `content/ranges` más un perfil (`app/drills/postflop.py`) que fija qué fracción paga, apuesta por valor o farolea. Con ese modelo, treys calcula de forma exacta la equity en el river y el EV de cada opción. La explicación de cada ejercicio muestra el modelo y los números.
+No hay solver. Cada spot postflop usa un **modelo explícito del rival**: su rango de call preflop de `content/ranges` más un perfil (`app/drills/postflop.py`) que fija qué fracción paga, apuesta por valor o farolea. Con ese modelo, treys calcula de forma exacta la equity en el river y el EV de cada opción. En los spots de river el rango de la BB se estrecha según la línea (check-check, apuesta en flop, apuestas en flop y turn): al pagar una apuesta solo sigue con pareja o mejor hecha con sus cartas, o con proyecto (al menos 4 outs en el flop y 8 en el turn). La explicación de cada ejercicio muestra el modelo y los números.
 
 ## Repetición espaciada
 
