@@ -1,0 +1,18 @@
+- level: 0
+  name: Fundamentos
+  summary: Rankings, posiciones, pot odds, outs, EV y equity.
+- level: 1
+  name: Preflop
+  summary: Rangos de apertura, 3-bet/4-bet, limpers y tamaños en vivo.
+- level: 2
+  name: Postflop
+  summary: Textura, c-bet, SPR, value vs farol, MDF y sizing.
+- level: 3
+  name: Lectura de manos
+  summary: Estrechar rangos calle por calle, blockers y combos.
+- level: 4
+  name: Explotación en vivo
+  summary: Perfiles de rival, tells básicos y ajustes.
+- level: 5
+  name: Mental y gestión
+  summary: Bankroll, varianza, tilt y cuándo subir o bajar.

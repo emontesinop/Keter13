@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b6e4f">
+<title>{% block title %}Poker Coach{% endblock %}</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<main>{% block body %}{% endblock %}</main>
+{% set p = request.url.path %}
+<nav class="tabs">
+  <a href="/" class="{{ 'on' if p == '/' }}">Hoy</a>
+  <a href="/ruta" class="{{ 'on' if p.startswith('/ruta') or p.startswith('/nivel') or p.startswith('/leccion') }}">Ruta</a>
+  <a href="/practicar" class="{{ 'on' if p.startswith('/practicar') or p.startswith('/run') }}">Practicar</a>
+  <a href="/manos" class="{{ 'on' if p.startswith('/manos') or p.startswith('/leaks') }}">Manos</a>
+  <a href="/sesiones" class="{{ 'on' if p.startswith('/sesiones') or p.startswith('/mental') or p.startswith('/checkin') }}">Sesiones</a>
+</nav>
+</body>
+</html>

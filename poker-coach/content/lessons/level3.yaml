@@ -1,0 +1,61 @@
+- id: l3_ranges
+  level: 3
+  title: Estrechar rangos calle por calle
+  concept: |
+    Asigna al rival un rango preflop según su posición, su acción y su perfil.
+    En cada calle elimina las manos que habrían jugado de otra forma y pondera las que encajan con la acción.
+    Al llegar al river tienes una lista de combos, no una corazonada. Cuéntalos y decide.
+    Los jugadores pasivos en vivo con raise o check-raise suelen tener manos fuertes. Créeles.
+  example: "Un jugador pasivo paga preflop, paga el flop en K♠ 9♦ 4♣ y sube el turn 2♥: su rango son sets y dobles parejas, rara vez un farol."
+  sources:
+    - id: miller_read
+      idea: Proceso sistemático de lectura por calles.
+    - id: janda
+      idea: Rangos por acción y su composición.
+  drills: [range_vs_hand]
+
+- id: l3_combos
+  level: 3
+  title: Contar combos con cartas visibles
+  concept: |
+    Par sin cartas visibles: 6 combos. Con una carta en la mesa: 3. Con dos: 1.
+    Mano no pareada: cartas vivas de un rango × cartas vivas del otro. Por ejemplo, AK en un board con A = 3 × 4 = 12.
+    Las cartas de tu mano también cuentan como visibles.
+  example: "Board K♠ 7♦ 2♣: KK = 3 combos, 77 = 3, K7 = 3 × 3 = 9. Si tú tienes K♥, KK baja a 1 combo."
+  sources:
+    - id: janda
+      idea: Conteo de combinaciones para valorar rangos.
+    - id: miller_read
+      idea: Contar combos como herramienta práctica.
+  drills: [combos]
+
+- id: l3_blockers
+  level: 3
+  title: Blockers
+  concept: |
+    Un blocker es una carta tuya que reduce los combos del rival.
+    Para farolear conviene bloquear su valor (p. ej. el A del palo del color) y no sus faroles.
+    Para pagar conviene bloquear sus faroles y no su valor.
+    El efecto suele ser pequeño: úsalo para desempatar decisiones cerradas, no para justificar locuras.
+  example: "Board con tres corazones: el A♥ bloquea el color al nuts. Es un candidato a farol en el river si no tienes showdown."
+  sources:
+    - id: acevedo
+      idea: Selección de faroles por blockers según solvers.
+    - id: brokos
+      idea: Cómo afectan los blockers a la composición del rango.
+  drills: [blockers]
+
+- id: l3_value_bluff
+  level: 3
+  title: Proporción valor:farol
+  concept: |
+    Contra una apuesta en el river, tu bluffcatcher gana solo a los faroles.
+    Equity = faroles ÷ (valor + faroles), en combos vivos. Compárala con las pot odds: medio bote → 25 %, bote → 33 %.
+    Si en su rango no caben faroles creíbles, foldea aunque tu mano «parezca buena».
+  example: "Valor 24 combos, faroles 4 → 14 %. Contra medio bote necesitas 25 %: fold."
+  sources:
+    - id: janda
+      idea: Relación valor:farol de equilibrio según el sizing.
+    - id: miller_1pct
+      idea: Rangos reales de la población en vivo, infra-faroleados.
+  drills: [value_bluff]

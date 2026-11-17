@@ -1,0 +1,48 @@
+- id: q2_multiway_cbet
+  level: 2
+  skill: postflop
+  concept: l2_cbet
+  prompt: "Abres y pagan 3 jugadores. Flop 9♥ 8♥ 6♣ y tienes A♣ K♦. ¿Qué es lo estándar?"
+  options: ["C-bet pequeña con todo el rango", "Check: multiway y board conectado, sin mano", "All-in", "C-bet del bote para proteger"]
+  answer: 1
+  explanation: "Multiway en un board que conecta con los que pagan: tu fold equity es mínima. Chequea y no regales fichas."
+- id: q2_small_dry
+  level: 2
+  skill: postflop
+  concept: l2_sizing
+  prompt: "Abriste desde CO y la BB pagó. Flop K♠ 7♦ 2♣. ¿Qué tamaño de c-bet encaja con una estrategia de rango?"
+  options: ["≈ 1/3 del bote", "Bote", "2 botes", "No apostar nunca"]
+  answer: 0
+  explanation: "Board seco donde tienes ventaja de rango: un tamaño pequeño consigue folds de mucho aire y paga poco."
+- id: q2_station_size
+  level: 2
+  skill: postflop
+  concept: l2_sizing
+  prompt: "River. Tienes top pair buen kicker contra una calling station. ¿Qué tamaño de valor?"
+  options: ["Pequeño, para que pague", "Grande (2/3–bote): paga igual con manos peores", "Check para inducir", "Depende de mi imagen"]
+  answer: 1
+  explanation: "Si paga con un rango amplio de manos peores sin importar el tamaño, cobra más."
+- id: q2_spr_commit
+  level: 2
+  skill: postflop
+  concept: l2_spr
+  prompt: "Bote 3-beteado, SPR ≈ 2. Tienes AK y el flop trae K-8-4. ¿Plan?"
+  options: ["Controlar el bote", "Jugar por todo el stack", "Foldear si apuestan", "Check-fold"]
+  answer: 1
+  explanation: "Con SPR bajo, top pair top kicker es una mano para meter el stack."
+- id: q2_live_river_raise
+  level: 2
+  skill: postflop
+  concept: l2_mdf
+  prompt: "En 1/2 en vivo, un jugador pasivo te sube en el river. Tienes top pair buen kicker. ¿Lo más rentable a largo plazo?"
+  options: ["Pagar siempre por la MDF", "Foldear casi siempre: sus subidas de river son casi siempre valor", "Resubir", "Pagar para ver"]
+  answer: 1
+  explanation: "La población pasiva en vivo casi nunca farolea con un raise en el river. Explota eso foldeando."
+- id: q2_texture_low
+  level: 2
+  skill: postflop
+  concept: l2_texture
+  prompt: "UTG abre y la BB paga. ¿Qué flop favorece más a la BB?"
+  options: ["A♠ K♦ 2♣", "K♥ Q♠ 7♦", "7♥ 6♥ 5♦", "A♥ A♦ 9♣"]
+  answer: 2
+  explanation: "Los flops bajos y conectados dan a la BB más dobles parejas, escaleras y proyectos. UTG tiene pocas manos ahí."

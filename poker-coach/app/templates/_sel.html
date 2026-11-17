@@ -1,0 +1,6 @@
+{% macro select(name, opts, value, cls='') -%}
+<select name="{{ name }}" class="{{ cls }}">{% for v, l in opts %}<option value="{{ v }}" {{ 'selected' if (value or '') == v }}>{{ l }}</option>{% endfor %}</select>
+{%- endmacro %}
+{% macro posselect(name, positions, value, blank=False) -%}
+<select name="{{ name }}">{% if blank %}<option value="">—</option>{% endif %}{% for p in positions %}<option value="{{ p }}" {{ 'selected' if value == p }}>{{ p|pos }}</option>{% endfor %}</select>
+{%- endmacro %}

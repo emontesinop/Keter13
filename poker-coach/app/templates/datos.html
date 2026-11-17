@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Tus datos</h1>
+<p class="small muted">Todo se guarda solo en tu computadora (<code>data/poker.db</code>). Exporta una copia de vez en cuando o antes de cambiar de equipo.</p>
+{% if msg %}<div class="box finding ok"><p style="margin:0">{{ msg }}</p></div>{% endif %}
+{% if error %}<div class="box finding error"><p style="margin:0;color:var(--bad)">{{ error }}</p></div>{% endif %}
+<div class="box">
+  <p class="small muted">{{ counts.attempts }} ejercicios · {{ counts.sessions }} sesiones · {{ counts.hands }} manos · {{ counts.srs_cards }} tarjetas de repaso · {{ counts.mental_checkins }} check-in{{ 's' if counts.mental_checkins != 1 }}</p>
+  <a class="btn primary" href="/datos/exportar">Exportar copia completa (JSON)</a>
+  <a class="btn" href="/datos/sesiones.csv">Exportar sesiones (CSV, para hoja de cálculo)</a>
+</div>
+<h2>Importar copia</h2>
+<form class="box" method="post" action="/datos/importar" enctype="multipart/form-data">
+  <input type="file" name="archivo" accept="application/json,.json" required>
+  <label style="display:flex;gap:8px;align-items:center;margin:12px 0;font-size:.9rem;color:var(--fg)">
+    <input type="checkbox" name="confirmar" value="si" style="width:auto"> Entiendo que esto reemplaza todos mis datos actuales
+  </label>
+  <button class="btn">Importar</button>
+</form>
+{% endblock %}

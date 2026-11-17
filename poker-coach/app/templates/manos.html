@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Manos</h1>
+<a class="btn primary" href="/manos/nueva">Analizar una mano</a>
+<a class="btn" href="/leaks">Panel de leaks y plan semanal</a>
+{% if rows %}
+<div class="box"><ul class="list">
+{% for h in rows %}
+  <li><a href="/manos/{{ h.id }}" style="text-decoration:none;color:inherit"><div class="row">
+    <span><b>{{ h.position|pos }}</b> {% for x in h.cards|batch(2) %}{{ x|join|card|safe }}{% endfor %} <span class="small muted">{{ h.date }}</span></span>
+    <span>{% if h.n_errors %}<span class="tag error-t">{{ h.n_errors }}</span>{% endif %}{% if h.n_doubts %} <span class="tag dudoso-t">{{ h.n_doubts }}</span>{% endif %}{% if not h.n_errors and not h.n_doubts %}<span class="tag ok-t">ok</span>{% endif %}</span>
+  </div></a></li>
+{% endfor %}</ul></div>
+{% else %}<p class="small muted">Aún no has analizado manos. Las mejores para analizar son las que perdiste con dudas y los botes grandes.</p>{% endif %}
+{% endblock %}

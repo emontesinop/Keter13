@@ -1,0 +1,68 @@
+# Bibliografía. Las lecciones citan por `id`. Las citas son atribuciones de
+# concepto (de dónde viene la idea), no transcripciones textuales.
+- id: sklansky_top
+  author: David Sklansky
+  title: The Theory of Poker
+  year: 1987
+- id: ssh
+  author: Sklansky, Miller y Malmuth
+  title: Small Stakes Hold'em
+  year: 2004
+  note: Escrito para Limit; sus principios contra rivales pasivos y que pagan de más se aplican a NL en vivo.
+- id: miller_1pct
+  author: Ed Miller
+  title: "Poker's 1%"
+  year: 2014
+- id: miller_course
+  author: Ed Miller
+  title: The Course
+  year: 2015
+- id: janda
+  author: Matthew Janda
+  title: Applications of No-Limit Hold'em
+  year: 2013
+- id: acevedo
+  author: Michael Acevedo
+  title: Modern Poker Theory
+  year: 2019
+- id: brokos
+  author: Andrew Brokos
+  title: Play Optimal Poker
+  year: 2019
+- id: tendler
+  author: Jared Tendler
+  title: The Mental Game of Poker
+  year: 2011
+- id: hanson
+  author: Bart Hanson
+  title: Crush Live Poker (contenido de entrenamiento de cash en vivo)
+- id: little
+  author: Jonathan Little
+  title: PokerCoaching.com (contenido de entrenamiento)
+- id: polk
+  author: Doug Polk
+  title: Upswing Poker (contenido de entrenamiento)
+- id: gordon
+  author: Phil Gordon
+  title: "Phil Gordon's Little Green Book"
+  year: 2005
+- id: rrop
+  author: Robert Ciaffone
+  title: "Robert's Rules of Poker"
+- id: fmm
+  author: Flynn, Mehta y Miller
+  title: "Professional No-Limit Hold'em: Volume I"
+  year: 2007
+  note: Introduce el concepto de SPR (stack-to-pot ratio) y el compromiso con el bote.
+- id: miller_read
+  author: Ed Miller
+  title: "How to Read Hands at No-Limit Hold'em"
+  year: 2012
+- id: caro
+  author: Mike Caro
+  title: "Caro's Book of Poker Tells"
+  year: 2003
+- id: elwood
+  author: Zachary Elwood
+  title: Reading Poker Tells
+  year: 2012

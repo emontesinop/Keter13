@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% from "_macros.html" import bar %}
+{% block body %}
+<p class="small"><a href="/ruta">← Ruta</a></p>
+<h1>Nivel {{ level }} · {{ c.level_name(level) }}</h1>
+{% if g.status == 'locked' %}
+<div class="box"><p>Bloqueado. Aprueba el nivel {{ level - 1 }} para abrirlo.</p></div>
+{% elif not g.has_content %}
+<div class="box"><p>El contenido de este nivel llega en próximas iteraciones.</p></div>
+{% else %}
+<div class="box">
+  {{ bar(g.count / g.window) }}
+  <p class="small muted">{{ g.count }}/{{ g.window }} ejercicios · precisión {{ g.accuracy|pct }} · necesitas ≥ {{ g.min_accuracy|pct }}</p>
+  <a class="btn primary" href="/practicar?level={{ level }}">Practicar nivel {{ level }}</a>
+  {% if g.exam_ready and g.status != 'passed' %}
+  <form method="post" action="/examen/{{ level }}"><button class="btn">Presentar examen ({{ c.config.gate.exam_size }} preguntas)</button></form>
+  {% elif g.status == 'passed' %}<p class="small muted">Nivel aprobado. Puedes seguir practicando.</p>
+  {% else %}<button class="btn" disabled>Examen: {% if g.remaining %}faltan {{ g.remaining }} ejercicios{% else %}sube tu precisión a {{ g.min_accuracy|pct }}{% endif %}</button>{% endif %}
+</div>
+<h2>Lecciones</h2>
+<div class="box"><ul class="list">
+{% for l in lessons %}
+  <li class="row"><a href="/leccion/{{ l.id }}">{{ l.title }}</a>
+  <span class="small muted">{% if l.id in acc %}{{ acc[l.id][0]|pct }} · {{ acc[l.id][1] }}{% endif %}</span></li>
+{% endfor %}</ul></div>
+{% endif %}
+{% endblock %}

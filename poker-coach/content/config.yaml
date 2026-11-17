@@ -1,0 +1,19 @@
+# Tamaños en vivo (editables). Se usan en drills y explicaciones.
+sizing:
+  open_bb: 5            # open sin limpers
+  per_limper_bb: 1      # +1 bb por cada limper
+  oop_extra_bb: 1       # +1 bb si aíslas desde las ciegas
+  threebet_ip_x: 3      # 3-bet en posición = 3x el open
+  threebet_oop_x: 4     # 3-bet fuera de posición = 4x el open
+gate:
+  window: 50            # últimos N ejercicios del nivel
+  min_accuracy: 0.85
+  exam_size: 20
+  exam_pass: 0.85
+bankroll:
+  min_buyins: 20          # por debajo: baja de límite
+  comfortable_buyins: 30  # para subir: 30 buy-ins del límite siguiente
+  buyin_bb: 100
+  ladder: ["1/2", "1/3", "2/5", "5/10"]   # escalera de límites (ciega grande tras la barra)
+variance:
+  default_sd_bb: 75       # desviación típica en cash en vivo (bb/h) si no tienes datos propios

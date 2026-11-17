@@ -1,0 +1,642 @@
+from __future__ import annotations
+
+import random
+import time
+from contextlib import asynccontextmanager
+from datetime import date
+from pathlib import Path
+from urllib.parse import urlencode
+
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from sqlmodel import Session as DB
+from sqlmodel import select
+
+import json
+
+from . import analyzer, backup, drills, leaks, mental, progress, readiness, review
+from .charts import line_chart, paths_chart, radar
+from .core.variance import hours_for_significance, prob_losing, risk_of_ruin, simulate
+from .content import POSITIONS_9 as POSITIONS_9_LIST
+from .content import get_content, pos_label
+from .core.cards import fmt_card
+from .core.stats import SessionData, bankroll_curve, buyins, summarize
+from .db import get_db, get_engine, init_db
+from .core.cards import CardError, parse_cards
+from .models import Attempt, Hand, HandFinding, MentalCheckin, Run, Session, SrsCard
+
+BASE = Path(__file__).resolve().parent
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    get_content()  # valida el contenido: si algo está mal, no arranca
+    init_db()
+    with DB(get_engine()) as db:
+        progress.ensure_levels(db)
+    yield
+
+
+app = FastAPI(title="Poker Coach", lifespan=lifespan)
+app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
+templates = Jinja2Templates(directory=BASE / "templates")
+
+
+def _card_html(c: str) -> str:
+    color = "red" if c[1] in "hd" else "black"
+    return f'<span class="card {color}">{fmt_card(c)}</span>'
+
+
+templates.env.filters["card"] = _card_html
+templates.env.filters["pos"] = pos_label
+templates.env.filters["pct"] = lambda x: "—" if x is None else f"{x * 100:.0f} %"
+templates.env.filters["money"] = lambda x: "—" if x is None else (("−" if x < 0 else "") + f"${abs(x):,.0f}".replace(",", " "))
+templates.env.filters["num"] = lambda x, d=1: "—" if x is None else f"{x:.{d}f}".replace(".", ",").replace("-", "−")
+templates.env.globals["skill_label"] = drills.SKILL_LABEL
+
+
+def render(request: Request, name: str, **ctx) -> HTMLResponse:
+    ctx.setdefault("c", get_content())
+    return templates.TemplateResponse(request, name, ctx)
+
+
+def _now_ms() -> int:
+    return int(time.time() * 1000)
+
+
+def _record(db: DB, q: drills.Question, answer: str, ok: bool, issued: int | None,
+            mode: str, run_id: str | None = None, card_id: int | None = None):
+    """Guarda el intento y actualiza la repetición espaciada. Devuelve la tarjeta SRS si cambió."""
+    ms = None
+    if issued:
+        ms = max(0, min(_now_ms() - issued, 30 * 60 * 1000))
+    db.add(Attempt(level=q.level, skill=q.skill, drill_type=q.drill_type, concept_id=q.concept_id,
+                   seed=q.seed, user_answer=answer, correct_answer=q.answer, correct=ok,
+                   ms_taken=ms, mode=mode, run_id=run_id))
+    db.commit()
+    return review.on_answer(db, q, ok, ms, card_id)
+
+
+# ---------------- Hoy ----------------
+
+@app.get("/", response_class=HTMLResponse)
+def home(request: Request, db: DB = Depends(get_db)):
+    c = get_content()
+    lvl = progress.current_level(db)
+    scores = progress.skill_scores(db)
+    sessions = db.exec(select(Session)).all()
+    summ = summarize([_sd(s) for s in sessions]) if sessions else None
+    return render(request, "home.html",
+                  rec=progress.recommendation(db, c), level=lvl, gate=progress.gate(db, lvl, c),
+                  radar=radar({k: v[0] for k, v in scores.items()}, drills.SKILL_LABEL),
+                  scores=scores, summ=summ, due=review.due_count(db), prios=leaks.priorities(db, c, top=2),
+                  ready=readiness.readiness(db, c),
+                  checkin_today=db.exec(select(MentalCheckin).where(
+                      MentalCheckin.date == date.today().isoformat(), MentalCheckin.phase == "pre")).first())
+
+
+# ---------------- Diagnóstico y exámenes ----------------
+
+@app.get("/diagnostico", response_class=HTMLResponse)
+def diagnostic_intro(request: Request, db: DB = Depends(get_db)):
+    last = progress.get_setting(db, "diagnostic_done")
+    n = len(progress.DIAGNOSTIC_PLAN) + sum(1 for q in get_content().questions.values() if q.get("diagnostic_only"))
+    return render(request, "diagnostic_intro.html", last=last, n=n)
+
+
+@app.post("/diagnostico")
+def diagnostic_start(db: DB = Depends(get_db)):
+    run = progress.create_diagnostic(db)
+    return RedirectResponse(f"/run/{run.id}", status_code=303)
+
+
+@app.post("/examen/{level}")
+def exam_start(level: int, db: DB = Depends(get_db)):
+    if not progress.gate(db, level).exam_ready:
+        raise HTTPException(403, "Aún no cumples el requisito para el examen de este nivel.")
+    run = progress.create_exam(db, level)
+    return RedirectResponse(f"/run/{run.id}", status_code=303)
+
+
+def _get_run(db: DB, run_id: str) -> Run:
+    run = db.get(Run, run_id)
+    if not run:
+        raise HTTPException(404, "No existe")
+    return run
+
+
+@app.get("/run/{run_id}")
+def run_next(run_id: str, db: DB = Depends(get_db)):
+    run = _get_run(db, run_id)
+    done = len(progress.run_attempts(db, run))
+    if done >= len(progress.run_plan(run)):
+        return RedirectResponse(f"/run/{run_id}/resultado", status_code=303)
+    return RedirectResponse(f"/run/{run_id}/{done}", status_code=303)
+
+
+@app.get("/run/{run_id}/resultado", response_class=HTMLResponse)
+def run_result(request: Request, run_id: str, db: DB = Depends(get_db)):
+    c = get_content()
+    run = _get_run(db, run_id)
+    atts = progress.run_attempts(db, run)
+    if len(atts) < len(progress.run_plan(run)):
+        return RedirectResponse(f"/run/{run_id}", status_code=303)
+    progress.finish_run(db, run, c)
+    wrong = [(a, drills.generate(a.drill_type, a.seed, c)) for a in atts if not a.correct]
+    ctx = dict(run=run, atts=atts, wrong=wrong)
+    if run.kind == "diagnostic":
+        ctx["res"] = progress.diagnostic_result(db, run, c)
+    else:
+        ctx["passed"] = run.score >= c.config["gate"]["exam_pass"]
+    return render(request, "run_result.html", **ctx)
+
+
+@app.get("/run/{run_id}/{i}", response_class=HTMLResponse)
+def run_question(request: Request, run_id: str, i: int, db: DB = Depends(get_db)):
+    run = _get_run(db, run_id)
+    plan = progress.run_plan(run)
+    done = len(progress.run_attempts(db, run))
+    if i != done or i >= len(plan):
+        return RedirectResponse(f"/run/{run_id}", status_code=303)
+    t, seed = plan[i]
+    q = drills.generate(t, seed)
+    return render(request, "question.html", q=q, action=f"/run/{run_id}/{i}", issued=_now_ms(),
+                  progress_txt=f"{i + 1} / {len(plan)}", run=run, feedback=None)
+
+
+@app.post("/run/{run_id}/{i}")
+def run_answer(run_id: str, i: int, answer: str = Form(...), issued: int | None = Form(None),
+               db: DB = Depends(get_db)):
+    run = _get_run(db, run_id)
+    plan = progress.run_plan(run)
+    if i == len(progress.run_attempts(db, run)) and i < len(plan):
+        t, seed = plan[i]
+        q, ok = drills.grade(t, seed, answer)
+        _record(db, q, answer, ok, issued, run.kind, run.id)
+    return RedirectResponse(f"/run/{run_id}", status_code=303)
+
+
+# ---------------- Ruta, niveles, lecciones ----------------
+
+@app.get("/ruta", response_class=HTMLResponse)
+def route_map(request: Request, db: DB = Depends(get_db)):
+    c = get_content()
+    gates = [progress.gate(db, l["level"], c) for l in c.levels]
+    return render(request, "ruta.html", gates=gates)
+
+
+@app.get("/nivel/{level}", response_class=HTMLResponse)
+def level_page(request: Request, level: int, db: DB = Depends(get_db)):
+    c = get_content()
+    if level < 0 or level > progress.MAX_LEVEL:
+        raise HTTPException(404)
+    g = progress.gate(db, level, c)
+    acc = {k: (a, n) for k, a, n in progress.concept_accuracy(db, level, min_n=1)}
+    return render(request, "nivel.html", level=level, g=g, lessons=c.lessons_for_level(level), acc=acc)
+
+
+@app.get("/leccion/{lesson_id}", response_class=HTMLResponse)
+def lesson_page(request: Request, lesson_id: str, db: DB = Depends(get_db)):
+    c = get_content()
+    lesson = c.lessons.get(lesson_id)
+    if not lesson:
+        raise HTTPException(404)
+    return render(request, "leccion.html", lesson=lesson, open=progress.is_open(db, lesson["level"]))
+
+
+@app.get("/fuentes", response_class=HTMLResponse)
+def sources_page(request: Request):
+    return render(request, "fuentes.html")
+
+
+# ---------------- Práctica ----------------
+
+def _filters(level: int | None, concept: str | None, timer: int) -> str:
+    q = {k: v for k, v in (("level", level), ("concept", concept), ("timer", timer or None)) if v is not None}
+    return urlencode(q)
+
+
+@app.get("/practicar", response_class=HTMLResponse)
+def practice(request: Request, level: int | None = None, concept: str | None = None, timer: int = 0,
+             db: DB = Depends(get_db)):
+    c = get_content()
+    if concept and concept not in c.lessons:
+        raise HTTPException(404)
+    if concept:
+        level = None
+        lvl = c.lessons[concept]["level"]
+    else:
+        level = progress.current_level(db) if level is None else level
+        lvl = level
+    if not progress.is_open(db, lvl):
+        return RedirectResponse("/ruta", status_code=303)
+    rng = random.Random()
+    card = review.maybe_review_in_practice(db, rng, lvl if not concept else None, concept)
+    if card:
+        q = review.card_question(card)
+    else:
+        try:
+            t = drills.pick(rng, level=level, concept=concept, c=c)
+        except LookupError:
+            return render(request, "empty.html", level=lvl)
+        q = drills.generate(t, drills.new_seed(), c)
+    return render(request, "question.html", q=q, action="/practicar", issued=_now_ms(),
+                  filters=_filters(level, concept, timer), level=level, concept=concept,
+                  timer=timer, feedback=None, gate=progress.gate(db, lvl, c), card=card)
+
+
+@app.post("/practicar", response_class=HTMLResponse)
+def practice_answer(request: Request, drill_type: str = Form(...), seed: int = Form(...),
+                    answer: str = Form(...), issued: int | None = Form(None),
+                    level: int | None = Form(None), concept: str | None = Form(None),
+                    timer: int = Form(0), card_id: int | None = Form(None), db: DB = Depends(get_db)):
+    c = get_content()
+    try:
+        q, ok = drills.grade(drill_type, seed, answer)
+    except KeyError:
+        raise HTTPException(400, "Ejercicio desconocido")
+    if not progress.is_open(db, q.level):
+        return RedirectResponse("/ruta", status_code=303)
+    card = _record(db, q, answer, ok, issued, "review" if card_id else "practice", card_id=card_id)
+    lesson = c.lessons.get(q.concept_id)
+    return render(request, "question.html", q=q, action=None, feedback={"ok": ok, "answer": answer},
+                  lesson=lesson, filters=_filters(level, concept or None, timer), level=level,
+                  concept=concept, timer=timer, gate=progress.gate(db, q.level, c),
+                  card=card if card_id else None, srs=_srs_note(card, ok))
+
+
+def _srs_note(card, ok: bool) -> str | None:
+    if card is None:
+        return None
+    if not ok:
+        return "Guardado para repaso: esta situación vuelve en unos 10 minutos y luego con intervalos crecientes."
+    d = card.interval
+    return f"Repaso superado. Próximo repaso en {d} día{'s' if d != 1 else ''}."
+
+
+# ---------------- Repaso espaciado ----------------
+
+@app.get("/repasar", response_class=HTMLResponse)
+def review_page(request: Request, db: DB = Depends(get_db)):
+    card = review.next_due(db)
+    if not card:
+        nxt = review.next_scheduled(db)
+        total = db.exec(select(SrsCard)).all()
+        return render(request, "repasar_vacio.html", nxt=nxt, total=len(total))
+    q = review.card_question(card)
+    return render(request, "question.html", q=q, action="/repasar", issued=_now_ms(), feedback=None,
+                  card=card, due=review.due_count(db), review_mode=True)
+
+
+@app.post("/repasar", response_class=HTMLResponse)
+def review_answer(request: Request, card_id: int = Form(...), drill_type: str = Form(...), seed: int = Form(...),
+                  answer: str = Form(...), issued: int | None = Form(None), db: DB = Depends(get_db)):
+    c = get_content()
+    card = db.get(SrsCard, card_id)
+    if not card or card.drill_type != drill_type:
+        raise HTTPException(400, "Tarjeta inválida")
+    q, ok = drills.grade(drill_type, seed, answer)
+    card = _record(db, q, answer, ok, issued, "review", card_id=card_id)
+    return render(request, "question.html", q=q, action=None, feedback={"ok": ok, "answer": answer},
+                  lesson=c.lessons.get(q.concept_id), card=card, review_mode=True,
+                  due=review.due_count(db), srs=_srs_note(card, ok), next_href="/repasar")
+
+
+# ---------------- Sesiones en vivo ----------------
+
+def _sd(s: Session) -> SessionData:
+    return SessionData(s.date, s.hours, s.buy_in, s.cash_out, s.bb)
+
+
+def _parse_stakes(stakes: str) -> float:
+    try:
+        bb = float(stakes.replace("$", "").split("/")[-1])
+    except ValueError:
+        raise HTTPException(400, "Límite inválido. Usa el formato 1/2, 1/3, 2/5…")
+    if bb <= 0:
+        raise HTTPException(400, "Límite inválido")
+    return bb
+
+
+@app.get("/sesiones", response_class=HTMLResponse)
+def sessions_page(request: Request, db: DB = Depends(get_db)):
+    c = get_content()
+    rows = db.exec(select(Session).order_by(Session.date.desc(), Session.id.desc())).all()
+    initial = float(progress.get_setting(db, "initial_bankroll", "0") or 0)
+    data = [_sd(s) for s in rows]
+    summ = summarize(data, initial)
+    curve = bankroll_curve(initial, data)
+    bankroll = curve[-1][1]
+    ref_bb = rows[0].bb if rows else 2.0
+    bi = buyins(bankroll, ref_bb, c.config["bankroll"]["buyin_bb"])
+    return render(request, "sesiones.html", rows=rows, summ=summ, chart=line_chart([v for _, v in curve]),
+                  initial=initial, bankroll=bankroll, bi=bi, ref_bb=ref_bb,
+                  stop_loss=progress.get_setting(db, "stop_loss_bi", ""),
+                  target=progress.get_setting(db, "target_stakes", ""),
+                  today=date.today().isoformat())
+
+
+@app.post("/sesiones")
+def sessions_add(date_: str = Form(..., alias="date"), stakes: str = Form(...), hours: float = Form(...),
+                 buy_in: float = Form(...), cash_out: float = Form(...), location: str = Form(""),
+                 notes: str = Form(""), post_tilt: int | None = Form(None), post_energy: int | None = Form(None),
+                 post_focus: int | None = Form(None), db: DB = Depends(get_db)):
+    if hours <= 0 or hours > 48 or buy_in < 0 or cash_out < 0:
+        raise HTTPException(400, "Revisa horas y montos")
+    s = Session(date=date_, stakes=stakes.strip(), bb=_parse_stakes(stakes), hours=hours,
+                buy_in=buy_in, cash_out=cash_out, location=location.strip(), notes=notes.strip())
+    db.add(s)
+    db.commit()
+    db.refresh(s)
+    mental.link_pending_pre(db, s)
+    post = (post_tilt, post_energy, post_focus)
+    if all(v is not None for v in post):
+        _check_scale(*post)
+        db.add(MentalCheckin(date=date_, phase="post", tilt=post_tilt, energy=post_energy,
+                             focus=post_focus, session_id=s.id))
+    db.commit()
+    if all(v is not None for v in post):
+        return RedirectResponse(f"/mental?post={s.id}", status_code=303)
+    return RedirectResponse("/sesiones", status_code=303)
+
+
+def _check_scale(*vals: int) -> None:
+    if any(not 1 <= v <= 5 for v in vals):
+        raise HTTPException(400, "Los valores van de 1 a 5")
+
+
+# ---------------- Check-in mental ----------------
+
+@app.get("/checkin", response_class=HTMLResponse)
+def checkin_page(request: Request):
+    return render(request, "checkin.html", tips=None)
+
+
+@app.post("/checkin", response_class=HTMLResponse)
+def checkin_save(request: Request, tilt: int = Form(...), energy: int = Form(...), focus: int = Form(...),
+                 note: str = Form(""), db: DB = Depends(get_db)):
+    _check_scale(tilt, energy, focus)
+    db.add(MentalCheckin(date=date.today().isoformat(), phase="pre", tilt=tilt, energy=energy,
+                         focus=focus, note=note.strip()))
+    db.commit()
+    tips = mental.advice("pre", tilt, energy, focus, progress.get_setting(db, "stop_loss_bi"))
+    return render(request, "checkin.html", tips=tips, vals=(tilt, energy, focus))
+
+
+@app.get("/mental", response_class=HTMLResponse)
+def mental_page(request: Request, post: int | None = None, db: DB = Depends(get_db)):
+    tips = None
+    if post:
+        pc = db.exec(select(MentalCheckin).where(MentalCheckin.session_id == post,
+                                                 MentalCheckin.phase == "post")).first()
+        if pc:
+            tips = mental.advice("post", pc.tilt, pc.energy, pc.focus, None)
+    history = db.exec(select(MentalCheckin).order_by(MentalCheckin.ts.desc()).limit(20)).all()
+    sessions = {s.id: s for s in db.exec(select(Session)).all()}
+    return render(request, "mental.html", tips=tips, corr=mental.correlations(db), history=history,
+                  sessions=sessions, metrics=mental.METRICS, strength=mental.strength_label)
+
+
+@app.post("/sesiones/{sid}/borrar")
+def sessions_delete(sid: int, db: DB = Depends(get_db)):
+    s = db.get(Session, sid)
+    if s:
+        db.delete(s)
+        db.commit()
+    return RedirectResponse("/sesiones", status_code=303)
+
+
+@app.post("/ajustes")
+def settings_save(initial_bankroll: float = Form(0), stop_loss_bi: str = Form(""), target_stakes: str = Form(""),
+                  db: DB = Depends(get_db)):
+    progress.set_setting(db, "initial_bankroll", str(max(0.0, initial_bankroll)))
+    progress.set_setting(db, "stop_loss_bi", stop_loss_bi.strip())
+    if target_stakes.strip():
+        _parse_stakes(target_stakes)
+    progress.set_setting(db, "target_stakes", target_stakes.strip())
+    return RedirectResponse("/sesiones", status_code=303)
+
+
+# ---------------- Analizador de manos ----------------
+
+PROFILE_ORDER = ["unknown", "nit", "regular", "calling_station", "lag", "maniac"]
+PRE_SITUATIONS = [("rfi", "Todos foldean hasta mí"), ("limpers", "Hay limpers delante"),
+                  ("vs_open", "Un rival abre (raise)"), ("vs_3bet", "Abrí y me hicieron 3-bet")]
+HERO_PRE = [("raise", "Subo / 3-bet / 4-bet"), ("call", "Pago"), ("limp", "Limp"), ("check", "Paso (BB)"),
+            ("fold", "Fold"), ("allin", "All-in")]
+VILLAIN_ACTS = [("", "—"), ("check", "Pasa"), ("bet", "Apuesta"), ("raise", "Sube"), ("allin", "All-in")]
+HERO_ACTS = [("", "—"), ("check", "Paso"), ("bet", "Apuesto"), ("call", "Pago"), ("raise", "Subo"),
+             ("fold", "Fold"), ("allin", "All-in")]
+VILLAIN_ACTS2 = [("", "—"), ("call", "Paga"), ("raise", "Sube"), ("allin", "All-in")]
+HERO_ACTS2 = [("", "—"), ("call", "Pago"), ("raise", "Resubo"), ("fold", "Fold"), ("allin", "All-in")]
+BOARD_N = {"flop": 3, "turn": 1, "river": 1}
+
+
+def _num(v: str | None) -> float | None:
+    if v is None or str(v).strip() == "":
+        return None
+    try:
+        return float(str(v).replace(",", "."))
+    except ValueError:
+        raise ValueError(f"Número inválido: '{v}'")
+
+
+def parse_hand_form(f: dict, c) -> tuple[analyzer.HandInput, dict]:
+    """Convierte el formulario en HandInput. Lanza ValueError con un mensaje legible."""
+    hero = parse_cards(f.get("cards", ""))
+    if len(hero) != 2:
+        raise ValueError("Tus cartas: escribe exactamente 2, p. ej. AhKd.")
+    pos = f.get("position", "")
+    if pos not in POSITIONS_9_LIST:
+        raise ValueError("Elige tu posición.")
+    seen = set(hero)
+    streets = []
+    prev_ok = True
+    for st, n in BOARD_N.items():
+        raw = f.get(f"{st}_cards", "").strip()
+        if not raw:
+            prev_ok = False
+            continue
+        if not prev_ok:
+            raise ValueError(f"Para el {st} hace falta la calle anterior.")
+        cs = parse_cards(raw)
+        if len(cs) != n:
+            raise ValueError(f"{st.capitalize()}: {n} carta{'s' if n > 1 else ''}.")
+        if seen & set(cs):
+            raise ValueError(f"Carta repetida en el {st}.")
+        seen |= set(cs)
+        streets.append(analyzer.Street(
+            st, cs, _num(f.get(f"{st}_pot")),
+            analyzer.Action(f.get(f"{st}_v_kind", ""), _num(f.get(f"{st}_v_size"))),
+            analyzer.Action(f.get(f"{st}_h_kind", ""), _num(f.get(f"{st}_h_size"))),
+            analyzer.Action(f.get(f"{st}_v2_kind", ""), _num(f.get(f"{st}_v2_size"))),
+            analyzer.Action(f.get(f"{st}_h2_kind", ""), _num(f.get(f"{st}_h2_size")))))
+    vc = f.get("villain_cards", "").strip()
+    if vc:
+        vcs = parse_cards(vc)
+        if len(vcs) != 2 or seen & set(vcs):
+            raise ValueError("Cartas del rival: 2 cartas que no estén ya en la mano.")
+    profile = f.get("profile", "unknown")
+    if profile not in c.profiles:
+        profile = "unknown"
+    h = analyzer.HandInput(
+        position=pos, stack_bb=_num(f.get("stack_bb")) or 100, hero=hero, profile=profile,
+        players=int(_num(f.get("players")) or 2), pre_situation=f.get("pre_situation", "rfi"),
+        villain_pos=f.get("villain_pos") or None, limpers=int(_num(f.get("limpers")) or 0),
+        villain_size=_num(f.get("villain_size")),
+        hero_pre=analyzer.Action(f.get("hero_pre_kind", ""), _num(f.get("hero_pre_size"))), streets=streets)
+    return h, {"result_bb": _num(f.get("result_bb"))}
+
+
+def _hand_form_ctx(**kw):
+    c = get_content()
+    return dict(positions=POSITIONS_9_LIST, profiles=[(p, c.profiles[p]["label"]) for p in PROFILE_ORDER if p in c.profiles],
+                pre_situations=PRE_SITUATIONS, hero_pre=HERO_PRE, villain_acts=VILLAIN_ACTS, hero_acts=HERO_ACTS,
+                villain_acts2=VILLAIN_ACTS2, hero_acts2=HERO_ACTS2,
+                today=date.today().isoformat(), **kw)
+
+
+@app.get("/manos", response_class=HTMLResponse)
+def hands_list(request: Request, db: DB = Depends(get_db)):
+    rows = db.exec(select(Hand).order_by(Hand.created.desc()).limit(100)).all()
+    return render(request, "manos.html", rows=rows)
+
+
+@app.get("/manos/nueva", response_class=HTMLResponse)
+def hand_new(request: Request):
+    return render(request, "mano_form.html", **_hand_form_ctx(f={}, error=None))
+
+
+@app.post("/manos", response_class=HTMLResponse)
+async def hand_create(request: Request, db: DB = Depends(get_db)):
+    c = get_content()
+    form = dict(await request.form())
+    try:
+        h, extra = parse_hand_form(form, c)
+    except (ValueError, CardError) as e:
+        return render(request, "mano_form.html", **_hand_form_ctx(f=form, error=str(e)))
+    findings = analyzer.analyze(h, c)
+    hand = Hand(date=form.get("date") or date.today().isoformat(), stakes=form.get("stakes", "").strip(),
+                position=h.position, cards="".join(h.hero), profile=h.profile, data=json.dumps(form),
+                result_bb=extra["result_bb"], villain_cards=form.get("villain_cards", "").strip(),
+                notes=form.get("notes", "").strip(),
+                n_errors=sum(f.verdict == "error" for f in findings),
+                n_doubts=sum(f.verdict == "dudoso" for f in findings))
+    db.add(hand)
+    db.commit()
+    db.refresh(hand)
+    for f in findings:
+        db.add(HandFinding(hand_id=hand.id, street=f.street, decision=f.decision, verdict=f.verdict,
+                           leak=f.leak, explanation=f.explanation, concept_id=f.concept_id))
+    db.commit()
+    return RedirectResponse(f"/manos/{hand.id}", status_code=303)
+
+
+@app.get("/manos/{hid}", response_class=HTMLResponse)
+def hand_view(request: Request, hid: int, db: DB = Depends(get_db)):
+    hand = db.get(Hand, hid)
+    if not hand:
+        raise HTTPException(404)
+    form = json.loads(hand.data)
+    findings = db.exec(select(HandFinding).where(HandFinding.hand_id == hid).order_by(HandFinding.id)).all()
+    board = []
+    for st in BOARD_N:
+        if form.get(f"{st}_cards"):
+            board += parse_cards(form[f"{st}_cards"])
+    return render(request, "mano.html", hand=hand, form=form, findings=findings, board=board,
+                  hero=parse_cards(hand.cards), street_es=analyzer.STREET_ES)
+
+
+@app.post("/manos/{hid}/borrar")
+def hand_delete(hid: int, db: DB = Depends(get_db)):
+    for f in db.exec(select(HandFinding).where(HandFinding.hand_id == hid)).all():
+        db.delete(f)
+    h = db.get(Hand, hid)
+    if h:
+        db.delete(h)
+    db.commit()
+    return RedirectResponse("/manos", status_code=303)
+
+
+# ---------------- Panel de leaks ----------------
+
+@app.get("/leaks", response_class=HTMLResponse)
+def leaks_page(request: Request, db: DB = Depends(get_db)):
+    c = get_content()
+    return render(request, "leaks.html", prios=leaks.priorities(db, c), drill=leaks.drill_leaks(db, c),
+                  hand=leaks.hand_leaks(db), plan=leaks.weekly_plan(db, c))
+
+
+# ---------------- Listo para jugar / varianza ----------------
+
+@app.get("/listo", response_class=HTMLResponse)
+def ready_page(request: Request, db: DB = Depends(get_db)):
+    checks, ok = readiness.readiness(db)
+    return render(request, "listo.html", checks=checks, ok=ok)
+
+
+@app.get("/varianza", response_class=HTMLResponse)
+def variance_page(request: Request, wr: float | None = None, sd: float | None = None, hours: float = 100,
+                  bankroll_bb: float | None = None, db: DB = Depends(get_db)):
+    c = get_content()
+    rows = db.exec(select(Session)).all()
+    summ = summarize([_sd(s) for s in rows]) if rows else None
+    own = bool(summ and summ.hours >= 20 and summ.sd_bb_hour)
+    if wr is None:
+        wr = round(summ.bb_per_hour, 1) if own else 5.0
+    if sd is None:
+        sd = round(summ.sd_bb_hour) if own else c.config["variance"]["default_sd_bb"]
+    if bankroll_bb is None:
+        bb = rows[-1].bb if rows else 2.0
+        bankroll_bb = round(readiness.bankroll_now(db) / bb) if rows or progress.get_setting(db, "initial_bankroll") else 2000
+    hours = max(1.0, min(hours, 5000.0))
+    sd = max(1.0, sd)
+    sim = simulate(wr, sd, hours, n_sims=2000, rng=random.Random(42))
+    return render(request, "varianza.html", wr=wr, sd=sd, hours=hours, bankroll_bb=bankroll_bb, own=own, sim=sim,
+                  chart=paths_chart(sim.paths, wr * hours), p_loss_theory=prob_losing(wr, sd, hours),
+                  ror=risk_of_ruin(wr, sd, bankroll_bb), h_sig=hours_for_significance(wr, sd))
+
+
+# ---------------- Datos: exportar / importar ----------------
+
+@app.get("/datos", response_class=HTMLResponse)
+def data_page(request: Request, db: DB = Depends(get_db)):
+    counts = {name: len(db.exec(select(model)).all()) for name, model in backup.TABLES.items()}
+    return render(request, "datos.html", counts=counts, msg=None, error=None)
+
+
+@app.get("/datos/exportar")
+def data_export(db: DB = Depends(get_db)):
+    fname = f"poker-coach-{date.today().isoformat()}.json"
+    return JSONResponse(backup.export_data(db), headers={"Content-Disposition": f'attachment; filename="{fname}"'})
+
+
+@app.get("/datos/sesiones.csv")
+def data_sessions_csv(db: DB = Depends(get_db)):
+    return Response(backup.sessions_csv(db), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": 'attachment; filename="sesiones.csv"'})
+
+
+@app.post("/datos/importar", response_class=HTMLResponse)
+async def data_import(request: Request, archivo: UploadFile = File(...), confirmar: str = Form(""),
+                      db: DB = Depends(get_db)):
+    def page(msg=None, error=None):
+        counts = {name: len(db.exec(select(model)).all()) for name, model in backup.TABLES.items()}
+        return render(request, "datos.html", counts=counts, msg=msg, error=error)
+    if confirmar != "si":
+        return page(error="Marca la casilla de confirmación: importar reemplaza todos tus datos actuales.")
+    raw = await archivo.read()
+    if len(raw) > 50 * 1024 * 1024:
+        return page(error="Archivo demasiado grande.")
+    try:
+        data = json.loads(raw.decode("utf-8"))
+        n = backup.import_data(db, data)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return page(error="El archivo no es un JSON válido.")
+    except backup.BackupError as e:
+        return page(error=str(e))
+    progress.ensure_levels(db)
+    return page(msg=f"Importado: {sum(n.values())} registros ({n['sessions']} sesiones, {n['hands']} manos, "
+                    f"{n['attempts']} ejercicios).")

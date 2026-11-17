@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Repaso</h1>
+<div class="box">
+  <p>No tienes repasos pendientes ahora.</p>
+  {% if nxt %}<p class="small muted">Próximo repaso: {{ nxt.astimezone().strftime('%d/%m %H:%M') }} · {{ total }} tarjeta{{ 's' if total != 1 }} en total.</p>
+  {% else %}<p class="small muted">Las tarjetas nacen de tus errores. Cada fallo vuelve en unos 10 minutos y después a 1, 6, 15… días si lo aciertas (algoritmo SM-2).</p>{% endif %}
+  <a class="btn primary" href="/practicar">Practicar</a>
+</div>
+{% endblock %}

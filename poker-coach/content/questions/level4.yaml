@@ -1,0 +1,48 @@
+- id: q4_weak_strong
+  level: 4
+  skill: postflop
+  concept: l4_tells
+  prompt: "Un jugador recreativo suspira, se encoge de hombros y apuesta fuerte en el river. ¿Qué es lo más probable?"
+  options: ["Está débil, como aparenta", "Está fuerte: actúa débil a propósito", "No dice nada", "Va de farol seguro"]
+  answer: 1
+  explanation: "Muchos aficionados actúan lo contrario de lo que tienen (Caro). Quien finge debilidad suele estar fuerte."
+- id: q4_chip_glance
+  level: 4
+  skill: postflop
+  concept: l4_tells
+  prompt: "Al salir el flop, un rival mira rápido sus fichas y desvía la mirada. ¿Qué indica más a menudo?"
+  options: ["Que falló el flop", "Que ligó y piensa apostar", "Que va a foldear", "Nada"]
+  answer: 1
+  explanation: "Mirar las fichas de forma involuntaria tras ver cartas suele indicar interés en apostar."
+- id: q4_fast_call
+  level: 4
+  skill: reading
+  concept: l4_tells
+  prompt: "Un rival paga muy rápido tu c-bet del flop. ¿Qué rango encaja mejor?"
+  options: ["Sets y dobles parejas", "Manos medias y proyectos", "Aire total", "Solo el nuts"]
+  answer: 1
+  explanation: "El call rápido suele indicar una decisión fácil: pareja media o proyecto. Con monstruos o con aire suelen pensar o subir."
+- id: q4_tells_weight
+  level: 4
+  skill: postflop
+  concept: l4_tells
+  prompt: "Tienes una decisión clara de fold por la matemática, pero crees ver un tell de debilidad. ¿Qué haces?"
+  options: ["Pagar: el tell manda", "Foldear: los tells desempatan decisiones cerradas, no cambian las claras", "All-in", "Pedir tiempo y pagar"]
+  answer: 1
+  explanation: "Los tells tienen ruido. Úsalos en decisiones cerradas."
+- id: q4_multiway
+  level: 4
+  skill: postflop
+  concept: l4_live_dynamics
+  prompt: "Bote multiway con 5 jugadores. Flop 9♠ 8♠ 7♦ y tienes QQ. ¿Plan?"
+  options: ["Apostar y meter el stack", "Control del bote: tu mano vale mucho menos multiway en este board", "Farol grande", "Foldear siempre"]
+  answer: 1
+  explanation: "En multiway y board conectado, alguien suele tener dos pares, set o proyectos fuertes."
+- id: q4_table_select
+  level: 4
+  skill: mental
+  concept: l4_live_dynamics
+  prompt: "¿Cuál es el ajuste explotativo con más impacto en tu win rate en vivo?"
+  options: ["Farolear más", "Elegir mesas con jugadores débiles", "Jugar más horas cansado", "Cambiar de asiento cada hora"]
+  answer: 1
+  explanation: "Tu ganancia sale de los errores de los demás. Sentarte con quien comete más errores es lo primero."

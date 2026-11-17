@@ -1,0 +1,55 @@
+{% extends "base.html" %}{% from "_sel.html" import select, posselect %}
+{% block body %}
+<p class="small"><a href="/manos">← Manos</a></p>
+<h1>Analizar una mano</h1>
+<p class="small muted">Rellena solo lo que recuerdes. Las cartas van como <code>AhKd</code> (T = 10; s/h/d/c = ♠♥♦♣). Los tamaños van en bb y son el total que pone cada uno en la calle: «sube a 30» = 30. Hasta dos decisiones tuyas por calle.</p>
+{% if error %}<div class="box" style="border-color:var(--bad);color:var(--bad)">{{ error }}</div>{% endif %}
+<form method="post" action="/manos">
+<div class="box"><div class="grid2">
+  <div><label>Fecha</label><input type="date" name="date" value="{{ f.date or today }}"></div>
+  <div><label>Límite</label><input name="stakes" value="{{ f.stakes or '1/2' }}"></div>
+  <div><label>Tu posición</label>{{ posselect('position', positions, f.position or 'BTN') }}</div>
+  <div><label>Tus cartas</label><input name="cards" value="{{ f.cards }}" placeholder="AhKd" autocapitalize="none" autocomplete="off" required></div>
+  <div><label>Stack efectivo (bb)</label><input name="stack_bb" value="{{ f.stack_bb or 100 }}" inputmode="decimal"></div>
+  <div><label>Jugadores al flop</label><input name="players" value="{{ f.players or 2 }}" inputmode="numeric"></div>
+  <div class="full"><label>Rival principal (perfil)</label>{{ select('profile', profiles, f.profile or 'unknown') }}</div>
+</div></div>
+
+<h2>Preflop</h2>
+<div class="box"><div class="grid2">
+  <div class="full"><label>Situación</label>{{ select('pre_situation', pre_situations, f.pre_situation or 'rfi') }}</div>
+  <div><label>Posición del rival</label>{{ posselect('villain_pos', positions, f.villain_pos, blank=True) }}</div>
+  <div><label>Limpers (si hay)</label><input name="limpers" value="{{ f.limpers }}" inputmode="numeric"></div>
+  <div><label>Tamaño del rival (bb)</label><input name="villain_size" value="{{ f.villain_size }}" inputmode="decimal" placeholder="open o 3-bet"></div>
+  <div></div>
+  <div><label>Tu acción</label>{{ select('hero_pre_kind', hero_pre, f.hero_pre_kind or 'raise') }}</div>
+  <div><label>Tamaño (bb)</label><input name="hero_pre_size" value="{{ f.hero_pre_size }}" inputmode="decimal"></div>
+</div>
+<p class="small muted" style="margin:8px 0 0">«Posición del rival» = quien abrió, hizo 3-bet o pagó tu open (el que llega contigo al flop).</p></div>
+
+{% for st, n, ph in [('flop', 3, 'Ks7d2c'), ('turn', 1, '9h'), ('river', 1, '4s')] %}
+<details class="box" {{ 'open' if f[st ~ '_cards'] or st == 'flop' }}><summary style="margin:0">{{ st|capitalize }}</summary>
+<div class="grid2" style="margin-top:10px">
+  <div><label>Carta{{ 's' if n > 1 }}</label><input name="{{ st }}_cards" value="{{ f[st ~ '_cards'] }}" placeholder="{{ ph }}" autocapitalize="none" autocomplete="off"></div>
+  <div><label>Bote al empezar (bb)</label><input name="{{ st }}_pot" value="{{ f[st ~ '_pot'] }}" inputmode="decimal"></div>
+  <div><label>Rival</label>{{ select(st ~ '_v_kind', villain_acts, f[st ~ '_v_kind']) }}</div>
+  <div><label>Tamaño (bb)</label><input name="{{ st }}_v_size" value="{{ f[st ~ '_v_size'] }}" inputmode="decimal"></div>
+  <div><label>Tú</label>{{ select(st ~ '_h_kind', hero_acts, f[st ~ '_h_kind']) }}</div>
+  <div><label>Tamaño (bb)</label><input name="{{ st }}_h_size" value="{{ f[st ~ '_h_size'] }}" inputmode="decimal"></div>
+  <div class="full small muted" style="margin-top:4px">Si la acción siguió (p. ej. apuestas y te suben):</div>
+  <div><label>Rival responde</label>{{ select(st ~ '_v2_kind', villain_acts2, f[st ~ '_v2_kind']) }}</div>
+  <div><label>Tamaño total (bb)</label><input name="{{ st }}_v2_size" value="{{ f[st ~ '_v2_size'] }}" inputmode="decimal"></div>
+  <div><label>Tú otra vez</label>{{ select(st ~ '_h2_kind', hero_acts2, f[st ~ '_h2_kind']) }}</div>
+  <div><label>Tamaño total (bb)</label><input name="{{ st }}_h2_size" value="{{ f[st ~ '_h2_size'] }}" inputmode="decimal"></div>
+</div></details>
+{% endfor %}
+
+<h2>Resultado</h2>
+<div class="box"><div class="grid2">
+  <div><label>Ganado/perdido (bb)</label><input name="result_bb" value="{{ f.result_bb }}" inputmode="decimal" placeholder="-35"></div>
+  <div><label>Cartas del rival</label><input name="villain_cards" value="{{ f.villain_cards }}" placeholder="si las mostró" autocapitalize="none"></div>
+  <div class="full"><label>Notas</label><textarea name="notes" rows="2">{{ f.notes }}</textarea></div>
+</div></div>
+<button class="btn primary">Analizar</button>
+</form>
+{% endblock %}

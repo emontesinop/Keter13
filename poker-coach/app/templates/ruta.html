@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% from "_macros.html" import bar %}
+{% block body %}
+<h1>Ruta</h1>
+<p class="small muted">Para aprobar un nivel necesitas ≥ 85 % en tus últimos 50 ejercicios y aprobar el examen final.</p>
+{% for g in gates %}{% set lv = c.levels[loop.index0] %}
+<a href="/nivel/{{ g.level }}" style="text-decoration:none;color:inherit">
+<div class="box">
+  <div class="row"><b>{{ g.level }} · {{ lv.name }}</b>
+  <span class="tag {{ 'ok' if g.status == 'passed' else ('lock' if g.status == 'locked' else '') }}">{{ {'unlocked':'en curso','placed':'convalidado','passed':'aprobado','locked':'🔒'}[g.status] }}</span></div>
+  <p class="small muted" style="margin:4px 0 0">{{ lv.summary }}</p>
+  {% if g.status in ('unlocked', 'placed') and g.has_content %}{{ bar(g.count / g.window) }}<p class="small muted" style="margin:0">{{ g.count }}/{{ g.window }} · {{ g.accuracy|pct }}</p>{% endif %}
+  {% if not g.has_content %}<p class="small muted" style="margin:4px 0 0">Próximamente</p>{% endif %}
+</div></a>
+{% endfor %}
+{% endblock %}

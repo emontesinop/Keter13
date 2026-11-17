@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block body %}
+<p class="small"><a href="/manos">← Manos</a></p>
+<h1>Mano · {{ hand.position|pos }}</h1>
+<div class="box">
+  <div class="cards"><span class="lbl">Tu mano</span>{% for x in hero %}{{ x|card|safe }}{% endfor %}</div>
+  {% if board %}<div class="cards"><span class="lbl">Board</span>{% for x in board %}{{ x|card|safe }}{% endfor %}</div>{% endif %}
+  <p class="small muted" style="margin:6px 0 0">{{ hand.date }} · {{ hand.stakes }} · rival {{ c.profiles[hand.profile].label }}{% if hand.result_bb is not none %} · <b style="color:{{ 'var(--ok)' if hand.result_bb >= 0 else 'var(--bad)' }}">{{ hand.result_bb|num }} bb</b>{% endif %}{% if hand.villain_cards %} · mostró {{ hand.villain_cards }}{% endif %}</p>
+</div>
+<div class="row" style="margin:4px 0 12px"><span><span class="tag bad-t">{{ hand.n_errors }} error{{ 'es' if hand.n_errors != 1 }}</span> <span class="tag warn-t">{{ hand.n_doubts }} dudoso{{ 's' if hand.n_doubts != 1 }}</span></span></div>
+{% for f in findings %}
+<div class="box finding {{ f.verdict }}">
+  <div class="row"><b>{{ street_es.get(f.street, f.street) }} · {{ f.decision }}</b>
+  <span class="tag {{ f.verdict }}-t">{{ {'ok':'bien','dudoso':'dudoso','error':'error','info':'info'}[f.verdict] }}</span></div>
+  <p class="small" style="margin:6px 0 0">{{ f.explanation }}</p>
+  {% if f.leak %}<p class="small muted" style="margin:6px 0 0">Leak: <b>{{ c.leaks[f.leak].label }}</b>. {{ c.leaks[f.leak].advice }} → <a href="/leccion/{{ f.concept_id }}">{{ c.lessons[f.concept_id].title }}</a></p>{% endif %}
+</div>
+{% else %}
+<div class="box"><p>No hay decisiones evaluables. Indica tu acción y el bote en cada calle.</p></div>
+{% endfor %}
+{% if hand.notes %}<p class="note">{{ hand.notes }}</p>{% endif %}
+<p class="note">Análisis basado en los rangos y perfiles de la app (modelo, no solver). Un «dudoso» es una decisión discutible según el contexto, no un error seguro.</p>
+<form method="post" action="/manos/{{ hand.id }}/borrar" onsubmit="return confirm('¿Borrar esta mano?')"><button class="btn">Borrar mano</button></form>
+{% endblock %}

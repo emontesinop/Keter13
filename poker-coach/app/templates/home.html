@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% from "_macros.html" import bar %}
+{% block body %}
+<h1>Hoy</h1>
+<div class="box">
+  <p>{{ rec.text }}</p>
+  <a class="btn primary" href="{{ rec.href }}">{{ rec.cta }}</a>
+</div>
+{% if due %}<a class="btn" href="/repasar">↻ {{ due }} repaso{{ 's' if due != 1 }} pendiente{{ 's' if due != 1 }}</a>{% endif %}
+<a class="btn" href="{{ '/mental' if checkin_today else '/checkin' }}">{{ 'Check-in de hoy hecho · ver panel mental' if checkin_today else '¿Juegas hoy? Check-in previo (30 s)' }}</a>
+<div class="box">
+  <div class="row"><b>Nivel {{ level }} · {{ c.level_name(level) }}</b><span class="tag">{{ {'unlocked':'en curso','placed':'convalidado','passed':'aprobado','locked':'bloqueado'}[gate.status] }}</span></div>
+  {% if gate.has_content %}
+  {{ bar(gate.count / gate.window) }}
+  <p class="small muted">{{ gate.count }}/{{ gate.window }} ejercicios recientes · precisión {{ gate.accuracy|pct }} (necesitas ≥ {{ gate.min_accuracy|pct }} y aprobar el examen)</p>
+  {% else %}<p class="small muted">Contenido de este nivel: próximas iteraciones.</p>{% endif %}
+</div>
+{% if prios %}
+<h2>Leaks principales</h2>
+<div class="box"><ul class="list">{% for p in prios %}<li class="row"><a href="/leccion/{{ p.concept }}">{{ c.lessons[p.concept].title }}</a><span class="small muted">{{ p.reasons[0] }}</span></li>{% endfor %}</ul>
+<a class="small" href="/leaks">Ver panel y plan semanal →</a></div>
+{% endif %}
+{% set checks, is_ready = ready %}
+<a href="/listo" style="text-decoration:none;color:inherit"><div class="box row"><span><b>¿Listo para jugar por dinero?</b><br><span class="small muted">{{ checks|selectattr('ok')|list|length }}/{{ checks|length }} requisitos cumplidos</span></span><span class="tag {{ 'ok-t' if is_ready else '' }}">{{ 'sí' if is_ready else 'aún no' }}</span></div></a>
+<h2>Habilidades</h2>
+<div class="box">{{ radar|safe }}<p class="small muted">Precisión en tus últimos 100 ejercicios por habilidad (sin contar el diagnóstico).</p></div>
+{% if summ %}
+<h2>En vivo</h2>
+<div class="stats">
+  <div class="stat"><b>{{ summ.profit|money }}</b><span>resultado total</span></div>
+  <div class="stat"><b>{{ summ.hours|num }} h</b><span>{{ summ.sample_label }}</span></div>
+</div>
+{% endif %}
+<p class="small muted" style="margin-top:20px"><a href="/diagnostico">Diagnóstico</a> · <a href="/fuentes">Fuentes</a> · <a href="/datos">Datos</a></p>
+{% endblock %}

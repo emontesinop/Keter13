@@ -1,0 +1,9 @@
+# Rangos de la población en vivo y respuestas que usa el analizador de manos.
+# APROXIMADOS Y EDITABLES.
+ranges:
+  # Rango típico de un limper en 1/2-1/3 en vivo (amplio y medio; rara vez AA/KK).
+  limp: "22-JJ, A2s-AJs, K9s+, Q9s+, J9s+, T8s+, 97s+, 86s+, 75s+, 65s, 54s, ATo-AQo, KTo+, QTo+, JTo"
+  # Abriste y te hacen 3-bet. Lo que no está aquí es fold.
+  vs3bet_4bet: "QQ+, AKs, AKo"
+  vs3bet_call_ip: "JJ-77, AQs, AJs, KQs, QJs, JTs, T9s, AQo"
+  vs3bet_call_oop: "JJ-99, AQs, KQs"

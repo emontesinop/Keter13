@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% from "_macros.html" import scale %}
+{% block body %}
+<h1>Check-in previo</h1>
+{% if tips %}
+<div class="box">
+  {% for t in tips %}<p>{{ t }}</p>{% endfor %}
+  <p class="small muted">Al registrar la sesión de hoy, este check-in se vincula a ella y puedes añadir el de salida.</p>
+</div>
+<a class="btn primary" href="/">Listo</a>
+{% else %}
+<p class="small muted">30 segundos antes de sentarte. Contesta con honestidad: sirve para ver cómo tu estado afecta a tus resultados.</p>
+<div class="box">
+<form class="grid" method="post" action="/checkin">
+  {{ scale('tilt', 'Tilt / frustración', 'calma', 'tilt fuerte') }}
+  {{ scale('energy', 'Energía', 'agotado', 'lleno') }}
+  {{ scale('focus', 'Enfoque', 'disperso', 'enfocado') }}
+  <div class="full"><label>Nota (opcional)</label><input name="note" placeholder="p. ej. dormí poco, vengo de discutir…"></div>
+  <div class="full"><button class="btn primary">Guardar</button></div>
+</form>
+</div>
+{% endif %}
+{% endblock %}

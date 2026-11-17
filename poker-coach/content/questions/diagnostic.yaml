@@ -1,0 +1,73 @@
+# Preguntas de niveles 2-5 solo para el diagnóstico inicial (detectar nivel).
+- id: dx2_mdf
+  level: 2
+  skill: postflop
+  concept: l2_mdf
+  diagnostic_only: true
+  prompt: "El rival apuesta el tamaño del bote. ¿Cuál es tu frecuencia mínima de defensa (MDF)?"
+  options: ["33 %", "50 %", "67 %", "75 %"]
+  answer: 1
+  explanation: "MDF = bote ÷ (bote + apuesta) = 1 ÷ 2 = 50 %."
+- id: dx2_spr
+  level: 2
+  skill: postflop
+  concept: l2_spr
+  diagnostic_only: true
+  prompt: "Bote de $100 en el flop y stacks efectivos de $150. Tienes top pair buen kicker. ¿Qué implica el SPR de 1,5?"
+  options: ["Debes jugar con cuidado y controlar el bote", "Estás comprometido, prepárate para meter el stack", "Debes foldear a cualquier apuesta", "El SPR no importa con top pair"]
+  answer: 1
+  explanation: "Con SPR bajo (< 3) el top pair suele bastar para ir all-in."
+- id: dx2_cbet
+  level: 2
+  skill: postflop
+  concept: l2_texture
+  diagnostic_only: true
+  prompt: "Abriste UTG y la BB pagó. ¿En qué flop te conviene hacer c-bet con más frecuencia?"
+  options: ["A♠ K♦ 7♣", "7♥ 6♥ 5♦", "9♠ 8♠ 7♦", "6♣ 5♣ 4♦"]
+  answer: 0
+  explanation: "Un flop alto y seco favorece el rango del que abre desde UTG. Los flops bajos y conectados favorecen a la BB."
+- id: dx3_combos
+  level: 3
+  skill: reading
+  concept: l3_combos
+  diagnostic_only: true
+  prompt: "Mesa K♠ 7♦ 2♣. ¿Cuántos combos de KK (set de reyes) puede tener el rival?"
+  options: ["6", "3", "1", "4"]
+  answer: 1
+  explanation: "Hay un rey en la mesa y quedan 3, así que C(3,2) = 3 combos."
+- id: dx3_blocker
+  level: 3
+  skill: reading
+  concept: l3_blockers
+  diagnostic_only: true
+  prompt: "Mesa con tres corazones y tú tienes el A♥ sin color. ¿Qué te dice esa carta?"
+  options: ["Nada", "El rival no puede tener el color al nuts", "El rival tiene color seguro", "Debes foldear"]
+  answer: 1
+  explanation: "Tu A♥ bloquea el color al nuts. Eso lo convierte en un buen candidato para farolear."
+- id: dx4_station
+  level: 4
+  skill: postflop
+  concept: dx_exploit
+  diagnostic_only: true
+  prompt: "Contra una calling station (paga con todo, rara vez sube), el ajuste principal es..."
+  options: ["Más faroles", "Apostar por valor más fino y casi no farolear", "Hacer check siempre", "Jugar más manos fuera de posición"]
+  answer: 1
+  explanation: "Te paga con manos peores, así que cobra por valor con más manos y no farolees."
+- id: dx5_bankroll
+  level: 5
+  skill: mental
+  concept: dx_mental
+  diagnostic_only: true
+  prompt: "Juegas 1/2 en vivo con buy-in de $200. ¿Qué bankroll mínimo es razonable?"
+  options: ["$500", "$1 000", "$4 000-6 000", "$20 000"]
+  answer: 2
+  explanation: "20-30 buy-ins para cash en vivo, es decir 20 × 200 = $4 000 a 30 × 200 = $6 000."
+- id: dx5_tilt
+  level: 5
+  skill: mental
+  concept: dx_mental
+  diagnostic_only: true
+  prompt: "Perdiste 3 buy-ins y sientes urgencia por recuperarlos. ¿Qué es lo correcto?"
+  options: ["Subir de límite para recuperar más rápido", "Aplicar el stop-loss que definiste antes de la sesión y analizar después", "Jugar más manos para cambiar la racha", "Seguir hasta quedar en positivo"]
+  answer: 1
+  explanation: "La urgencia por recuperar es una forma de tilt (Tendler). Las reglas decididas en frío te protegen."

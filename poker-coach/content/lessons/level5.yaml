@@ -1,0 +1,57 @@
+- id: l5_bankroll
+  level: 5
+  title: Bankroll y cambio de límite
+  concept: |
+    Para cash en vivo mantén al menos 20-30 buy-ins de 100 bb del límite que juegas.
+    Por debajo de 20, baja de límite. Para subir, espera a tener unos 30 del límite siguiente.
+    Si quieres probar un límite más alto antes de tener ese colchón, decide de antemano cuánto arriesgas (p. ej. 3 buy-ins) y vuelve a tu límite si los pierdes.
+  example: "Con $4 000 en 1/2 ($200 por buy-in) tienes 20 buy-ins: es el mínimo. Para subir a 1/3 ($300) necesitas unos $9 000."
+  sources:
+    - id: tendler
+      idea: La gestión del bankroll reduce el miedo y el tilt.
+    - id: little
+      idea: Reglas prácticas de buy-ins para cash en vivo.
+  drills: [bankroll_move]
+
+- id: l5_variance
+  level: 5
+  title: Varianza y tamaño de muestra
+  concept: |
+    En vivo la desviación típica es de unas 60-90 bb por hora. Con una ventaja de 5-10 bb/h, el ruido domina durante cientos de horas.
+    Intervalo del 95 %: win rate ± 1,96 × desviación ÷ √horas.
+    Hasta que el intervalo no excluye el 0, no sabes si eres ganador. Juzga tus decisiones, no tus resultados.
+  example: "8 bb/h con desviación de 75 en 200 h: ± 10,4 → entre −2,4 y 18,4 bb/h. Aún no está demostrado."
+  sources:
+    - id: sklansky_top
+      idea: Valor esperado frente a resultados a corto plazo.
+    - id: tendler
+      idea: Entender la varianza para no reaccionar con tilt.
+  drills: [variance_ci]
+
+- id: l5_tilt
+  level: 5
+  title: Tilt
+  concept: |
+    El tilt es una reacción emocional que baja tu juego del A al B o al C.
+    Tipos frecuentes según Tendler: odiar perder, injusticia (bad beats), errores propios, venganza y desesperación.
+    Detéctalo pronto: anota tus señales (pensamientos, cuerpo, decisiones) y ten una acción preparada, como respirar, levantarte o irte.
+  example: "Tras un bad beat empiezas a pagar más «para ver». Es tilt por injusticia: levántate 5 minutos y relee tu regla de stop-loss."
+  sources:
+    - id: tendler
+      idea: Tipos de tilt, juego A/B/C y el trabajo para corregirlo.
+  drills: []
+
+- id: l5_stoploss
+  level: 5
+  title: Stop-loss y reglas de sesión
+  concept: |
+    Decide en frío, antes de jugar, cuándo te vas: un stop-loss (p. ej. 2-3 buy-ins) y un tiempo máximo.
+    Irte no cambia el EV de la mesa, pero te protege de jugar tu juego C, que sí lo cambia.
+    Vete también si la mesa es mala o si tu check-in marca tilt o cansancio.
+  example: "Stop-loss de 2 buy-ins en 1/2 = $400. Si llegas, te levantas aunque la mesa parezca buena."
+  sources:
+    - id: tendler
+      idea: Reglas preparadas en frío para momentos de tilt.
+    - id: hanson
+      idea: Gestión de sesiones en cash en vivo.
+  drills: []

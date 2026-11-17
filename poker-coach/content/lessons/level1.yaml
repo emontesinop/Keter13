@@ -1,0 +1,108 @@
+- id: l1_rfi
+  level: 1
+  title: Rangos de apertura por posición
+  concept: |
+    Si todos foldean hasta ti, abre (sube) o foldea. En vivo no hagas open-limp.
+    Cuantos más jugadores quedan por hablar detrás de ti, más fuerte debe ser tu rango: UTG ≈ 12 %, CO ≈ 27 %, BTN ≈ 45 %.
+    Los rangos de esta app son aproximados y editables (content/ranges/rfi_100bb.yaml).
+  example: "A9s: foldea desde UTG y abre desde LJ en adelante. KTo: foldea hasta HJ y abre desde CO."
+  sources:
+    - id: acevedo
+      idea: Rangos de apertura derivados de solver como punto de partida.
+    - id: janda
+      idea: Por qué el rango se ensancha a medida que quedan menos jugadores.
+    - id: little
+      idea: Ajustar los rangos a mesas en vivo más pasivas.
+  drills: [rfi]
+
+- id: l1_vs_open
+  level: 1
+  title: Contra un open, fold, call o 3-bet
+  concept: |
+    Cuanto antes abre el rival, más fuerte es su rango, así que defiende más estrecho.
+    En vivo a bajos límites haz un 3-bet sobre todo por valor (lineal): los rivales pagan demasiado y el farol rinde poco.
+    Sin posición (ciegas) prefiere 3-bet o fold antes que call, salvo en la BB, que ya tiene dinero puesto.
+  example: "Abre UTG y tienes AJo en CO: fold. Si abre el CO y estás en BTN con AJo: call."
+  sources:
+    - id: acevedo
+      idea: Estructura de rangos de defensa frente a cada posición.
+    - id: hanson
+      idea: Hacer el 3-bet lineal y por valor contra jugadores en vivo que pagan mucho.
+  drills: [vs_open]
+
+- id: l1_4bet
+  level: 1
+  title: 3-bet y 4-bet en vivo
+  concept: |
+    Tamaño de 3-bet: 3x el open en posición y 4x fuera de posición.
+    En 1/2 y 1/3 en vivo, un 4-bet de un jugador desconocido suele ser QQ+ o AK. Contra eso, foldea JJ o AQ sin dudar.
+    Tu propio 4-bet hazlo por valor: QQ+ y AK, y KK+ contra rivales muy tight.
+  example: "Haces 3-bet con AQs y un regular tight te mete 4-bet: fold. AQs tiene poca equity contra QQ+ y AK."
+  sources:
+    - id: janda
+      idea: Construcción de rangos de 3-bet y 4-bet.
+    - id: hanson
+      idea: En vivo los 4-bets están muy sesgados hacia el valor.
+  drills: [sizing]
+
+- id: l1_limpers
+  level: 1
+  title: Jugar contra limpers
+  concept: |
+    El limper suele tener un rango débil y pasivo. Castígalo con un iso-raise: 5 bb + 1 bb por limper.
+    Las manos especulativas (pares bajos, conectores del mismo palo) pueden entrar con limp detrás, en posición y en multiway barato.
+    Desde la BB nunca foldeas sin subida: pasa con lo que no sea fuerte.
+  example: "Dos limpers y estás en BTN con AJo: sube a 5 + 2 = 7 bb. Con 55: limp detrás."
+  sources:
+    - id: miller_course
+      idea: Aislar a jugadores débiles en posición.
+    - id: hanson
+      idea: Tamaños de iso en vivo y castigo a los limpers.
+    - id: ssh
+      idea: Ganar con manos fuertes contra rivales pasivos.
+  drills: [vs_limpers, sizing]
+
+- id: l1_sizing
+  level: 1
+  title: Tamaños preflop en vivo
+  concept: |
+    En vivo las subidas pequeñas reciben demasiados calls, así que sube más grande que online.
+    Open: 5 bb. Iso: 5 bb + 1 por limper (+1 desde las ciegas). 3-bet: 3x en posición y 4x fuera de posición.
+    Usa un tamaño que no dependa de tu mano para no dar información.
+  example: "En 1/3 con 2 limpers, desde BTN: 5 + 2 = 7 bb = $21."
+  sources:
+    - id: hanson
+      idea: Tamaños preflop adaptados a mesas en vivo.
+    - id: little
+      idea: Subir más grande contra rivales que pagan de más.
+  drills: [sizing]
+
+- id: l1_implied
+  level: 1
+  title: Implied odds y set mining
+  concept: |
+    Implied odds = lo que puedes ganar en calles futuras si ligas.
+    Pagar con pares bajos para ligar un set (≈ 12 % en el flop) requiere que el stack efectivo sea unas 15-20 veces lo que pagas.
+    Contra opens grandes en vivo (5-6 bb) y stacks de 100 bb, el set mining puro va justo, así que necesitas un rival que pague mucho postflop.
+  example: "Pagar $15 con 44 requiere unos $225-300 efectivos detrás y un rival capaz de pagarte."
+  sources:
+    - id: sklansky_top
+      idea: Implied odds y reverse implied odds.
+    - id: miller_1pct
+      idea: La rentabilidad depende de lo que el rival pagará después.
+  drills: [vs_open]
+
+- id: l1_combos
+  level: 1
+  title: Combinaciones
+  concept: |
+    Hay 1326 manos iniciales. Un par tiene 6 combos, una mano del mismo palo 4 y una de distinto palo 12.
+    Por eso AK (16 combos) es más frecuente que AA (6).
+    Cada carta que ves (tuya o de la mesa) quita combos al rival.
+  example: "Si tienes A♠, el rival solo tiene 3 combos de AA en vez de 6."
+  sources:
+    - id: janda
+      idea: Contar combos para construir rangos.
+    - id: brokos
+      idea: El razonamiento por combinaciones.
+  drills: []

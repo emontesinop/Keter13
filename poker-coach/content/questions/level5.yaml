@@ -1,0 +1,48 @@
+- id: q5_tilt_injustice
+  level: 5
+  skill: mental
+  concept: l5_tilt
+  prompt: "Pierdes con AA contra un rival que pagó con 72o y ligó. Empiezas a pensar «no puede ser». ¿Qué tipo de tilt es?"
+  options: ["Tilt por errores propios", "Tilt por injusticia (bad beats)", "Desesperación", "No es tilt"]
+  answer: 1
+  explanation: "La sensación de injusticia ante un bad beat es uno de los tipos de tilt que describe Tendler."
+- id: q5_mistake_tilt
+  level: 5
+  skill: mental
+  concept: l5_tilt
+  prompt: "Te enfadas contigo por un error tonto y juegas las siguientes manos peor. ¿Qué es?"
+  options: ["Tilt por errores propios", "Mala suerte", "Varianza", "Un tell"]
+  answer: 0
+  explanation: "La frustración con tus propios errores es un tipo de tilt. Anota el error y vuelve a tu plan."
+- id: q5_stoploss_why
+  level: 5
+  skill: mental
+  concept: l5_stoploss
+  prompt: "¿Por qué sirve un stop-loss si irte no cambia el EV de la mesa?"
+  options: ["No sirve", "Te protege de jugar tu juego B o C cuando estás afectado", "Porque las rachas continúan", "Para pagar menos rake"]
+  answer: 1
+  explanation: "Las pérdidas fuertes empeoran tu juego. La regla decidida en frío evita que juegues peor."
+- id: q5_variance_sample
+  level: 5
+  skill: mental
+  concept: l5_variance
+  prompt: "Llevas 80 horas ganando 25 bb/h. ¿Qué puedes concluir?"
+  options: ["Que eres un gran ganador", "Muy poco: con desviación ~75 bb/h, el intervalo es enorme", "Que debes subir de límite ya", "Que tu win rate real es 25 bb/h"]
+  answer: 1
+  explanation: "± 1,96 × 75 ÷ √80 ≈ ± 16 bb/h: el intervalo va de 9 a 41. No basta para concluir ni para subir."
+- id: q5_shot
+  level: 5
+  skill: mental
+  concept: l5_bankroll
+  prompt: "Quieres probar 2/5 con un bankroll justo para 1/3. ¿Cómo hacerlo con disciplina?"
+  options: ["Ir con todo el bankroll", "Separar de antemano 2-3 buy-ins para el intento y volver a 1/3 si los pierdes", "Pedir prestado", "Jugar 2/5 solo cuando vas ganando ese día"]
+  answer: 1
+  explanation: "Un intento en un límite superior con un límite de pérdida fijado de antemano protege tu bankroll."
+- id: q5_results_vs_decisions
+  level: 5
+  skill: mental
+  concept: l5_variance
+  prompt: "Pierdes 5 sesiones seguidas. ¿Qué es lo primero que revisas?"
+  options: ["Tus decisiones en las manos clave (analizador)", "Cambiar de estilo por completo", "Subir de límite para recuperar", "Nada, es solo suerte"]
+  answer: 0
+  explanation: "Separa decisión de resultado: analiza las manos grandes. Si las decisiones fueron buenas, es varianza."

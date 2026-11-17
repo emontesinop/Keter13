@@ -1,0 +1,26 @@
+# Uno o más limpers delante, nadie ha subido. Acciones: iso (subir para aislar),
+# overlimp (limp detrás / completar desde SB), resto fold (BB: pasar).
+# Enfoque explotativo de cash en vivo (Ed Miller, Bart Hanson): castiga a los
+# limpers con manos fuertes y juega especulativas baratas en posición.
+# APROXIMADOS Y EDITABLES.
+groups:
+  EP: [UTG1, MP]
+  MP: [LJ, HJ]
+  LATE: [CO, BTN]
+  SB: [SB]
+  BB: [BB]
+spots:
+  EP:
+    iso: "88+, AJs+, KQs, AQo+"
+    overlimp: "77-22, ATs, KJs, QJs, JTs, T9s"
+  MP:
+    iso: "77+, ATs+, KJs+, QJs, AJo+, KQo"
+    overlimp: "66-22, A9s-A2s, KTs, QTs, JTs, T9s, 98s, 87s"
+  LATE:
+    iso: "55+, A8s+, A5s, KTs+, QTs+, JTs, ATo+, KJo+"
+    overlimp: "44-22, A7s-A6s, A4s-A2s, K9s-K7s, Q9s, J9s, T9s, T8s, 98s, 87s, 76s, 65s, 54s"
+  SB:
+    iso: "88+, ATs+, KJs+, AQo+"
+    overlimp: "77-22, A9s-A2s, KTs, QJs, QTs, JTs, T9s, 98s, 87s, 76s"
+  BB:
+    iso: "99+, AJs+, KQs, AQo+"

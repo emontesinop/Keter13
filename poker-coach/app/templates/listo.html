@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>¿Listo para jugar por dinero?</h1>
+<p class="small muted">Criterio mínimo antes de jugar en serio en vivo. No garantiza ganar: indica que tienes la base técnica y la gestión para que la varianza no te saque del juego.</p>
+{% for ch in checks %}
+<div class="box finding {{ 'ok' if ch.ok else 'error' }}">
+  <div class="row"><b>{{ ch.label }}</b><span class="tag {{ 'ok-t' if ch.ok else 'error-t' }}">{{ '✓' if ch.ok else 'pendiente' }}</span></div>
+  <p class="small" style="margin:6px 0 0">{{ ch.detail }}</p>
+  {% if not ch.ok %}<a class="small" href="{{ ch.href }}">{{ ch.cta }} →</a>{% endif %}
+</div>
+{% endfor %}
+<div class="box"><p>{% if ok %}<b>Cumples el criterio.</b> Juega tu límite con tu stop-loss, registra cada sesión y analiza las manos grandes. Revisa tu win rate con su intervalo, no con la última semana.{% else %}Aún no. Completa lo pendiente: cada punto protege tu bankroll o tu juego.{% endif %}</p></div>
+<a class="btn" href="/varianza">Simulador de varianza</a>
+{% endblock %}

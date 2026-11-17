@@ -1,0 +1,102 @@
+- id: l0_rankings
+  level: 0
+  title: Ranking de manos
+  concept: |
+    De mayor a menor: escalera de color, póker, full, color, escalera, trío, doble pareja, pareja y carta alta.
+    Siempre juega la mejor combinación de 5 cartas entre tus 2 cartas y las 5 de la mesa. Puedes usar 2, 1 o ninguna de las tuyas.
+    Si la mejor mano está en la mesa ("juega el board"), hay empate.
+  example: "Mesa A♠ A♦ K♣ K♥ Q♠. Tú J♣ J♦ y el rival 3♥ 2♥. Los dos juegan A-A-K-K-Q y empatan."
+  sources:
+    - id: rrop
+      idea: Reglas estándar de ranking y desempate.
+  drills: [hand_rank]
+
+- id: l0_positions
+  level: 0
+  title: Posiciones
+  concept: |
+    En una mesa de 9: UTG, UTG+1, MP, LJ, HJ, CO, BTN, SB y BB.
+    Preflop actúa primero UTG. Postflop actúan primero las ciegas y el botón actúa último en todas las calles.
+    Actuar último te da información gratis y control del bote. Por eso se juegan más manos cuanto más cerca del botón.
+  example: "Postflop entre el CO y la BB, la BB habla primero y el CO tiene posición."
+  sources:
+    - id: sklansky_top
+      idea: Capítulo sobre posición, el valor de actuar con información.
+    - id: miller_course
+      idea: Jugar más manos en posición contra rivales en vivo.
+  drills: [position]
+
+- id: l0_pot_odds
+  level: 0
+  title: Pot odds
+  concept: |
+    Para pagar necesitas una equity mínima = lo que pagas ÷ (bote final si pagas).
+    Si el rival apuesta B en un bote P: equity necesaria = B ÷ (P + 2B).
+    Apuesta de medio bote → 25 %. Bote → 33 %. Doble bote → 40 %.
+  example: "Bote $60, el rival apuesta $30. Pagas 30 para un bote final de 120, así que necesitas 30/120 = 25 %."
+  sources:
+    - id: sklansky_top
+      idea: Capítulo de pot odds, comparar el precio con la probabilidad de ganar.
+  drills: [pot_odds]
+
+- id: l0_outs
+  level: 0
+  title: Outs y regla del 2 y 4
+  concept: |
+    Un out es una carta que probablemente te da la mejor mano.
+    Proyectos típicos: color 9, escalera abierta 8, gutshot 4, color + escalera abierta 15.
+    Equity aproximada: outs × 4 en el flop si vas all-in (ves 2 cartas) y outs × 2 si ves solo una carta.
+    Con más de 8 outs, la regla del 4 sobreestima un poco.
+  example: "Proyecto de color en el flop: 9 × 4 ≈ 36 % hasta el river (exacto: 35 %). Con 9 × 2 ≈ 18 % para el turn (exacto: 19 %)."
+  sources:
+    - id: gordon
+      idea: Popularizó la regla del 4 y 2 como cálculo mental en la mesa.
+    - id: sklansky_top
+      idea: Outs, odds de mejorar y semifarol.
+  drills: [outs, rule24]
+
+- id: l0_ev
+  level: 0
+  title: Valor esperado (EV)
+  concept: |
+    EV = lo que ganas en promedio si repites la decisión infinitas veces.
+    EV de pagar = equity × (bote + apuesta) − (1 − equity) × lo que pagas.
+    Teorema Fundamental: cada vez que tu rival juega distinto a como lo haría viendo tus cartas, tú ganas. Cuando lo haces tú, él gana.
+    Juzga tus decisiones por su EV, no por el resultado de una mano.
+  example: "Bote $80 tras la apuesta de $20 del rival (el bote antes era $60). Con 30 % de equity: 0,30 × 80 − 0,70 × 20 = 24 − 14 = +$10."
+  sources:
+    - id: sklansky_top
+      idea: Esperanza matemática y el Teorema Fundamental del Poker.
+  drills: [ev_call]
+
+- id: l0_bluff_math
+  level: 0
+  title: Matemática del farol
+  concept: |
+    Un farol puro gana si el rival foldea más que B ÷ (P + B), el "alpha".
+    Medio bote → 33 %. Bote → 50 %.
+    En vivo a bajos límites muchos rivales pagan de más. Si no foldean lo suficiente, farolea menos y apuesta más por valor.
+  example: "Apuestas $50 de farol en un bote de $100. Es rentable si el rival foldea más de 50/150 = 33 %."
+  sources:
+    - id: sklansky_top
+      idea: Capítulo de faroles, odds que das al farolear.
+    - id: janda
+      idea: Relación entre tamaño de apuesta y frecuencias.
+    - id: miller_1pct
+      idea: Las poblaciones en vivo pagan de más, así que conviene farolear menos.
+  drills: [bluff_math]
+
+- id: l0_equity
+  level: 0
+  title: Equity preflop
+  concept: |
+    Equity = tu parte del bote si se reparten todas las cartas.
+    Referencias: par vs dos cartas menores ≈ 80 %, par vs dos overcards ≈ 55 %, par mayor vs par menor ≈ 80 %, dominada (AK vs AQ) ≈ 70/30, dos overcards vs dos undercards ≈ 60-65 %.
+    Las cartas del mismo palo añaden solo unos 2-3 puntos.
+  example: "QQ vs AK de distinto palo: unos 57 / 43. Es un coin flip con una ventaja ligera para el par."
+  sources:
+    - id: brokos
+      idea: La equity como base para razonar sobre rangos.
+    - id: janda
+      idea: Distribución de equity entre rangos.
+  drills: [equity_pre]
