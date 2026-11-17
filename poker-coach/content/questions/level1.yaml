@@ -1,0 +1,72 @@
+- id: q1_combos_pair
+  level: 1
+  skill: reading
+  concept: l1_combos
+  prompt: "¿Cuántas combinaciones hay de un par concreto (p. ej. JJ)?"
+  options: ["4", "6", "12", "16"]
+  answer: 1
+  explanation: "Hay 4 palos y se eligen 2: C(4,2) = 6."
+- id: q1_combos_ak
+  level: 1
+  skill: reading
+  concept: l1_combos
+  prompt: "¿Cuántas combinaciones de AK hay en total (suited + offsuit)?"
+  options: ["4", "6", "12", "16"]
+  answer: 3
+  explanation: "4 combos del mismo palo + 12 de distinto palo = 16. AK es casi 3 veces más frecuente que AA."
+- id: q1_blocker_aa
+  level: 1
+  skill: reading
+  concept: l1_combos
+  prompt: "Tienes A♠ K♦. ¿Cuántos combos de AA le quedan al rival?"
+  options: ["6", "3", "4", "1"]
+  answer: 1
+  explanation: "Quedan 3 ases: C(3,2) = 3."
+- id: q1_4bet_live
+  level: 1
+  skill: preflop
+  concept: l1_4bet
+  prompt: "En 1/2 en vivo, un jugador desconocido te hace 4-bet. ¿Qué rango suele representar?"
+  options: ["Cualquier par y ases del mismo palo", "QQ+ y AK, muy fuerte", "Un rango polarizado con muchos faroles", "Lo mismo que su open"]
+  answer: 1
+  explanation: "En bajos límites en vivo los 4-bets están muy sesgados hacia el valor."
+- id: q1_3bet_linear
+  level: 1
+  skill: preflop
+  concept: l1_vs_open
+  prompt: "Contra rivales en vivo que pagan muchos 3-bets, tu rango de 3-bet debería ser..."
+  options: ["Polarizado, con muchos faroles", "Lineal, por valor", "Solo AA", "Igual que online"]
+  answer: 1
+  explanation: "Si te pagan mucho, el valor gana más y los faroles pierden fold equity."
+- id: q1_open_limp
+  level: 1
+  skill: preflop
+  concept: l1_rfi
+  prompt: "Nadie ha entrado al bote y estás en CO con 98s. ¿Qué es lo estándar?"
+  options: ["Limp", "Abrir (subir)", "Fold siempre", "All-in"]
+  answer: 1
+  explanation: "Al abrir con subida puedes ganar el bote preflop y tomas la iniciativa. Abrir con limp invita a todos y te deja sin fold equity."
+- id: q1_live_size
+  level: 1
+  skill: preflop
+  concept: l1_sizing
+  prompt: "¿Por qué en vivo conviene abrir más grande (≈5 bb) que online (≈2,5 bb)?"
+  options: ["Por las reglas del casino", "Los rivales pagan demasiado y el tamaño pequeño les da buen precio", "Para farolear más", "Para que haya menos rake"]
+  answer: 1
+  explanation: "Cobras más con tu rango fuerte y reduces los multiway en los que tu ventaja se diluye."
+- id: q1_setmine
+  level: 1
+  skill: math
+  concept: l1_implied
+  prompt: "Regla práctica de set mining: el stack efectivo debe ser al menos ___ veces lo que pagas."
+  options: ["3-5", "8-10", "15-20", "50"]
+  answer: 2
+  explanation: "Ligas un set ≈ 12 % de las veces (≈ 1 de 8) y no siempre cobras el stack, así que necesitas unas 15-20 veces."
+- id: q1_bb_vs_limp
+  level: 1
+  skill: preflop
+  concept: l1_limpers
+  prompt: "Hay limpers y nadie subió. Estás en la BB con 72o. ¿Qué haces?"
+  options: ["Fold", "Pasar (check)", "Subir", "All-in"]
+  answer: 1
+  explanation: "Ya pusiste la ciega y no te cuesta nada ver el flop. Foldear aquí es tirar equity gratis."

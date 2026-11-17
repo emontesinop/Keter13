@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Fuentes</h1>
+<p class="small muted">Las lecciones atribuyen cada concepto a su origen. Son atribuciones de ideas, no citas textuales. Base GTO como referencia y ajustes explotativos para el vivo de bajos límites.</p>
+<div class="box"><ul class="list">
+{% for s in c.sources.values() %}<li><b>{{ s.author }}</b><br><i>{{ s.title }}</i>{% if s.year %} ({{ s.year }}){% endif %}{% if s.note %}<br><span class="small muted">{{ s.note }}</span>{% endif %}</li>{% endfor %}
+</ul></div>
+<p class="small muted">Los rangos preflop son aproximados para cash en vivo con 100 bb y se pueden editar en <code>content/ranges/</code>.</p>
+{% endblock %}

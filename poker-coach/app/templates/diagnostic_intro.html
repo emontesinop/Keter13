@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Diagnóstico</h1>
+<div class="box">
+  <p>{{ n }} preguntas de los niveles 0 a 5, sin feedback hasta el final. Responde lo que harías en la mesa. Si no sabes, elige tu mejor intuición.</p>
+  <p class="small muted">Si aciertas ≥ 85 % de un nivel, queda convalidado: puedes presentar su examen directamente, sin los 50 ejercicios previos.</p>
+  <form method="post" action="/diagnostico"><button class="btn primary">{{ 'Repetir diagnóstico' if last else 'Empezar' }}</button></form>
+  {% if last %}<a class="btn" href="/run/{{ last }}/resultado">Ver último resultado</a>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+# Preguntas conceptuales fijas. answer = índice (desde 0) de la opción correcta.
+- id: q0_full_vs_flush
+  level: 0
+  skill: reading
+  concept: l0_rankings
+  prompt: "¿Qué mano es más alta?"
+  options: ["Color", "Full", "Escalera", "Son iguales"]
+  answer: 1
+  explanation: "Full > color > escalera. El full es más difícil de ligar."
+- id: q0_wheel
+  level: 0
+  skill: reading
+  concept: l0_rankings
+  prompt: "En la escalera A-2-3-4-5, ¿cuál es la carta más alta?"
+  options: ["As", "5", "4", "Depende del palo"]
+  answer: 1
+  explanation: "En la 'rueda' el As cuenta como 1, así que es una escalera al 5, la más baja posible."
+- id: q0_board_plays
+  level: 0
+  skill: reading
+  concept: l0_rankings
+  prompt: "Mesa A♠ A♦ K♣ K♥ Q♠. Tú tienes J♣ J♦ y el rival 3♥ 2♥. ¿Quién gana?"
+  options: ["Tú", "El rival", "Empate"]
+  answer: 2
+  explanation: "La mejor mano de 5 cartas de ambos es A-A-K-K-Q, que está en la mesa. Tus jotas no juegan."
+- id: q0_position_value
+  level: 0
+  skill: preflop
+  concept: l0_positions
+  prompt: "¿Por qué el botón es la posición más rentable?"
+  options: ["Paga menos ciegas", "Actúa último postflop en todas las calles", "Recibe mejores cartas", "Puede hacer limp más barato"]
+  answer: 1
+  explanation: "Actuar último te da información de lo que hicieron todos antes de decidir."
+- id: q0_fundamental
+  level: 0
+  skill: math
+  concept: l0_ev
+  prompt: "Según el Teorema Fundamental de Sklansky, ganas dinero cuando..."
+  options: ["Ganas la mano", "Tu rival juega distinto a como jugaría viendo tus cartas", "Faroleas más que tu rival", "Juegas más manos"]
+  answer: 1
+  explanation: "Ganas cada vez que el rival comete un error respecto a la decisión que tomaría con información perfecta."
+- id: q0_results
+  level: 0
+  skill: math
+  concept: l0_ev
+  prompt: "Pagas un all-in con 80 % de equity y pierdes. ¿Fue un error?"
+  options: ["Sí, perdiste", "No, la decisión tenía EV positivo", "Depende del tamaño del bote", "Solo si era el river"]
+  answer: 1
+  explanation: "Evalúa la decisión, no el resultado. Con 80 % pierdes 1 de cada 5 veces y eso es varianza."
+- id: q0_bluff_live
+  level: 0
+  skill: math
+  concept: l0_bluff_math
+  prompt: "Tu rival en vivo paga casi siempre. ¿Qué ajuste es correcto?"
+  options: ["Farolear más grande", "Farolear menos y apostar más por valor", "Apostar siempre medio bote", "Hacer slowplay con todo"]
+  answer: 1
+  explanation: "Si no foldea lo suficiente, el farol tiene EV negativo y la apuesta de valor gana más."
+- id: q0_equity_def
+  level: 0
+  skill: math
+  concept: l0_equity
+  prompt: "Tener 40 % de equity significa que..."
+  options: ["Ganas 4 de cada 10 manos de la sesión", "Te corresponde el 40 % del bote si se reparten todas las cartas", "Debes apostar el 40 % del bote", "El rival tiene 40 % de faroles"]
+  answer: 1
+  explanation: "La equity es tu parte del bote en promedio si la mano llega al showdown sin más apuestas."

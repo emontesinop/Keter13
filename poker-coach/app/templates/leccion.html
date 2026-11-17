@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% from "_macros.html" import sources %}
+{% block body %}
+<p class="small"><a href="/nivel/{{ lesson.level }}">← Nivel {{ lesson.level }}</a></p>
+<h1>{{ lesson.title }}</h1>
+<div class="box">
+  {% for line in lesson.concept.strip().split('\n') %}<p>{{ line }}</p>{% endfor %}
+</div>
+<div class="box"><p class="small muted" style="margin-bottom:4px">Ejemplo</p><p>{{ lesson.example }}</p></div>
+{{ sources(lesson, c) }}
+{% if open %}<a class="btn primary" href="/practicar?concept={{ lesson.id }}">Practicar este concepto</a>
+{% else %}<button class="btn" disabled>Nivel bloqueado</button>{% endif %}
+{% endblock %}

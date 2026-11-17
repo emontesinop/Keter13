@@ -1,0 +1,44 @@
+{% extends "base.html" %}{% from "_macros.html" import sources %}
+{% block body %}
+<div class="row small muted">
+  <span>{% if run %}{{ 'Diagnóstico' if run.kind == 'diagnostic' else 'Examen nivel ' ~ run.level }} · {{ progress_txt }}{% else %}Nivel {{ q.level }} · {{ skill_label[q.skill] }}{% endif %}</span>
+  {% if not run %}
+    {% if gate and gate.has_content %}<span>{{ gate.count }}/{{ gate.window }} · {{ gate.accuracy|pct }}</span>{% endif %}
+  {% endif %}
+</div>
+<div class="box" style="margin-top:8px">
+  {% if q.situation %}<dl class="situ">{% for k, v in q.situation %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% endfor %}</dl>{% endif %}
+  {% for lbl, cs in q.cards %}<div class="cards"><span class="lbl">{{ lbl }}</span>{% for x in cs %}{{ x|card|safe }}{% endfor %}</div>{% endfor %}
+  <p class="prompt">{{ q.prompt }}</p>
+  {% if not feedback %}
+  <form method="post" action="{{ action }}">
+    <input type="hidden" name="issued" value="{{ issued }}">
+    {% if not run %}
+    <input type="hidden" name="drill_type" value="{{ q.drill_type }}"><input type="hidden" name="seed" value="{{ q.seed }}">
+    {% if level is not none %}<input type="hidden" name="level" value="{{ level }}">{% endif %}
+    {% if concept %}<input type="hidden" name="concept" value="{{ concept }}">{% endif %}
+    <input type="hidden" name="timer" value="{{ timer }}">
+    {% endif %}
+    <div class="options {{ 'cols-2' if q.options|length in (2, 4) }}">
+    {% for v, label in q.options %}<button class="btn" name="answer" value="{{ v }}">{{ label }}</button>{% endfor %}
+    </div>
+  </form>
+  {% if timer %}<p class="small muted">⏱ <span class="timer" id="t">20</span> s</p>
+  <script>let s=20,e=document.getElementById('t');setInterval(()=>{s--;e.textContent=s;if(s<=0)e.classList.add('late')},1000)</script>{% endif %}
+  {% else %}
+  <div class="options {{ 'cols-2' if q.options|length in (2, 4) }}">
+    {% for v, label in q.options %}<button class="btn {{ 'ok' if v == q.answer else ('bad' if v == feedback.answer else '') }}" disabled>{{ label }}</button>{% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% if feedback %}
+<div class="box">
+  <div class="verdict {{ 'ok' if feedback.ok else 'bad' }}">{{ 'Correcto' if feedback.ok else 'Incorrecto. Respuesta: ' ~ q.answer_label }}</div>
+  <p>{{ q.explanation }}</p>
+  {% if lesson %}<p class="small">Concepto: <a href="/leccion/{{ lesson.id }}">{{ lesson.title }}</a></p>{{ sources(lesson, c) }}{% endif %}
+</div>
+<a class="btn primary" href="/practicar?{{ filters }}" autofocus>Siguiente</a>
+{% elif not run %}
+<p class="small muted"><a href="/practicar?{{ filters ~ ('&' if filters else '') }}timer={{ 0 if timer else 1 }}">{{ 'Quitar' if timer else 'Activar' }} temporizador</a></p>
+{% endif %}
+{% endblock %}

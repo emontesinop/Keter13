@@ -1,0 +1,6 @@
+{% macro sources(lesson, c) -%}
+<p class="small muted">Fuente:
+{%- for s in lesson.sources %} <b>{{ c.sources[s.id].author }}</b>, <i>{{ c.sources[s.id].title }}</i> ({{ s.idea.rstrip(".") }}){{ ";" if not loop.last else "." }}{% endfor %}
+</p>
+{%- endmacro %}
+{% macro bar(frac) -%}<div class="bar"><span style="width:{{ ((frac or 0) * 100)|round|int }}%"></span></div>{%- endmacro %}

@@ -1,0 +1,17 @@
+# Rangos de apertura (RFI = "raise first in": todos foldean hasta ti).
+# Mesa en vivo de 9 jugadores, 100 bb efectivas, open de ~5 bb.
+# APROXIMADOS Y EDITABLES: base razonable inspirada en rangos de solver
+# (Acevedo, Janda) y ajustada a cash en vivo de bajos límites (Hanson, Little).
+# Regla de validación: cada posición contiene a la anterior (UTG ⊂ ... ⊂ BTN).
+meta:
+  note: Aproximados para cash en vivo 100bb. Editables.
+  order: [UTG, UTG1, MP, LJ, HJ, CO, BTN]
+ranges:
+  UTG:  "55+, ATs+, KTs+, QJs, JTs, T9s, AJo+, KQo"
+  UTG1: "44+, A9s+, KTs+, QTs+, JTs, T9s, 98s, AJo+, KQo"
+  MP:   "33+, A8s+, A5s, K9s+, QTs+, J9s+, T9s, 98s, 87s, ATo+, KQo"
+  LJ:   "22+, A2s+, K9s+, Q9s+, J9s+, T8s+, 98s, 87s, 76s, ATo+, KJo+"
+  HJ:   "22+, A2s+, K8s+, Q9s+, J9s+, T8s+, 97s+, 87s, 76s, 65s, ATo+, KJo+, QJo"
+  CO:   "22+, A2s+, K6s+, Q8s+, J8s+, T8s+, 97s+, 86s+, 75s+, 65s, 54s, A9o+, KTo+, QTo+, JTo"
+  BTN:  "22+, A2s+, K2s+, Q5s+, J7s+, T7s+, 96s+, 85s+, 74s+, 64s+, 53s+, 43s, A2o+, K8o+, Q9o+, J9o+, T9o, 98o"
+  SB:   "22+, A2s+, K5s+, Q8s+, J8s+, T8s+, 97s+, 86s+, 75s+, 65s, 54s, A7o+, A5o, KTo+, QTo+, JTo"

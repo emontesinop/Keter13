@@ -1,0 +1,44 @@
+{% extends "base.html" %}{% from "_macros.html" import bar %}
+{% block body %}
+{% if run.kind == 'diagnostic' %}
+<h1>Resultado del diagnóstico</h1>
+<div class="box">
+  <p><b>{{ (run.score * 100)|round|int }} %</b> de aciertos en total.</p>
+  <p>Tu punto de partida: <b>nivel {{ res.placed_level }} · {{ c.level_name(res.placed_level) }}</b>.</p>
+  {% if res.placed_level > 0 %}<p class="small muted">Niveles convalidados (0{% if res.placed_level > 1 %}–{{ res.placed_level - 1 }}{% endif %}): puedes presentar su examen directamente desde la Ruta.</p>{% endif %}
+</div>
+<h2>Por nivel</h2>
+<div class="box"><ul class="list">
+{% for lvl, v in res.by_level|dictsort %}{% set ok, tot = v %}
+  <li><div class="row"><span>{{ lvl }} · {{ c.level_name(lvl) }}</span><span>{{ ok }}/{{ tot }}</span></div>{{ bar(ok / tot) }}</li>
+{% endfor %}</ul></div>
+{% if res.weaknesses %}
+<h2>Debilidades detectadas</h2>
+<div class="box"><ul class="list">
+{% for cid, ok, tot in res.weaknesses %}
+  <li class="row"><span>{% if cid in c.lessons %}<a href="/leccion/{{ cid }}">{{ c.lessons[cid].title }}</a>{% else %}{{ {'dx_postflop':'Postflop (nivel 2)','dx_reading':'Lectura de manos (nivel 3)','dx_exploit':'Explotación (nivel 4)','dx_mental':'Mental y bankroll (nivel 5)'}.get(cid, cid) }}{% endif %}</span><span class="muted">{{ ok }}/{{ tot }}</span></li>
+{% endfor %}</ul></div>
+{% endif %}
+<a class="btn primary" href="/">Ver mi plan de hoy</a>
+{% else %}
+<h1>Examen · nivel {{ run.level }}</h1>
+<div class="box">
+  <div class="verdict {{ 'ok' if passed else 'bad' }}">{{ 'Aprobado' if passed else 'No aprobado' }} · {{ (run.score * 100)|round|int }} %</div>
+  <p>{% if passed %}Nivel {{ run.level }} superado. El nivel {{ run.level + 1 }} queda abierto.{% else %}Necesitas ≥ {{ (c.config.gate.exam_pass * 100)|int }} %. Repasa los errores de abajo y vuelve a cumplir el requisito de práctica.{% endif %}</p>
+</div>
+<a class="btn primary" href="/ruta">Volver a la ruta</a>
+{% endif %}
+{% if wrong %}
+<details {{ 'open' if run.kind == 'exam' }}><summary>Revisar tus errores ({{ wrong|length }})</summary>
+{% for a, q in wrong %}
+<div class="box">
+  {% for lbl, cs in q.cards %}<div class="cards"><span class="lbl">{{ lbl }}</span>{% for x in cs %}{{ x|card|safe }}{% endfor %}</div>{% endfor %}
+  {% if q.situation %}<dl class="situ">{% for k, v in q.situation %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% endfor %}</dl>{% endif %}
+  <p class="prompt">{{ q.prompt }}</p>
+  <p class="small">Tu respuesta: <b>{{ q.option_label(a.user_answer) }}</b> · Correcta: <b>{{ q.answer_label }}</b></p>
+  <p class="small muted">{{ q.explanation }}</p>
+</div>
+{% endfor %}
+</details>
+{% endif %}
+{% endblock %}
