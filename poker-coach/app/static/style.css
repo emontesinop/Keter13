@@ -74,3 +74,6 @@ form.grid .grid{display:grid;grid-template-columns:1fr;gap:8px}
 .finding.ok{border-left:4px solid var(--ok)}
 nav.tabs a{padding:8px 4px}
 @media (prefers-color-scheme:dark){.tag.dudoso-t,.tag.warn-t{color:#f0b85a;border-color:#a77a2c}}
+.sim-path{stroke:var(--muted);stroke-opacity:.35;stroke-width:1.2}
+.sim-exp{stroke:var(--accent);stroke-width:2.5;stroke-dasharray:6 4}
+.row .btn.inline+.btn.inline{margin-left:0}

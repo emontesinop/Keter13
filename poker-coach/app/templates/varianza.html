@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block body %}
+<p class="small"><a href="/sesiones">← Sesiones</a></p>
+<h1>Simulador de varianza</h1>
+<p class="small muted">Qué rangos de resultado son normales con un win rate y una desviación dados. {% if own %}Valores iniciales: tus estadísticas reales.{% else %}Valores iniciales: típicos de vivo (aún no tienes 20 h registradas).{% endif %}</p>
+<form class="box grid2" method="get" action="/varianza">
+  <div><label>Win rate (bb/h)</label><input name="wr" value="{{ wr }}" inputmode="decimal"></div>
+  <div><label>Desviación (bb/h)</label><input name="sd" value="{{ sd }}" inputmode="decimal"></div>
+  <div><label>Horas</label><input name="hours" value="{{ hours|int }}" inputmode="numeric"></div>
+  <div><label>Bankroll (bb)</label><input name="bankroll_bb" value="{{ bankroll_bb|int }}" inputmode="numeric"></div>
+  <div class="full"><button class="btn primary">Simular</button></div>
+</form>
+<div class="box">{{ chart|safe }}<p class="small muted" style="margin:6px 0 0">20 de 2 000 trayectorias simuladas. La línea discontinua es el resultado esperado.</p></div>
+<div class="stats">
+  <div class="stat"><b>{{ (sim.p_loss * 100)|round|int }} %</b><span>prob. de ir en negativo tras {{ hours|int }} h</span></div>
+  <div class="stat"><b>{{ sim.pct(0.5)|num(0) }} bb</b><span>resultado mediano</span></div>
+  <div class="stat"><b>{{ sim.pct(0.05)|num(0) }} bb</b><span>peor 5 %</span></div>
+  <div class="stat"><b>{{ sim.pct(0.95)|num(0) }} bb</b><span>mejor 5 %</span></div>
+  <div class="stat"><b>{{ sim.pct(0.5, sim.drawdowns)|num(0) }} bb</b><span>caída máx. mediana</span></div>
+  <div class="stat"><b>{{ sim.pct(0.95, sim.drawdowns)|num(0) }} bb</b><span>caída máx. (1 de cada 20)</span></div>
+</div>
+<div class="note">
+  {% if wr > 0 %}Para que tu intervalo del 95 % excluya el 0 con este win rate necesitas ≈ <b>{{ h_sig|num(0) }} h</b>.
+  Riesgo de ruina con {{ bankroll_bb|int }} bb: <b>{{ (ror * 100)|num(1) }} %</b> (aprox. de difusión, sin cambiar de límite).
+  {% else %}Con win rate ≤ 0 el riesgo de ruina a largo plazo es 100 %.{% endif %}
+  Probabilidad teórica de ir en negativo: {{ (p_loss_theory * 100)|num(0) }} %.
+</div>
+{% endblock %}

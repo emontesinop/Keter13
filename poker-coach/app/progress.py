@@ -89,10 +89,12 @@ def _unlock(db: DB, level: int, status: str = "unlocked") -> None:
 # ---------- runs (diagnóstico / examen) ----------
 
 DIAGNOSTIC_PLAN = (
-    ["pot_odds", "outs", "rule24", "ev_call", "ev_call", "hand_rank", "position", "bluff_math"]   # nivel 0
-    + ["rfi"] * 3 + ["vs_open"] * 3 + ["vs_limpers", "sizing"]                                  # nivel 1
+    ["pot_odds", "outs", "rule24", "ev_call", "hand_rank", "position", "bluff_math"]            # nivel 0
+    + ["rfi"] * 3 + ["vs_open"] * 2 + ["vs_limpers", "sizing"]                                  # nivel 1
     + ["mdf", "spr", "river_decision", "facing_bet"]                                            # nivel 2
     + ["combos", "range_vs_hand"]                                                               # nivel 3
+    + ["profile_id"]                                                                            # nivel 4
+    + ["bankroll_move"]                                                                         # nivel 5
 )
 
 
@@ -134,8 +136,12 @@ def run_attempts(db: DB, run: Run) -> list[Attempt]:
 class DiagnosticResult:
     by_level: dict          # level -> (correct, total)
     by_skill: dict          # skill -> (correct, total)
-    placed_level: int
+    placed_level: int       # primer nivel no convalidado (puede ser MAX_LEVEL + 1)
     weaknesses: list        # [(concept_id, correct, total)]
+
+    @property
+    def start_level(self) -> int:
+        return min(self.placed_level, MAX_LEVEL)
 
 
 def diagnostic_result(db: DB, run: Run, c: Content | None = None) -> DiagnosticResult:

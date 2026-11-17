@@ -1,0 +1,78 @@
+- id: l4_profiles
+  level: 4
+  title: Perfiles de rival
+  concept: |
+    Clasifica a cada rival en 2-3 órbitas con dos datos: cuántas manos juega (VPIP) y cuántas sube (PFR).
+    Nit: juega poco y sube poco. Regular: rango razonable, sube lo que juega. LAG: juega bastante y agresivo. Calling station: juega mucho y casi nunca sube. Maníaco: juega casi todo y sube casi todo.
+    Ajusta la etiqueta cuando veas showdowns.
+  example: "Entra en 1 de cada 2 manos, casi nunca sube y llega al river con pares bajos: calling station."
+  sources:
+    - id: miller_1pct
+      idea: Clasificar a la población en vivo y sus errores típicos.
+    - id: hanson
+      idea: Perfiles de jugadores de cash en vivo.
+  drills: [profile_id]
+
+- id: l4_exploit_passive
+  level: 4
+  title: Explotar a jugadores pasivos
+  concept: |
+    Contra la calling station, valor fino, tamaños grandes y casi cero faroles.
+    Contra el nit, roba sus ciegas, haz c-bet a menudo y créele cuando sube.
+    El error más caro en vivo es pagar las subidas de turn y river de jugadores pasivos.
+  example: "Un nit sube tu apuesta del turn: foldea top pair sin dolor. Una calling station paga tu river: apuesta 3/4 con top pair."
+  sources:
+    - id: miller_1pct
+      idea: El jugador pasivo que sube tiene la mano.
+    - id: ssh
+      idea: Ganar a rivales pasivos apostando valor.
+    - id: polk
+      idea: Ajustes explotativos contra jugadores débiles.
+  drills: [exploit_adjust]
+
+- id: l4_exploit_aggro
+  level: 4
+  title: Explotar a jugadores agresivos
+  concept: |
+    Contra LAGs y maníacos, deja que apuesten: paga más con bluffcatchers y haz 4-bet por valor más amplio.
+    Busca la posición contra ellos: siéntate a su izquierda.
+    No farolees a quien no foldea, y no conviertas cada mano en una guerra de egos.
+  example: "Un maníaco apuesta las tres calles en un board seco y tienes top pair: el call es mucho mejor que contra un nit."
+  sources:
+    - id: hanson
+      idea: Ajustes contra agresivos en cash en vivo.
+    - id: janda
+      idea: Cuando el rival farolea de más, amplía la defensa.
+  drills: [exploit_adjust]
+
+- id: l4_tells
+  level: 4
+  title: Tells básicos
+  concept: |
+    Los tells sirven para desempatar decisiones cerradas, no para cambiar una decisión clara.
+    Primero observa cómo se comporta habitualmente: un tell es un cambio respecto a eso.
+    Patrones frecuentes en jugadores recreativos: quien actúa débil suele estar fuerte y al revés; mirar las fichas tras ver el flop suele indicar fuerza; un call rápido en flop o turn suele ser una mano media o un proyecto.
+    Contra regulares buenos, los tells cuentan menos.
+  example: "Tras el flop, el rival mira sus fichas y luego desvía la mirada. Más probable que haya ligado."
+  sources:
+    - id: caro
+      idea: Actuar débil cuando se está fuerte, mirar las fichas.
+    - id: elwood
+      idea: Tells de tiempo y comportamiento según el contexto.
+  drills: []
+
+- id: l4_live_dynamics
+  level: 4
+  title: Dinámicas del vivo
+  concept: |
+    Las mesas en vivo tienen botes multiway, straddles, limps y apuestas desproporcionadas.
+    En multiway juega más directo: valor con manos fuertes y menos faroles.
+    Un sizing raro de un recreativo (apuesta enorme o mínima) suele decir mucho sobre su mano. Anótalo.
+    Elige mesa: el mayor ajuste explotativo es sentarte donde hay jugadores débiles.
+  example: "Bote multiway de 5 jugadores en 9♠ 8♠ 7♦: tu overpair es una mano de control del bote, no de stack."
+  sources:
+    - id: miller_course
+      idea: Selección de mesa y botes multiway en vivo.
+    - id: little
+      idea: Lectura de sizing en jugadores recreativos.
+  drills: []

@@ -57,3 +57,34 @@ def radar(scores: dict[str, float | None], labels: dict[str, str], size: int = 2
                  f'<text x="{x:.1f}" y="{y + 13:.1f}" text-anchor="middle" class="chart-label strong">{val}</text>')
     return (f'<svg viewBox="0 0 {size} {size}" class="radar" role="img" aria-label="Precisión por habilidad">'
             f'{rings}{axes}<polygon class="radar-shape" points="{shape}"/>{text}</svg>')
+
+
+def _s(x: float) -> str:
+    return ("+" if x >= 0 else "−") + f"{abs(x):,.0f}".replace(",", " ")
+
+
+def paths_chart(paths: list[list[float]], expected_end: float, width: int = 560, height: int = 220,
+                pad: int = 30) -> str:
+    """Trayectorias simuladas (finas) + línea esperada (discontinua) + cero."""
+    if not paths:
+        return ""
+    allv = [v for p in paths for v in p] + [0.0, expected_end]
+    lo, hi = min(allv), max(allv)
+    if hi == lo:
+        hi += 1
+    n = len(paths[0])
+    X = lambda i: pad + i * (width - 2 * pad) / (n - 1)
+    Y = lambda v: height - pad - (v - lo) * (height - 2 * pad) / (hi - lo)
+    lines = "".join(
+        '<polyline class="sim-path" fill="none" points="' + " ".join(f"{X(i):.1f},{Y(v):.1f}" for i, v in enumerate(p)) + '"/>'
+        for p in paths)
+    return (
+        f'<svg viewBox="0 0 {width} {height}" class="chart" role="img" aria-label="Trayectorias simuladas">'
+        f'<line x1="{pad}" x2="{width - pad}" y1="{Y(0):.1f}" y2="{Y(0):.1f}" class="chart-base"/>'
+        f'{lines}'
+        f'<line x1="{X(0):.1f}" y1="{Y(0):.1f}" x2="{X(n - 1):.1f}" y2="{Y(expected_end):.1f}" class="sim-exp"/>'
+        f'<text x="{pad}" y="{pad - 12}" class="chart-label">{_s(hi)} bb</text>'
+        f'<text x="{pad}" y="{height - 10}" class="chart-label">{_s(lo)} bb</text>'
+        f'<text x="{width - pad}" y="{Y(expected_end) - 8:.1f}" text-anchor="end" class="chart-label strong">esperado {_s(expected_end)}</text>'
+        "</svg>"
+    )

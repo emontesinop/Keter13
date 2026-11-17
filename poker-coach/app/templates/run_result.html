@@ -4,7 +4,7 @@
 <h1>Resultado del diagnóstico</h1>
 <div class="box">
   <p><b>{{ (run.score * 100)|round|int }} %</b> de aciertos en total.</p>
-  <p>Tu punto de partida: <b>nivel {{ res.placed_level }} · {{ c.level_name(res.placed_level) }}</b>.</p>
+  <p>Tu punto de partida: <b>nivel {{ res.start_level }} · {{ c.level_name(res.start_level) }}</b>.</p>
   {% if res.placed_level > 0 %}<p class="small muted">Niveles convalidados (0{% if res.placed_level > 1 %}–{{ res.placed_level - 1 }}{% endif %}): puedes presentar su examen directamente desde la Ruta.</p>{% endif %}
 </div>
 <h2>Por nivel</h2>

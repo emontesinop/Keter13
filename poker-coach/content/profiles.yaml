@@ -1,12 +1,117 @@
-# Modelo simplificado de cada perfil de rival (fracciones de su rango en esa calle).
-#   call:       fracción de su rango que paga una apuesta tuya (su mejor X %)
-#   bet_value:  fracción con la que apuesta por valor (su mejor X %)
-#   bet_bluff:  fracción con la que farolea (su peor X %)
-# drill_call / drill_bet: si el perfil aparece en los drills de river.
-# APROXIMADOS Y EDITABLES: ajústalos a lo que ves en tus mesas.
-unknown:         {label: "desconocido", call: 0.45, bet_value: 0.25, bet_bluff: 0.08}
-nit:             {label: "nit", call: 0.25, bet_value: 0.15, bet_bluff: 0.0, drill_call: true, drill_bet: true}
-regular:         {label: "regular", call: 0.45, bet_value: 0.25, bet_bluff: 0.08, drill_call: true, drill_bet: true}
-calling_station: {label: "calling station", call: 0.70, bet_value: 0.20, bet_bluff: 0.03, drill_call: true}
-lag:             {label: "agresivo (LAG)", call: 0.45, bet_value: 0.30, bet_bluff: 0.20, drill_bet: true}
-maniac:          {label: "maníaco", call: 0.60, bet_value: 0.40, bet_bluff: 0.35}
+# Perfiles de rival. Los usan los drills, el analizador de manos y el nivel 4.
+#   call / bet_value / bet_bluff: modelo de river (fracción de su rango que paga,
+#     apuesta por valor y farolea). APROXIMADOS Y EDITABLES.
+#   vpip / pfr: rango típico (%) en cash en vivo.
+#   behaviors: lo que observas en la mesa.
+#   do / dont: ajustes correctos e incorrectos contra él (los drills usan "dont" como distractores).
+unknown:
+  label: desconocido
+  call: 0.45
+  bet_value: 0.25
+  bet_bluff: 0.08
+nit:
+  label: nit
+  call: 0.25
+  bet_value: 0.15
+  bet_bluff: 0.0
+  drill_call: true
+  drill_bet: true
+  vpip: [8, 15]
+  pfr: [5, 12]
+  behaviors:
+    - "solo entra al bote con manos premium"
+    - "foldea a casi todos los 3-bets"
+    - "rara vez farolea; cuando apuesta grande, tiene"
+    - "se queja de las malas rachas y espera AA"
+  do:
+    - "Róbale las ciegas: abre más amplio cuando él está en las ciegas"
+    - "Foldea ante sus subidas en turn y river salvo manos muy fuertes"
+    - "Haz c-bet a menudo: foldea todo lo que no conectó"
+  dont:
+    - "Pagar sus 3-bets con AJ o KQ"
+    - "Apostar valor fino esperando que pague con peores"
+    - "Pagar su subida del river con top pair"
+calling_station:
+  label: calling station
+  call: 0.70
+  bet_value: 0.20
+  bet_bluff: 0.03
+  drill_call: true
+  vpip: [40, 65]
+  pfr: [3, 10]
+  behaviors:
+    - "paga casi todo y rara vez sube"
+    - "llega al showdown con pares bajos y proyectos fallados"
+    - "nunca foldea top pair"
+    - "hace limp-call preflop a menudo"
+  do:
+    - "Apuesta valor fino en tres calles, incluso top pair con kicker medio"
+    - "Usa tamaños grandes con tus manos buenas"
+    - "Casi no farolees: tu ganancia viene del valor"
+  dont:
+    - "Hacer faroles de varias calles"
+    - "Hacer slowplay con manos fuertes"
+    - "Apostar pequeño por valor «para que pague»"
+regular:
+  label: regular
+  call: 0.45
+  bet_value: 0.25
+  bet_bluff: 0.08
+  drill_call: true
+  drill_bet: true
+  vpip: [18, 26]
+  pfr: [14, 22]
+  behaviors:
+    - "abre según la posición con rangos razonables"
+    - "hace c-bet a menudo y se rinde en el turn"
+    - "hace 3-bet sobre todo por valor"
+    - "se ajusta a la mesa"
+  do:
+    - "Defiende más contra sus c-bets pequeñas en boards que te favorecen"
+    - "Flotea en posición y ataca cuando chequea el turn"
+    - "Juega cerca de la estrategia base y busca ajustes pequeños"
+  dont:
+    - "Asumir que siempre farolea"
+    - "Pagar sus 3-bets fuera de posición con manos dominadas"
+    - "Hacer jugadas raras sin un motivo concreto"
+lag:
+  label: agresivo (LAG)
+  call: 0.45
+  bet_value: 0.30
+  bet_bluff: 0.20
+  drill_bet: true
+  vpip: [28, 40]
+  pfr: [22, 32]
+  behaviors:
+    - "abre y hace 3-bet muy amplio"
+    - "hace c-bet y doble barril con frecuencia"
+    - "presiona los botes pequeños"
+    - "farolea cuando el board da miedo"
+  do:
+    - "Amplía tus rangos de call y de 4-bet por valor"
+    - "Deja que farolee: paga más con bluffcatchers decentes"
+    - "Juega más botes en posición contra él"
+  dont:
+    - "Foldear top pair buen kicker ante cualquier apuesta"
+    - "Farolearle en boards que él no respeta"
+    - "Pelear sus 3-bets con manos débiles fuera de posición"
+maniac:
+  label: maníaco
+  call: 0.60
+  bet_value: 0.40
+  bet_bluff: 0.35
+  vpip: [50, 80]
+  pfr: [35, 60]
+  behaviors:
+    - "sube y resube casi todas las manos"
+    - "va all-in con proyectos y aire"
+    - "apuesta en todas las calles"
+    - "juega al azar, a menudo en tilt"
+  do:
+    - "Juega manos fuertes y deja que él apueste por ti"
+    - "Paga más amplio en el river con manos medias"
+    - "Siéntate a su izquierda para actuar después de él"
+  dont:
+    - "Intentar faroles contra él"
+    - "Foldear manos fuertes por miedo al tamaño"
+    - "Entrar en guerras de 3-bet con manos especulativas"

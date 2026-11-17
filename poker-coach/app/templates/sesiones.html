@@ -1,7 +1,7 @@
 {% extends "base.html" %}{% from "_macros.html" import scale %}
 {% block body %}
 <h1>Sesiones en vivo</h1>
-<div class="row" style="margin-bottom:12px"><a class="btn inline" href="/checkin">Check-in previo</a><a class="btn inline" href="/mental">Panel mental</a></div>
+<div class="row" style="margin-bottom:12px;flex-wrap:wrap;justify-content:flex-start"><a class="btn inline" href="/checkin">Check-in previo</a><a class="btn inline" href="/mental">Panel mental</a><a class="btn inline" href="/varianza">Varianza</a><a class="btn inline" href="/listo">¿Listo?</a></div>
 {% if summ.n_sessions %}
 <div class="stats">
   <div class="stat"><b>{{ summ.profit|money }}</b><span>resultado</span></div>
@@ -56,6 +56,7 @@
 <form class="grid" method="post" action="/ajustes">
   <div><label>Bankroll inicial $</label><input type="number" name="initial_bankroll" value="{{ initial|int }}" min="0" inputmode="decimal"></div>
   <div><label>Stop-loss (buy-ins)</label><input name="stop_loss_bi" value="{{ stop_loss }}" placeholder="p. ej. 2" inputmode="decimal"></div>
+  <div class="full"><label>Límite objetivo</label><input name="target_stakes" value="{{ target }}" placeholder="1/2" list="stk"></div>
   <div class="full"><button class="btn">Guardar ajustes</button></div>
 </form>
 <p class="small muted">Referencia: {{ c.config.bankroll.min_buyins }}–{{ c.config.bankroll.comfortable_buyins }} buy-ins para cash en vivo.</p>

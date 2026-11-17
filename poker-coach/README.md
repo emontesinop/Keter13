@@ -54,7 +54,16 @@ El diagnóstico puede convalidar un nivel: si aciertas ≥ 85 % de sus preguntas
 - Iteración 2: repetición espaciada SM-2 (`/repasar` e intercalada en la práctica), check-in mental pre/post y panel de correlación con resultados.
 - Iteración 3: nivel 2 (postflop) y nivel 3 (lectura de manos) con drills calculados con treys.
 - Iteración 4: analizador de manos (`/manos`) y panel de leaks con plan semanal (`/leaks`).
-- Próxima: niveles 4-5 (explotación en vivo, mental y bankroll) y criterio «listo para jugar con dinero».
+- Iteración 5: nivel 4 (explotación en vivo: perfiles, ajustes, tells), nivel 5 (bankroll, varianza, tilt, stop-loss), criterio «listo para jugar con dinero» (`/listo`) y simulador de varianza (`/varianza`).
+
+## Listo para jugar con dinero
+
+Se cumple con tres condiciones:
+1. Niveles 0-3 aprobados con examen. La convalidación del diagnóstico no basta.
+2. Bankroll de al menos 20 buy-ins del límite objetivo.
+3. Stop-loss definido.
+
+Las reglas de subir y bajar de límite y la escalera de límites están en `content/config.yaml`.
 
 ## Analizador de manos
 

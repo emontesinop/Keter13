@@ -16,8 +16,9 @@ from sqlmodel import select
 
 import json
 
-from . import analyzer, drills, leaks, mental, progress, review
-from .charts import line_chart, radar
+from . import analyzer, drills, leaks, mental, progress, readiness, review
+from .charts import line_chart, paths_chart, radar
+from .core.variance import hours_for_significance, prob_losing, risk_of_ruin, simulate
 from .content import POSITIONS_9 as POSITIONS_9_LIST
 from .content import get_content, pos_label
 from .core.cards import fmt_card
@@ -91,6 +92,7 @@ def home(request: Request, db: DB = Depends(get_db)):
                   rec=progress.recommendation(db, c), level=lvl, gate=progress.gate(db, lvl, c),
                   radar=radar({k: v[0] for k, v in scores.items()}, drills.SKILL_LABEL),
                   scores=scores, summ=summ, due=review.due_count(db), prios=leaks.priorities(db, c, top=2),
+                  ready=readiness.readiness(db, c),
                   checkin_today=db.exec(select(MentalCheckin).where(
                       MentalCheckin.date == date.today().isoformat(), MentalCheckin.phase == "pre")).first())
 
@@ -332,6 +334,7 @@ def sessions_page(request: Request, db: DB = Depends(get_db)):
     return render(request, "sesiones.html", rows=rows, summ=summ, chart=line_chart([v for _, v in curve]),
                   initial=initial, bankroll=bankroll, bi=bi, ref_bb=ref_bb,
                   stop_loss=progress.get_setting(db, "stop_loss_bi", ""),
+                  target=progress.get_setting(db, "target_stakes", ""),
                   today=date.today().isoformat())
 
 
@@ -406,9 +409,13 @@ def sessions_delete(sid: int, db: DB = Depends(get_db)):
 
 
 @app.post("/ajustes")
-def settings_save(initial_bankroll: float = Form(0), stop_loss_bi: str = Form(""), db: DB = Depends(get_db)):
+def settings_save(initial_bankroll: float = Form(0), stop_loss_bi: str = Form(""), target_stakes: str = Form(""),
+                  db: DB = Depends(get_db)):
     progress.set_setting(db, "initial_bankroll", str(max(0.0, initial_bankroll)))
     progress.set_setting(db, "stop_loss_bi", stop_loss_bi.strip())
+    if target_stakes.strip():
+        _parse_stakes(target_stakes)
+    progress.set_setting(db, "target_stakes", target_stakes.strip())
     return RedirectResponse("/sesiones", status_code=303)
 
 
@@ -555,3 +562,33 @@ def leaks_page(request: Request, db: DB = Depends(get_db)):
     c = get_content()
     return render(request, "leaks.html", prios=leaks.priorities(db, c), drill=leaks.drill_leaks(db, c),
                   hand=leaks.hand_leaks(db), plan=leaks.weekly_plan(db, c))
+
+
+# ---------------- Listo para jugar / varianza ----------------
+
+@app.get("/listo", response_class=HTMLResponse)
+def ready_page(request: Request, db: DB = Depends(get_db)):
+    checks, ok = readiness.readiness(db)
+    return render(request, "listo.html", checks=checks, ok=ok)
+
+
+@app.get("/varianza", response_class=HTMLResponse)
+def variance_page(request: Request, wr: float | None = None, sd: float | None = None, hours: float = 100,
+                  bankroll_bb: float | None = None, db: DB = Depends(get_db)):
+    c = get_content()
+    rows = db.exec(select(Session)).all()
+    summ = summarize([_sd(s) for s in rows]) if rows else None
+    own = bool(summ and summ.hours >= 20 and summ.sd_bb_hour)
+    if wr is None:
+        wr = round(summ.bb_per_hour, 1) if own else 5.0
+    if sd is None:
+        sd = round(summ.sd_bb_hour) if own else c.config["variance"]["default_sd_bb"]
+    if bankroll_bb is None:
+        bb = rows[-1].bb if rows else 2.0
+        bankroll_bb = round(readiness.bankroll_now(db) / bb) if rows or progress.get_setting(db, "initial_bankroll") else 2000
+    hours = max(1.0, min(hours, 5000.0))
+    sd = max(1.0, sd)
+    sim = simulate(wr, sd, hours, n_sims=2000, rng=random.Random(42))
+    return render(request, "varianza.html", wr=wr, sd=sd, hours=hours, bankroll_bb=bankroll_bb, own=own, sim=sim,
+                  chart=paths_chart(sim.paths, wr * hours), p_loss_theory=prob_losing(wr, sd, hours),
+                  ror=risk_of_ruin(wr, sd, bankroll_bb), h_sig=hours_for_significance(wr, sd))

@@ -6,10 +6,11 @@ from __future__ import annotations
 import random
 
 from ..content import Content, get_content
-from . import mathx, postflop, preflop, reading
+from . import exploit, mathx, postflop, preflop, reading
 from .base import Question, SKILL_LABEL  # noqa: F401
 
-GENERATORS: dict = {**mathx.GENERATORS, **preflop.GENERATORS, **postflop.GENERATORS, **reading.GENERATORS}
+GENERATORS: dict = {**mathx.GENERATORS, **preflop.GENERATORS, **postflop.GENERATORS, **reading.GENERATORS,
+                         **exploit.GENERATORS}
 QUIZ_PREFIX = "quiz:"
 
 
