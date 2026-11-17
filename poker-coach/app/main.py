@@ -429,6 +429,8 @@ HERO_PRE = [("raise", "Subo / 3-bet / 4-bet"), ("call", "Pago"), ("limp", "Limp"
 VILLAIN_ACTS = [("", "—"), ("check", "Pasa"), ("bet", "Apuesta"), ("raise", "Sube"), ("allin", "All-in")]
 HERO_ACTS = [("", "—"), ("check", "Paso"), ("bet", "Apuesto"), ("call", "Pago"), ("raise", "Subo"),
              ("fold", "Fold"), ("allin", "All-in")]
+VILLAIN_ACTS2 = [("", "—"), ("call", "Paga"), ("raise", "Sube"), ("allin", "All-in")]
+HERO_ACTS2 = [("", "—"), ("call", "Pago"), ("raise", "Resubo"), ("fold", "Fold"), ("allin", "All-in")]
 BOARD_N = {"flop": 3, "turn": 1, "river": 1}
 
 
@@ -468,7 +470,9 @@ def parse_hand_form(f: dict, c) -> tuple[analyzer.HandInput, dict]:
         streets.append(analyzer.Street(
             st, cs, _num(f.get(f"{st}_pot")),
             analyzer.Action(f.get(f"{st}_v_kind", ""), _num(f.get(f"{st}_v_size"))),
-            analyzer.Action(f.get(f"{st}_h_kind", ""), _num(f.get(f"{st}_h_size")))))
+            analyzer.Action(f.get(f"{st}_h_kind", ""), _num(f.get(f"{st}_h_size"))),
+            analyzer.Action(f.get(f"{st}_v2_kind", ""), _num(f.get(f"{st}_v2_size"))),
+            analyzer.Action(f.get(f"{st}_h2_kind", ""), _num(f.get(f"{st}_h2_size")))))
     vc = f.get("villain_cards", "").strip()
     if vc:
         vcs = parse_cards(vc)
@@ -490,6 +494,7 @@ def _hand_form_ctx(**kw):
     c = get_content()
     return dict(positions=POSITIONS_9_LIST, profiles=[(p, c.profiles[p]["label"]) for p in PROFILE_ORDER if p in c.profiles],
                 pre_situations=PRE_SITUATIONS, hero_pre=HERO_PRE, villain_acts=VILLAIN_ACTS, hero_acts=HERO_ACTS,
+                villain_acts2=VILLAIN_ACTS2, hero_acts2=HERO_ACTS2,
                 today=date.today().isoformat(), **kw)
 
 

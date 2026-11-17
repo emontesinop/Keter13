@@ -5,7 +5,7 @@ from ..core import pokermath as pm
 from ..core.cards import FULL_DECK, RANKS, RANK_VALUE, fmt_cards
 from ..core.handreading import count_live, flush_possible, hand_desc, live_combos, on_board, showdown
 from .base import Question, numeric_options, pct
-from .postflop import BET_SIZES, _spot
+from .postflop import BET_SIZES, LINE_MODEL, _spot, river_range
 
 
 def _sorted_ranks(board):
@@ -98,23 +98,33 @@ BEAT_BUCKETS = [(0, 0.2, "Menos de 20 %"), (0.2, 0.4, "20–40 %"), (0.4, 0.6, "
 
 
 def gen_range_vs_hand(rng, c) -> Question:
-    for _ in range(300):
+    found = False
+    for _ in range(80):
         opener, orng, brng = _spot(rng, c)
         board = rng.sample(FULL_DECK, 5)
-        hero = list(rng.choice(live_combos(orng, board)))
-        R = on_board(live_combos(brng, board + hero), board)
-        sd = showdown(hero, R, board)
-        frac = sd.lose / sd.n
-        if all(abs(frac - x) > 0.03 for x in (0.2, 0.4, 0.6, 0.8)):
+        line, streets, vcombos = river_range(rng, c, brng, board)
+        for _ in range(6):
+            hero = list(rng.choice(live_combos(orng, board)))
+            R = on_board([x for x in vcombos if not (set(x) & set(hero))], board)
+            if len(R) < 8:
+                break
+            sd = showdown(hero, R, board)
+            frac = sd.lose / sd.n
+            if all(abs(frac - x) > 0.03 for x in (0.2, 0.4, 0.6, 0.8)):
+                found = True
+                break
+        if found:
             break
     ans = next(l for lo, hi, l in BEAT_BUCKETS if lo <= frac < hi)
-    exp = (f"Tienes {hand_desc(hero, board)}. De {sd.n} combos vivos del rango de call de la BB, "
+    model = f" {LINE_MODEL}" if streets else " Sin apuestas, la BB llega con todo su rango de call preflop."
+    exp = (f"Tienes {hand_desc(hero, board)}.{model} Quedan {sd.n} combos vivos: "
            f"{sd.lose} te ganan, {sd.tie} empatan y {sd.win} pierden → te gana el {pct(frac)}. "
-           "Leer manos es convertir «creo que tiene algo» en una lista de combos y contar.")
+           "Leer manos es convertir «creo que tiene algo» en una lista de combos y contar. "
+           "Fíjate en cuánto mejora su rango cada vez que paga.")
     return Question("", 0, 0, "reading", "l3_ranges",
-                    "Si la BB llega al river con todo su rango de call preflop, ¿qué % de ese rango te gana?",
+                    "¿Qué % del rango con el que la BB llega al river te gana?",
                     [(l, l) for _, _, l in BEAT_BUCKETS], ans, exp,
-                    situation=[("Preflop", f"Abres en {opener}, la BB paga")],
+                    situation=[("Preflop", f"Abres en {opener}, la BB paga"), ("Flop y turn", line)],
                     cards=[("Tu mano", hero), ("Board", board)])
 
 

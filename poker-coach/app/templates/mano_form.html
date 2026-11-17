@@ -2,7 +2,7 @@
 {% block body %}
 <p class="small"><a href="/manos">← Manos</a></p>
 <h1>Analizar una mano</h1>
-<p class="small muted">Rellena solo lo que recuerdes. Las cartas van como <code>AhKd</code> (T = 10; s/h/d/c = ♠♥♦♣). Los tamaños van en bb. Se evalúa una decisión tuya por calle.</p>
+<p class="small muted">Rellena solo lo que recuerdes. Las cartas van como <code>AhKd</code> (T = 10; s/h/d/c = ♠♥♦♣). Los tamaños van en bb y son el total que pone cada uno en la calle: «sube a 30» = 30. Hasta dos decisiones tuyas por calle.</p>
 {% if error %}<div class="box" style="border-color:var(--bad);color:var(--bad)">{{ error }}</div>{% endif %}
 <form method="post" action="/manos">
 <div class="box"><div class="grid2">
@@ -36,6 +36,11 @@
   <div><label>Tamaño (bb)</label><input name="{{ st }}_v_size" value="{{ f[st ~ '_v_size'] }}" inputmode="decimal"></div>
   <div><label>Tú</label>{{ select(st ~ '_h_kind', hero_acts, f[st ~ '_h_kind']) }}</div>
   <div><label>Tamaño (bb)</label><input name="{{ st }}_h_size" value="{{ f[st ~ '_h_size'] }}" inputmode="decimal"></div>
+  <div class="full small muted" style="margin-top:4px">Si la acción siguió (p. ej. apuestas y te suben):</div>
+  <div><label>Rival responde</label>{{ select(st ~ '_v2_kind', villain_acts2, f[st ~ '_v2_kind']) }}</div>
+  <div><label>Tamaño total (bb)</label><input name="{{ st }}_v2_size" value="{{ f[st ~ '_v2_size'] }}" inputmode="decimal"></div>
+  <div><label>Tú otra vez</label>{{ select(st ~ '_h2_kind', hero_acts2, f[st ~ '_h2_kind']) }}</div>
+  <div><label>Tamaño total (bb)</label><input name="{{ st }}_h2_size" value="{{ f[st ~ '_h2_size'] }}" inputmode="decimal"></div>
 </div></details>
 {% endfor %}
 

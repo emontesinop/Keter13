@@ -11,8 +11,8 @@ import random
 
 from ..core import pokermath as pm
 from ..core.cards import FULL_DECK, RANK_VALUE, fmt_cards
-from ..core.handreading import (bottom_fraction, hand_desc, live_combos, on_board, range_vs_range_equity,
-                                showdown, strong_share, top_fraction)
+from ..core.handreading import (bottom_fraction, hand_desc, live_combos, narrow_after_calls, on_board,
+                                range_vs_range_equity, showdown, strong_share, top_fraction)
 from .base import Question, dec, numeric_options, pct
 
 OPENER_GROUP = {"UTG": "EP", "UTG1": "EP", "MP": "EP", "LJ": "MP", "HJ": "MP", "CO": "LATE", "BTN": "LATE"}
@@ -128,29 +128,54 @@ def _river_ev(hero, R, C, board, pot, bet):
     return sd_all, sd_c, ev_check, ev_bet
 
 
+# Líneas de acción en flop y turn antes del river (el héroe es quien abrió, en posición).
+RIVER_LINES = [
+    ("Flop y turn: check-check", ()),
+    ("Apostaste el flop (la BB pagó); turn: check-check", (3,)),
+    ("Apostaste flop y turn; la BB pagó las dos", (3, 4)),
+]
+LINE_MODEL = ("Al pagar una apuesta, la BB sigue con pareja o mejor hecha con sus cartas, o con proyecto "
+              "(≥ 4 outs en el flop, ≥ 8 en el turn); el resto foldea.")
+
+
+def river_range(rng, c, brng, board):
+    """(línea, combos de la BB al llegar al river) estrechados según la línea."""
+    label, streets = rng.choice(RIVER_LINES)
+    combos = live_combos(brng, board)
+    if streets:
+        combos = narrow_after_calls(combos, board, streets)
+    return label, streets, combos
+
+
 def gen_river_decision(rng, c) -> Question:
     target = rng.choice(["value", "check", "bluff"])
-    for _ in range(400):
+    profiles = call_profiles(c)
+    found = False
+    for _ in range(80):
         opener, orng, brng = _spot(rng, c)
         board = rng.sample(FULL_DECK, 5)
-        hero = _hero_combo(rng, orng, board)
-        R = on_board(live_combos(brng, board + hero), board)
-        profiles = call_profiles(c)
-        prof = rng.choice(list(profiles))
-        C = top_fraction(R, profiles[prof])
-        pot = rng.randrange(16, 61, 2)
-        frac, label = rng.choice(BET_SIZES[:3])
-        bet = round(pot * frac)
-        sd_all, sd_c, ev_check, ev_bet = _river_ev(hero, R, C, board, pot, bet)
-        if ev_bet > ev_check:
-            ans = "value" if sd_c.equity >= 0.5 else "bluff"
-        else:
-            ans = "check"
-        if ans == target and abs(ev_bet - ev_check) > 0.06 * pot:
+        line, streets, vcombos = river_range(rng, c, brng, board)
+        for _ in range(8):
+            hero = _hero_combo(rng, orng, board)
+            R = on_board([x for x in vcombos if not (set(x) & set(hero))], board)
+            if len(R) < 8:
+                break
+            prof = rng.choice(list(profiles))
+            C = top_fraction(R, profiles[prof])
+            pot = rng.randrange(16, 61, 2) if not streets else rng.randrange(30, 91, 2)
+            frac, label = rng.choice(BET_SIZES[:3])
+            bet = round(pot * frac)
+            sd_all, sd_c, ev_check, ev_bet = _river_ev(hero, R, C, board, pot, bet)
+            ans = ("value" if sd_c.equity >= 0.5 else "bluff") if ev_bet > ev_check else "check"
+            if ans == target and abs(ev_bet - ev_check) > 0.06 * pot:
+                found = True
+                break
+        if found:
             break
     desc = hand_desc(hero, board)
     fold_pct = 1 - profiles[prof]
-    exp = (f"Tienes {desc}. Modelo: la BB llega al river con su rango de call preflop ({len(R)} combos vivos) "
+    narrowed = f" que siguió tras tus apuestas. {LINE_MODEL}" if streets else ""
+    exp = (f"Tienes {desc}. Modelo: la BB llega al river con su rango de call preflop{narrowed} ({len(R)} combos vivos) "
            f"y, como {prof}, paga con su mejor {pct(profiles[prof])} y foldea el resto. "
            f"Tu equity contra todo su rango: {pct(sd_all.equity)}; contra las manos que pagan: {pct(sd_c.equity)}. "
            f"EV(check) ≈ {dec(ev_check, 1)} bb; EV(apostar {bet} bb) ≈ {dec(ev_bet, 1)} bb. ")
@@ -166,8 +191,8 @@ def gen_river_decision(rng, c) -> Question:
                     "River. La BB pasa. ¿Qué haces?",
                     [("value", f"Apostar por valor ({label})"), ("check", "Check"), ("bluff", f"Farol ({label})")],
                     ans, exp,
-                    situation=[("Preflop", f"Abres en {opener}, la BB paga"), ("Bote", f"{pot} bb"),
-                               ("Rival", prof)],
+                    situation=[("Preflop", f"Abres en {opener}, la BB paga"), ("Flop y turn", line),
+                               ("Bote", f"{pot} bb"), ("Rival", prof)],
                     cards=[("Tu mano", hero), ("Board", board)])
 
 

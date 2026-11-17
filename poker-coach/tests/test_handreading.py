@@ -64,3 +64,18 @@ def test_range_advantage_direction():
     assert eq_dry > 0.56 and eq_wet < 0.50
     # en el flop bajo y conectado la BB tiene más manos fuertes (ventaja de nuts)
     assert strong_share(bb, ["7h", "6h", "5d"]) > 2 * strong_share(utg, ["7h", "6h", "5d"])
+
+
+def test_narrow_after_calls_model():
+    from app.core.handreading import continues_vs_bet, narrow_after_calls
+    flop = ["Ks", "7d", "2c"]
+    assert continues_vs_bet(("Kh", "Qd"), flop)          # top pair
+    assert continues_vs_bet(("5s", "5d"), flop)          # pareja de bolsillo
+    assert continues_vs_bet(("6h", "5h"), ["Ks", "4d", "3c"])  # escalera abierta
+    assert not continues_vs_bet(("Ah", "Qd"), flop)      # aire (sin pareja ni proyecto)
+    board = ["Ks", "7d", "2c", "9h", "4s"]
+    combos = live_combos(["AQo", "KQs", "55", "86s"], board)
+    narrowed = narrow_after_calls(combos, board)
+    hands = {c[0][0] + c[1][0] for c in narrowed}
+    assert "AQ" not in hands and {"KQ", "55"} <= hands
+    assert "86" not in hands  # en K-7-2 no tiene proyecto (le faltan dos cartas): foldea el flop

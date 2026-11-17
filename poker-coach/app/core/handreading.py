@@ -165,3 +165,37 @@ def equity_vs_combos(hero, combos, board, rng: random.Random, iterations: int = 
         total += 1.0 if a < b else (0.5 if a == b else 0.0)
         n += 1
     return total / n
+
+
+# Modelo de continuación: con qué sigue un rival que PAGA una apuesta en cada calle.
+# Pareja o mejor usando al menos una carta propia, o proyecto con suficientes outs.
+CALL_MIN_OUTS = {3: 4, 4: 8}  # flop: gutshot o mejor; turn: proyecto de 8+ outs
+
+
+def made_with_hole(combo, board) -> bool:
+    """Pareja o mejor que usa sus cartas (no solo la pareja del board)."""
+    from .equity import draw_outs  # noqa: F401  (evita import circular en carga)
+    cls = _EVAL.get_rank_class(strength(combo, board))
+    if cls <= 5:
+        return True
+    ranks = [c[0] for c in board]
+    return combo[0][0] == combo[1][0] or combo[0][0] in ranks or combo[1][0] in ranks
+
+
+def continues_vs_bet(combo, board) -> bool:
+    if made_with_hole(combo, board):
+        return True
+    need = CALL_MIN_OUTS.get(len(board))
+    if need is None:
+        return False
+    from .equity import draw_outs
+    return len(draw_outs(combo, board).all) >= need
+
+
+def narrow_after_calls(combos, board, streets_called=(3, 4)) -> list[tuple[str, str]]:
+    """Filtra el rango que pagó apuestas en las calles indicadas (3 = flop, 4 = turn)."""
+    out = list(combos)
+    for n in streets_called:
+        b = board[:n]
+        out = [c for c in out if continues_vs_bet(c, b)]
+    return out

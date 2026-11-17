@@ -147,3 +147,51 @@ def test_analyze_full_hand_runs():
     h = river_hand(["Ah", "Kh"], ["Qh", "Jh", "2c", "3d", "9s"], Action("bet", 20), Action("call"))
     fs = analyze(h, C)
     assert fs[0].street == "preflop" and all(f.verdict in ("ok", "dudoso", "error", "info") for f in fs)
+
+
+# ---------- varias acciones por calle y estrechamiento ----------
+import re
+
+
+def test_bet_raise_call_uses_real_price():
+    # apuestas 10 en bote de 20, te suben a 30, pagas 20 para un bote de 80 → 25 %
+    h = H(hero=["Ah", "Kd"], streets=[
+        Street("flop", ["Ac", "8s", "4d"], 20, Action("check"), Action("bet", 10), Action("raise", 30), Action("call"))])
+    fs = eval_postflop(h, C)
+    facing = [f for f in fs if "ante" in f.decision][0]
+    assert "pagar 20 bb para un bote de 80 pide 25%" in facing.explanation
+    assert "sube con su mejor" in facing.explanation
+    assert len(fs) == 2  # la apuesta inicial y el call ante la subida
+
+
+def test_fold_to_raise_ends_hand():
+    h = H(hero=["7h", "7d"], profile="nit", streets=[
+        Street("flop", ["Ac", "Ks", "Qd"], 20, Action("check"), Action("bet", 10), Action("raise", 40), Action("fold")),
+        Street("turn", ["2c"], 100, Action("check"), Action("check"))])
+    fs = eval_postflop(h, C)
+    assert all(f.street == "flop" for f in fs)
+    assert fs[-1].decision.startswith("Fold") and fs[-1].verdict == "ok"
+
+
+def _river_combos(fs):
+    river = [f for f in fs if f.street == "river"][0]
+    return int(re.search(r"(\d+) combos posibles", river.explanation).group(1))
+
+
+def test_villain_range_narrows_after_calling():
+    board = (["Kc", "8s", "4d"], ["2h"], ["9c"])
+    checked = H(hero=["Ah", "Kd"], streets=[
+        Street("flop", board[0], 11, Action("check"), Action("check")),
+        Street("turn", board[1], 11, Action("check"), Action("check")),
+        Street("river", board[2], 11, Action("check"), Action("check"))])
+    called = H(hero=["Ah", "Kd"], streets=[
+        Street("flop", board[0], 11, Action("check"), Action("bet", 6), Action("call"), Action()),
+        Street("turn", board[1], 23, Action("check"), Action("bet", 15), Action("call"), Action()),
+        Street("river", board[2], 53, Action("check"), Action("check"))])
+    n_checked, n_called = _river_combos(eval_postflop(checked, C)), _river_combos(eval_postflop(called, C))
+    assert n_called < n_checked * 0.7
+
+
+def test_missing_villain_size_is_info():
+    h = H(streets=[Street("flop", ["Ac", "8s", "4d"], 11, Action("bet"), Action("call"))])
+    assert verdicts(eval_postflop(h, C)) == [("info", None)]

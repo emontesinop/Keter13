@@ -82,3 +82,10 @@ def test_drill_leaks_and_weekly_plan(client):
 def test_pages(client):
     for p in ["/manos", "/manos/nueva", "/leaks"]:
         assert client.get(p).status_code == 200
+
+
+def test_form_second_action_is_evaluated(client):
+    r = post_hand(client, flop_cards="Ac8s4d", flop_pot="20", flop_v_kind="check", flop_h_kind="bet",
+                  flop_h_size="10", flop_v2_kind="raise", flop_v2_size="30", flop_h2_kind="call")
+    page = client.get(r.headers["location"]).text
+    assert "Call ante subida 30 bb" in page and "pagar 20 bb para un bote de 80" in page
