@@ -1,0 +1,99 @@
+- id: l2_texture
+  level: 2
+  title: Textura y ventaja de rango
+  concept: |
+    Antes de apostar pregúntate qué rango conecta mejor con el flop.
+    Los flops altos y secos (K-8-3) favorecen al que abrió, que tiene más ases, reyes y overpairs.
+    Los flops bajos y conectados (7-6-5) favorecen a la BB, que tiene más dobles parejas, escaleras y sets bajos.
+    Tener ventaja de nuts (más manos muy fuertes) te permite apostar más grande.
+  example: "UTG abre y la BB paga. En K♦ 8♠ 3♥ el rango de UTG tiene ≈ 60 % de equity. En 7♥ 6♥ 5♦ baja a ≈ 46 %."
+  sources:
+    - id: acevedo
+      idea: Ventaja de rango y de nuts como base de la estrategia de c-bet.
+    - id: janda
+      idea: Cómo la textura reparte la equity entre los rangos.
+  drills: [range_adv]
+
+- id: l2_cbet
+  level: 2
+  title: Continuation bet (c-bet)
+  concept: |
+    Con ventaja de rango haz c-bet a menudo y pequeño (≈ 1/3), incluso con manos que no ligaron.
+    Sin ventaja de rango chequea más y apuesta más grande solo con manos fuertes o proyectos buenos.
+    En multiway la c-bet debe ser mucho más selectiva, porque alguien casi siempre ligó algo.
+    En vivo a bajos límites: menos c-bets de farol contra varios rivales y contra jugadores que no foldean.
+  example: "Abres CO y la BB paga en A♠ 7♦ 2♣: c-bet pequeña con casi todo. En 9♥ 8♥ 6♣ chequea mucho y apuesta grande con dos pares y proyectos fuertes."
+  sources:
+    - id: acevedo
+      idea: Frecuencias y tamaños de c-bet según la textura.
+    - id: miller_1pct
+      idea: Ajustar la frecuencia de c-bet a cómo juega realmente el rival.
+    - id: little
+      idea: C-bet selectiva en botes multiway en vivo.
+  drills: [range_adv]
+
+- id: l2_spr
+  level: 2
+  title: SPR (stack-to-pot ratio)
+  concept: |
+    SPR = stack efectivo ÷ bote en el flop. Te dice cuánta mano necesitas para meter todo.
+    Si el SPR es menor que 3, top pair buen kicker basta para ir all-in.
+    Si está entre 3 y 6, top pair u overpair suelen valer dos calles.
+    Si es mayor que 6, necesitas dos pares o mejor para jugar por el stack. Una pareja controla el bote.
+  example: "Botes 3-beteados ≈ SPR 3-4: AK con top pair se juega por el stack. En un bote limpeado multiway con 100 bb (SPR > 10), top pair no es una mano para el stack."
+  sources:
+    - id: fmm
+      idea: Definición de SPR y planificación del compromiso con el bote.
+    - id: miller_course
+      idea: Planificar la mano según la profundidad de los stacks.
+  drills: [spr]
+
+- id: l2_value_bluff
+  level: 2
+  title: Valor vs farol en el river
+  concept: |
+    Apuesta por valor si te pagan manos peores más de la mitad de las veces que pagan.
+    Farolea si el rival foldea más que bote ÷ (bote + apuesta) y tu mano no gana en showdown.
+    Con valor de showdown medio, el check suele ser lo mejor: apostar solo te pagan manos mejores.
+    En vivo a bajos límites el error típico es no apostar valor fino contra quien paga todo.
+  example: "Contra una calling station que paga con el 70 % de su rango, top pair kicker medio es una apuesta de valor clara."
+  sources:
+    - id: sklansky_top
+      idea: Apuestas de valor y faroles según lo que hará el rival.
+    - id: miller_1pct
+      idea: Las poblaciones en vivo pagan de más y farolean de menos.
+    - id: polk
+      idea: El valor fino como principal fuente de ganancias contra jugadores débiles.
+  drills: [river_decision]
+
+- id: l2_mdf
+  level: 2
+  title: MDF y bluffcatchers
+  concept: |
+    MDF = bote ÷ (bote + apuesta): es la fracción mínima de tu rango que debes continuar para que el rival no gane con cualquier farol.
+    Es una referencia de equilibrio (GTO). En vivo a bajos límites casi nadie farolea suficiente, así que contra la mayoría foldea más que la MDF.
+    Para pagar con un bluffcatcher compara tu equity contra su rango de apuesta con las pot odds.
+  example: "Apuesta del bote → MDF 50 %. Pero si un nit apuesta grande en el river, su rango apenas tiene faroles: foldea manos medias."
+  sources:
+    - id: brokos
+      idea: MDF y frecuencias de defensa explicadas de forma simple.
+    - id: janda
+      idea: Frecuencias de defensa y su relación con el sizing.
+    - id: hanson
+      idea: Infra-farol en el river en vivo, foldear más que la MDF.
+  drills: [mdf, facing_bet]
+
+- id: l2_sizing
+  level: 2
+  title: Sizing postflop
+  concept: |
+    Usa apuestas pequeñas (25-33 %) en boards secos donde tienes ventaja de rango y quieres apostar con mucho.
+    Usa apuestas grandes (66-100 %+) en boards húmedos, con rangos polarizados y para proteger o cobrar con proyectos presentes.
+    Contra jugadores que pagan de más, apuesta más grande por valor: el tamaño de tus faroles no les hace foldear.
+  example: "Overpair en J♥ 9♥ 4♠ contra una calling station: 3/4 de bote o más. En A♠ 7♦ 2♣ con rango amplio: 1/3."
+  sources:
+    - id: acevedo
+      idea: Relación entre textura, ventaja de nuts y tamaño.
+    - id: little
+      idea: Tamaños mayores por valor contra jugadores pasivos en vivo.
+  drills: []

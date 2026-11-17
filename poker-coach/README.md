@@ -52,7 +52,12 @@ El diagnóstico puede convalidar un nivel: si aciertas ≥ 85 % de sus preguntas
 
 - Iteración 1 (MVP): diagnóstico, niveles 0-1, drills de matemática y preflop, gate y examen, sesiones en vivo.
 - Iteración 2: repetición espaciada SM-2 (`/repasar` e intercalada en la práctica), check-in mental pre/post y panel de correlación con resultados.
-- Próximas: niveles 2-3 (postflop, lectura), analizador de manos y panel de leaks, niveles 4-5.
+- Iteración 3: nivel 2 (postflop) y nivel 3 (lectura de manos) con drills calculados con treys.
+- Próximas: analizador de manos y panel de leaks, niveles 4-5.
+
+## Cómo se calculan las respuestas postflop
+
+No hay solver. Cada spot postflop usa un **modelo explícito del rival**: su rango de call preflop de `content/ranges` más un perfil (`app/drills/postflop.py`) que fija qué fracción paga, apuesta por valor o farolea. Con ese modelo, treys calcula de forma exacta la equity en el river y el EV de cada opción. La explicación de cada ejercicio muestra el modelo y los números.
 
 ## Repetición espaciada
 

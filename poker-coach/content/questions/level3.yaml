@@ -1,0 +1,40 @@
+- id: q3_passive_raise
+  level: 3
+  skill: reading
+  concept: l3_ranges
+  prompt: "Un jugador pasivo paga preflop y paga el flop K♠ 9♦ 4♣. En el turn 2♥ te hace check-raise. Rango más probable:"
+  options: ["Proyectos y faroles", "Sets y dobles parejas", "Cualquier rey", "Pares medios"]
+  answer: 1
+  explanation: "Los jugadores pasivos suben con manos muy fuertes. En ese board, sets (KK, 99, 44, 22) y dobles parejas."
+- id: q3_limp_call
+  level: 3
+  skill: reading
+  concept: l3_ranges
+  prompt: "Un jugador hace limp y paga tu iso-raise. ¿Qué manos son poco probables en su rango?"
+  options: ["Pares bajos", "Conectores del mismo palo", "AA y KK", "Ases con kicker débil del mismo palo"]
+  answer: 2
+  explanation: "La mayoría de jugadores en vivo suben AA/KK preflop. Un limp-call suele ser un rango medio y especulativo."
+- id: q3_flush_blocker
+  level: 3
+  skill: reading
+  concept: l3_blockers
+  prompt: "River con tres picas en la mesa. Quieres farolear. ¿Qué carta en tu mano es más útil?"
+  options: ["A♠", "2♥", "Una carta que empareje el board", "No importa"]
+  answer: 0
+  explanation: "El A♠ bloquea el color al nuts del rival y hace tu farol más creíble."
+- id: q3_combos_pair_board
+  level: 3
+  skill: reading
+  concept: l3_combos
+  prompt: "Board Q♠ Q♦ 5♣. ¿Cuántos combos de trío de Q (con cualquier kicker) tiene AQ?"
+  options: ["16", "8", "4", "12"]
+  answer: 1
+  explanation: "Quedan 2 reinas y 4 ases: 2 × 4 = 8 combos de AQ."
+- id: q3_bluffcatch
+  level: 3
+  skill: reading
+  concept: l3_value_bluff
+  prompt: "Pagas un river de medio bote con un bluffcatcher. ¿Qué proporción mínima de faroles necesita el rival?"
+  options: ["10 %", "25 %", "33 %", "50 %"]
+  answer: 1
+  explanation: "Medio bote → pagas 1 para ganar 3 (bote + apuesta + tu call = 4): necesitas 25 % de equity."

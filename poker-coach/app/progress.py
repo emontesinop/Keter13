@@ -89,8 +89,10 @@ def _unlock(db: DB, level: int, status: str = "unlocked") -> None:
 # ---------- runs (diagnóstico / examen) ----------
 
 DIAGNOSTIC_PLAN = (
-    ["pot_odds"] * 2 + ["outs"] * 2 + ["rule24", "ev_call", "ev_call", "hand_rank", "position", "bluff_math"]
-    + ["rfi"] * 3 + ["vs_open"] * 3 + ["vs_limpers", "sizing"]
+    ["pot_odds", "outs", "rule24", "ev_call", "ev_call", "hand_rank", "position", "bluff_math"]   # nivel 0
+    + ["rfi"] * 3 + ["vs_open"] * 3 + ["vs_limpers", "sizing"]                                  # nivel 1
+    + ["mdf", "spr", "river_decision", "facing_bet"]                                            # nivel 2
+    + ["combos", "range_vs_hand"]                                                               # nivel 3
 )
 
 
@@ -145,7 +147,9 @@ def diagnostic_result(db: DB, run: Run, c: Content | None = None) -> DiagnosticR
             d[k][0] += a.correct
             d[k][1] += 1
     placed = 0
-    for lvl in (0, 1):  # solo hay contenido para convalidar 0-1 en el MVP
+    for lvl in range(MAX_LEVEL + 1):  # convalida niveles consecutivos con contenido
+        if not any(drills.candidates(level=lvl, c=c)):
+            break
         ok, tot = by_level.get(lvl, [0, 0])
         if tot and ok / tot >= thr:
             placed = lvl + 1

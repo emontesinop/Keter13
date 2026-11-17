@@ -36,14 +36,15 @@ def test_locked_level_redirects(client):
     assert r.status_code == 303 and r.headers["location"] == "/ruta"
 
 
-def test_diagnostic_perfect_places_level_2(client):
+def test_diagnostic_perfect_places_level_4(client):
     r = client.post("/diagnostico")
     res = _answer_run(client, _run_id(r), correct=True)
-    assert res.status_code == 200 and "nivel 2" in res.text
+    assert res.status_code == 200 and "nivel 4" in res.text
     with DB(get_engine()) as db:
         assert db.get(LevelProgress, 0).status == "placed"
-        assert db.get(LevelProgress, 1).status == "placed"
-        assert db.get(LevelProgress, 2).status == "unlocked"
+        for lvl in (1, 2, 3):
+            assert db.get(LevelProgress, lvl).status == "placed"
+        assert db.get(LevelProgress, 4).status == "unlocked"
         assert progress.gate(db, 0).exam_ready  # convalidado: examen directo
     # recargar el resultado no vuelve a aplicar nada
     assert client.get(res.url).status_code == 200

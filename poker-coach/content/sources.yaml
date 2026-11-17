@@ -49,3 +49,12 @@
 - id: rrop
   author: Robert Ciaffone
   title: "Robert's Rules of Poker"
+- id: fmm
+  author: Flynn, Mehta y Miller
+  title: "Professional No-Limit Hold'em: Volume I"
+  year: 2007
+  note: Introduce el concepto de SPR (stack-to-pot ratio) y el compromiso con el bote.
+- id: miller_read
+  author: Ed Miller
+  title: "How to Read Hands at No-Limit Hold'em"
+  year: 2012
