@@ -1,0 +1,71 @@
+id: pantalla-iphone-12
+titulo: Cambio de pantalla
+tipo: modular
+categoria_pieza: PANTALLA
+modelos: [iphone-12, iphone-12-pro]
+estado: verificar
+tiempo_estimado_min: 40
+dificultad: Media
+herramientas:
+  - Destornillador Pentalobe P2
+  - Destornillador tri-point Y000
+  - Ventosa y púas
+  - Placa calefactora o iOpener
+  - Junta adhesiva nueva
+  - Programador para True Tone (ver Programación de piezas)
+seguridad: [esd, calor, litio]
+notas: >-
+  Antes de desmontar, lee los datos de True Tone de la pantalla original con tu programador
+  si quieres transferirlos a la nueva.
+pasos:
+  - titulo: Respaldar datos de pantalla
+    texto: Si la pantalla original aún da imagen, lee los datos de True Tone con tu programador.
+    checks: [Datos de True Tone leídos (o no aplica)]
+    tiempo_min: 3
+    verificado: false
+  - titulo: Tornillos inferiores
+    texto: Retira los dos Pentalobe junto al puerto de carga.
+    tornillos:
+      - { tipo: Pentalobe P2, ubicacion: "A ambos lados del puerto de carga", cantidad: 2, largo: "" }
+    tiempo_min: 1
+    verificado: false
+  - titulo: Calentar y abrir
+    texto: Calienta el borde inferior, levanta con ventosa y recorre los bordes con la púa. Abre como libro hacia la derecha.
+    temperatura: "Placa / iOpener orientativo 60–80 °C (verificar)"
+    advertencias: [Con el cristal roto, cubre la pantalla con cinta para que la ventosa sujete y no saltar vidrio.]
+    seguridad: [calor]
+    tiempo_min: 8
+    verificado: false
+  - titulo: Desconectar batería
+    texto: Retira el soporte de conectores y desconecta primero la batería.
+    tornillos:
+      - { tipo: Tri-point Y000, ubicacion: "Soporte de conectores", cantidad: null, largo: "" }
+    seguridad: [litio]
+    checks: [Batería desconectada]
+    tiempo_min: 3
+    verificado: false
+  - titulo: Retirar pantalla
+    texto: Desconecta los flexores de pantalla y sensor frontal y retira la pantalla.
+    tiempo_min: 3
+    verificado: false
+  - titulo: Transferir piezas si aplica
+    texto: >-
+      Si la pantalla nueva no las trae, transfiere los componentes del auricular/sensores según tu modelo.
+      El flex de sensores frontal forma parte del sistema Face ID: manipúlalo con cuidado extremo.
+    advertencias: [Un daño en el flex de sensores frontal puede dejar Face ID no disponible.]
+    tiempo_min: 10
+    verificado: false
+  - titulo: Probar antes de sellar
+    texto: Conecta la nueva pantalla y por último la batería. Prueba imagen, touch, Face ID, proximidad y True Tone.
+    checks: [Imagen, Touch en toda la superficie, Face ID, Proximidad, True Tone]
+    tiempo_min: 5
+    verificado: false
+  - titulo: Programar True Tone
+    texto: Si hace falta, escribe los datos de True Tone con tu programador (ver Programación de piezas).
+    checks: [True Tone activo (o no aplica)]
+    tiempo_min: 5
+    verificado: false
+  - titulo: Sellar y cerrar
+    texto: Desconecta batería, pon junta adhesiva, reconecta y cierra con presión uniforme.
+    tiempo_min: 6
+    verificado: false

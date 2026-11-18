@@ -1,0 +1,105 @@
+# Líneas de la placa para registrar mediciones y localizar cortos.
+# NO hay valores: llena voltaje_nominal e inyeccion_max_* con TU esquemático.
+# Los nombres reales cambian entre modelos; usa "alias" para anotar cómo se llama en cada uno.
+# Si inyeccion_max_v está lleno, la app bloquea registrar una inyección por encima de ese valor.
+estado: verificar
+lineas:
+  - id: vdd_main
+    nombre: VDD_MAIN (línea principal del sistema)
+    grupo: Principal
+    descripcion: Alimenta la PMU y la mayoría de los reguladores. Es la primera que se revisa ante un corto directo.
+    donde_medir: Conector de batería o condensadores grandes de la línea principal.
+    voltaje_nominal: null
+    inyeccion_max_v: null
+    inyeccion_max_a: null
+    alias: {}
+  - id: batt_vcc
+    nombre: BATT_VCC (batería)
+    grupo: Principal
+    descripcion: Línea que viene del conector de batería hacia el cargador.
+    donde_medir: Pin positivo del conector de batería.
+    voltaje_nominal: null
+    inyeccion_max_v: null
+    inyeccion_max_a: null
+    alias: {}
+  - id: vbus
+    nombre: VBUS (entrada de carga)
+    grupo: Carga
+    descripcion: Entrada desde el puerto Lightning o USB-C.
+    donde_medir: Conector del flex de carga en la placa.
+    voltaje_nominal: null
+    inyeccion_max_v: null
+    inyeccion_max_a: null
+    alias: {}
+  - id: pp1v8
+    nombre: Línea de 1.8 V (PP1V8…)
+    grupo: Secundaria (PMU)
+    descripcion: Línea de lógica/IO. El nombre suele indicar el voltaje, confírmalo en tu esquemático.
+    donde_medir: Condensadores de la línea según tu boardview.
+    voltaje_nominal: null
+    inyeccion_max_v: null
+    inyeccion_max_a: null
+    alias: {}
+  - id: pp3v0
+    nombre: Línea de 3.0 V (PP3V0…)
+    grupo: Secundaria (PMU)
+    descripcion: Alimenta sensores y periféricos.
+    donde_medir: Condensadores de la línea según tu boardview.
+    voltaje_nominal: null
+    inyeccion_max_v: null
+    inyeccion_max_a: null
+    alias: {}
+  - id: pp_cpu
+    nombre: Núcleos de CPU / GPU / SoC
+    grupo: Secundaria (PMU)
+    descripcion: Líneas de muy bajo voltaje. Extrema precaución al inyectar.
+    donde_medir: Condensadores alrededor del SoC según tu boardview.
+    voltaje_nominal: null
+    inyeccion_max_v: null
+    inyeccion_max_a: null
+    alias: {}
+  - id: pp_dram
+    nombre: Alimentación de RAM
+    grupo: Secundaria (PMU)
+    descripcion: Líneas de la memoria RAM.
+    donde_medir: Según tu boardview.
+    voltaje_nominal: null
+    inyeccion_max_v: null
+    inyeccion_max_a: null
+    alias: {}
+  - id: pp_nand
+    nombre: Alimentación de NAND
+    grupo: Secundaria (PMU)
+    descripcion: Líneas de la memoria de almacenamiento.
+    donde_medir: Según tu boardview.
+    voltaje_nominal: null
+    inyeccion_max_v: null
+    inyeccion_max_a: null
+    alias: {}
+  - id: backlight
+    nombre: Retroiluminación (modelos LCD)
+    grupo: Pantalla
+    descripcion: Salida del circuito de retroiluminación hacia la pantalla LCD.
+    donde_medir: Pines de retroiluminación del conector de pantalla.
+    voltaje_nominal: null
+    inyeccion_max_v: null
+    inyeccion_max_a: null
+    alias: {}
+  - id: display_pwr
+    nombre: Alimentaciones de pantalla
+    grupo: Pantalla
+    descripcion: Voltajes que la placa entrega al conector de pantalla.
+    donde_medir: Pines del conector de pantalla.
+    voltaje_nominal: null
+    inyeccion_max_v: null
+    inyeccion_max_a: null
+    alias: {}
+  - id: boton_power
+    nombre: Línea del botón de encendido
+    grupo: Control
+    descripcion: Señal del botón lateral hacia la PMU.
+    donde_medir: Conector del flex de botones.
+    voltaje_nominal: null
+    inyeccion_max_v: null
+    inyeccion_max_a: null
+    alias: {}

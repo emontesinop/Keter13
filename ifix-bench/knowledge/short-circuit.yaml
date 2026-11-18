@@ -1,0 +1,98 @@
+# Flujo guiado de localización de cortocircuitos. Los pasos se marcan en cada
+# búsqueda y quedan guardados en la orden.
+estado: verificar
+metodos:
+  - { id: termica, label: Cámara térmica }
+  - { id: colofonia, label: Colofonia }
+  - { id: alcohol, label: Alcohol isopropílico }
+  - { id: aislamiento, label: Aislar componentes }
+  - { id: microscopio, label: Inspección con microscopio }
+  - { id: inyeccion, label: Inyección de voltaje }
+pasos:
+  - id: preparar
+    titulo: Preparar la placa
+    herramienta: visual
+    seguridad: [esd, litio]
+    texto: >-
+      Desconecta y retira la batería. Desconecta todos los flexores. Limpia la zona de trabajo y
+      la placa. Anota la orden y la línea que vas a revisar.
+    verificado: false
+  - id: medir
+    titulo: Medir resistencia y modo diodo a tierra
+    herramienta: multimetro
+    texto: >-
+      Mide la línea sospechosa en resistencia y en modo diodo contra tierra. Compárala con tu valor
+      de referencia de placa buena (abajo aparece si ya lo tienes). Un valor muy por debajo del de
+      referencia o cercano a 0 confirma el corto.
+    registra_medicion: true
+    verificado: false
+  - id: inspeccion
+    titulo: Inspección visual
+    herramienta: microscopio
+    texto: >-
+      Revisa con microscopio los componentes de la línea: condensadores fisurados, quemados,
+      corrosión, restos de soldadura o golpes. Revisa también la otra cara de la placa.
+    metodo: microscopio
+    verificado: false
+  - id: inyectar
+    titulo: Inyectar voltaje con límite
+    herramienta: fuente_dc
+    seguridad: [inyeccion]
+    texto: >-
+      Conecta el positivo de la fuente a la línea y el negativo a tierra. Ajusta el voltaje a NO más
+      del nominal de esa línea y empieza con la corriente limitada al mínimo. Súbela de a poco
+      mientras observas. Si la fuente marca el límite y el voltaje cae, el corto absorbe la corriente.
+    metodo: inyeccion
+    pide_inyeccion: true
+    verificado: false
+  - id: termica
+    titulo: Buscar el punto caliente
+    herramienta: camara_termica
+    texto: >-
+      Con la inyección activa, busca con la cámara térmica el componente que calienta primero. Si no
+      tienes cámara, usa colofonia o alcohol (pasos siguientes).
+    metodo: termica
+    verificado: false
+  - id: colofonia
+    titulo: Colofonia
+    herramienta: visual
+    seguridad: [calor]
+    texto: >-
+      Cubre la zona con una capa fina de vapor de colofonia. Al inyectar, la colofonia se derrite
+      primero sobre el componente que calienta.
+    metodo: colofonia
+    verificado: false
+  - id: alcohol
+    titulo: Alcohol isopropílico
+    herramienta: visual
+    texto: >-
+      Aplica una gota de alcohol isopropílico sobre la zona. Al inyectar, se evapora primero sobre el
+      componente que calienta.
+    metodo: alcohol
+    verificado: false
+  - id: aislar
+    titulo: Aislar la línea
+    herramienta: multimetro
+    seguridad: [calor]
+    texto: >-
+      Si no encuentras el punto, divide la línea: levanta una bobina, filtro o resistencia de 0 Ω que
+      la separe en secciones y mide cada lado. Repite en la sección que sigue en corto. Retira de a
+      uno los condensadores sospechosos y mide tras cada retiro.
+    metodo: aislamiento
+    verificado: false
+  - id: reemplazar
+    titulo: Retirar y reemplazar
+    herramienta: microscopio
+    seguridad: [calor]
+    texto: >-
+      Retira el componente culpable y vuelve a medir: el corto debe desaparecer. Reemplázalo por uno
+      del mismo valor y tamaño. Si es un IC, verifica antes en el esquemático qué alimenta.
+    verificado: false
+  - id: verificar
+    titulo: Verificar
+    herramienta: fuente_dc
+    texto: >-
+      Mide de nuevo la línea y compárala con tu referencia. Prueba el consumo en la fuente DC y
+      registra el resultado en Diagnóstico → Consumo DC.
+    registra_medicion: true
+    verificado: false

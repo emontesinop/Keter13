@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+html, body { background: #0b0d10; color: #f2f4f7; }
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@layer components {
+  .card { @apply rounded-2xl border border-bench-line bg-bench-card p-5; }
+  .panel { @apply rounded-2xl border border-bench-line bg-bench-panel p-5; }
+  .h1 { @apply text-3xl font-bold tracking-tight md:text-4xl; }
+  .h2 { @apply text-2xl font-bold; }
+  .h3 { @apply text-xl font-semibold; }
+  .muted { @apply text-bench-muted; }
+  .label { @apply mb-2 block text-base font-semibold text-bench-muted; }
+  .input {
+    @apply min-h-touch w-full rounded-xl border-2 border-bench-line bg-bench-bg px-4 text-lg text-bench-text
+      placeholder:text-slate-500 focus:border-bench-accent focus:outline-none;
+  }
+  textarea.input { @apply py-3; }
+  .btn {
+    @apply inline-flex min-h-touch select-none items-center justify-center gap-2 rounded-xl px-5 text-lg font-semibold
+      transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-primary { @apply btn bg-bench-accent text-black hover:brightness-110; }
+  .btn-secondary { @apply btn border-2 border-bench-line bg-bench-panel text-bench-text hover:border-bench-muted; }
+  .btn-danger { @apply btn bg-bench-bad text-white hover:brightness-110; }
+  .btn-ok { @apply btn bg-bench-ok text-black hover:brightness-110; }
+  .btn-xl { @apply min-h-[4.5rem] px-6 text-xl; }
+  .chip {
+    @apply inline-flex min-h-[3rem] cursor-pointer select-none items-center rounded-full border-2 border-bench-line
+      px-4 text-base font-medium;
+  }
+  .chip-on { @apply border-bench-accent bg-bench-accent/15 text-bench-accent; }
+}

@@ -1,0 +1,237 @@
+// iFix Bench — modelo de datos (SQLite local)
+// Los valores de "estado", "etapa", etc. se validan en src/lib/constants.ts
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  nombre    String
+  telefono  String?
+  email     String?
+  notas     String?
+  createdAt DateTime @default(now())
+  orders    Order[]
+
+  @@index([telefono])
+}
+
+model Order {
+  id                String   @id @default(cuid())
+  codigo            String   @unique // IFB-2026-0001
+  customerId        String
+  customer          Customer @relation(fields: [customerId], references: [id])
+  modelo            String // clave de knowledge/models.yaml
+  imei              String?
+  serie             String?
+  codigoDesbloqueo  String? // código del equipo que deja el cliente (opcional)
+  fallaReportada    String
+  sintomas          String   @default("") // claves separadas por coma
+  estadoFisico      String   @default("") // claves separadas por coma
+  estadoFisicoNota  String?
+  presupuesto       Float?
+  costoFinal        Float?
+  estado            String   @default("RECIBIDO")
+  icloudBloqueado   Boolean  @default(false)
+  pruebaPropiedad   String? // descripción de la prueba (factura, caja, etc.)
+  pruebaVerificada  Boolean  @default(false)
+  garantiaDias      Int?
+  boardviewPath     String? // ruta a un archivo local del técnico
+  diagnosticoFinal  String?
+  causaRaiz         String? // ej. "U2 / Tristar"
+  notas             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  deliveredAt       DateTime?
+  notaEntrega       String? // observaciones que se imprimen en la nota de entrega
+  recibidoPor       String? // quién recoge el equipo
+
+  photos            Photo[]
+  checklist         ChecklistResult[]
+  diagnostics       DiagnosticSession[]
+  dcReadings        DcReading[]
+  measurements      Measurement[]
+  shortHunts        ShortHunt[]
+  partUsages        PartUsage[]
+  guideProgress     GuideProgress[]
+  aiAnalyses        AiAnalysis[]
+  chatMessages      ChatMessage[]
+
+  @@index([modelo])
+  @@index([estado])
+}
+
+model Photo {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  etapa     String // ENTRADA | PROCESO | SALIDA | IA
+  ruta      String // relativa a data/uploads
+  nota      String?
+  createdAt DateTime @default(now())
+}
+
+model ChecklistResult {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fase      String // ENTRADA | SALIDA
+  itemKey   String
+  resultado String // OK | FALLA | NO_PROBADO | NA
+  nota      String?
+  updatedAt DateTime @updatedAt
+
+  @@unique([orderId, fase, itemKey])
+}
+
+model DiagnosticSession {
+  id         String   @id @default(cuid())
+  orderId    String?
+  order      Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  arbol      String
+  ruta       String // JSON: [{nodo, opcion, valor, nota}]
+  conclusion String? // id del nodo de conclusión
+  resumen    String?
+  createdAt  DateTime @default(now())
+}
+
+model DcReading {
+  id        String   @id @default(cuid())
+  orderId   String?
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  patron    String // clave de knowledge/dc-consumption.yaml
+  voltaje   Float?
+  mA        Float?
+  momento   String? // "al conectar" | "al pulsar encendido" | ...
+  nota      String?
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  key   String @id
+  value String
+}
+
+// ─── Fase 2 ─────────────────────────────────────────────────────────────────
+
+/// Mediciones por línea. Las marcadas placaBuena forman tus valores de referencia.
+model Measurement {
+  id         String   @id @default(cuid())
+  orderId    String?
+  order      Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  modelo     String
+  linea      String // clave de knowledge/reference-lines.yaml o texto libre
+  modo       String // DIODO | RESISTENCIA | VOLTAJE
+  valor      Float
+  unidad     String // V | mV | Ω | kΩ
+  placaBuena Boolean  @default(false)
+  nota       String?
+  createdAt  DateTime @default(now())
+
+  @@index([modelo, linea, modo])
+}
+
+model ShortHunt {
+  id                String   @id @default(cuid())
+  orderId           String?
+  order             Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  linea             String
+  resistencia       Float? // Ω a tierra
+  voltajeInyectado  Float?
+  corrienteMax      Float? // A
+  metodo            String   @default("") // claves separadas por coma
+  componenteHallado String?
+  resuelto          Boolean  @default(false)
+  pasosHechos       String   @default("[]") // JSON con ids de pasos del flujo
+  notas             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Part {
+  id          String      @id @default(cuid())
+  nombre      String
+  sku         String?
+  categoria   String // PANTALLA | BATERIA | FLEX | CAMARA | CARCASA | COMPONENTE | CONSUMIBLE | OTRO
+  modelos     String      @default("") // ids de modelos separados por coma
+  calidad     String? // Original, OEM, Compatible…
+  stock       Int         @default(0)
+  stockMinimo Int         @default(0)
+  costo       Float?
+  precioVenta Float?
+  proveedor   String?
+  ubicacion   String?
+  notas       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  usages      PartUsage[]
+}
+
+model PartUsage {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  partId    String
+  part      Part     @relation(fields: [partId], references: [id], onDelete: Restrict)
+  cantidad  Int      @default(1)
+  costoUnit Float?
+  createdAt DateTime @default(now())
+}
+
+model GuideProgress {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  guiaId      String
+  pasosHechos String   @default("[]") // JSON: índices de pasos completados
+  checks      String   @default("{}") // JSON: { "paso-check": true }
+  segundos    Int      @default(0)
+  terminada   Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+
+  @@unique([orderId, guiaId])
+}
+
+/// Biblioteca de archivos propios del técnico (esquemáticos, boardviews, datasheets).
+model Document {
+  id        String   @id @default(cuid())
+  nombre    String
+  tipo      String // ESQUEMATICO | BOARDVIEW | DATASHEET | OTRO
+  modelos   String   @default("") // ids separados por coma (vacío = todos)
+  archivo   String? // relativo a data/library (si se subió)
+  rutaLocal String? // o ruta a un archivo que ya tienes en el disco
+  tamano    Int?
+  nota      String?
+  createdAt DateTime @default(now())
+}
+
+// ─── Fase 3 ─────────────────────────────────────────────────────────────────
+
+model AiAnalysis {
+  id        String   @id @default(cuid())
+  orderId   String?
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  photoId   String?
+  tipoFoto  String // PLACA | CARCASA | PANTALLA | OTRO
+  pregunta  String?
+  resultado String // JSON validado (ver src/lib/ai.ts)
+  modelo    String
+  createdAt DateTime @default(now())
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  rol       String // user | assistant
+  contenido String
+  createdAt DateTime @default(now())
+
+  @@index([orderId, createdAt])
+}

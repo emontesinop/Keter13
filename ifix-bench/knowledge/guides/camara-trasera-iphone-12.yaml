@@ -1,0 +1,44 @@
+id: camara-trasera-iphone-12
+titulo: Cambio de cámara trasera
+tipo: modular
+categoria_pieza: CAMARA
+modelos: [iphone-12, iphone-12-pro]
+estado: verificar
+tiempo_estimado_min: 35
+dificultad: Media
+herramientas:
+  - Destornillador Pentalobe P2
+  - Destornillador tri-point Y000
+  - Destornillador Phillips #000
+  - Ventosa y púas
+  - Pinzas antiestáticas
+seguridad: [esd, calor, litio]
+notas: Las cámaras de modelos recientes pueden mostrar aviso de pieza desconocida. Ver Programación de piezas.
+pasos:
+  - titulo: Abrir el equipo
+    texto: Sigue los pasos de apertura de la guía de pantalla hasta desconectar la batería y la pantalla.
+    seguridad: [calor, litio]
+    checks: [Batería desconectada]
+    tiempo_min: 15
+    verificado: false
+  - titulo: Retirar soporte de la cámara
+    texto: Retira los tornillos del soporte que sujeta el módulo de cámaras.
+    tornillos:
+      - { tipo: "Phillips #000 / tri-point (según unidad)", ubicacion: "Soporte de cámara", cantidad: null, largo: "" }
+    advertencias: [Anota posición y largo de cada tornillo.]
+    tiempo_min: 3
+    verificado: false
+  - titulo: Desconectar y retirar
+    texto: Desconecta los flexores de cámara levantando en vertical y retira el módulo.
+    advertencias: [No toques las lentes ni el sensor; no apliques calor cerca de las lentes.]
+    tiempo_min: 3
+    verificado: false
+  - titulo: Instalar y probar
+    texto: Instala la cámara nueva, conecta pantalla y batería, y prueba todas las lentes, enfoque, estabilización y flash.
+    checks: [Gran angular, Ultra gran angular, Enfoque, Flash, Video]
+    tiempo_min: 5
+    verificado: false
+  - titulo: Cerrar
+    texto: Reinstala el soporte, cierra el equipo con junta adhesiva nueva y haz el checklist de salida.
+    tiempo_min: 8
+    verificado: false

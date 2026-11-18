@@ -1,0 +1,85 @@
+id: bootloop
+titulo: Se reinicia en bucle
+descripcion: Muestra la manzana y se reinicia, o se reinicia cada cierto tiempo.
+estado: verificar
+inicio: n1
+nodos:
+  n1:
+    tipo: pregunta
+    titulo: ¿Cómo se reinicia?
+    instruccion: Observa el comportamiento varias veces y cronometra el intervalo.
+    herramienta: visual
+    verificado: false
+    opciones:
+      - { texto: "Logo, se apaga y repite (no llega a iOS)", siguiente: n2 }
+      - { texto: "Llega a iOS y se reinicia cada pocos minutos", siguiente: n3 }
+      - { texto: "Solo se reinicia con poca batería o al exigirlo", siguiente: c_bateria }
+  n2:
+    tipo: pregunta
+    titulo: Batería conocida buena
+    instruccion: Prueba con una batería conocida buena o alimenta con fuente DC.
+    herramienta: fuente_dc
+    seguridad: [litio, inyeccion]
+    abrir_consumo: true
+    verificado: false
+    opciones:
+      - { texto: "Con batería buena arranca normal", siguiente: c_bateria }
+      - { texto: "Sigue en bucle", siguiente: n4 }
+  n3:
+    tipo: pregunta
+    titulo: Registro de pánicos
+    instruccion: >-
+      Si puedes entrar, revisa Ajustes → Privacidad y seguridad → Análisis y mejoras → Datos de análisis
+      y abre el archivo "panic-full" más reciente. Anota el texto clave en la nota.
+    herramienta: pc
+    verificado: false
+    opciones:
+      - { texto: "Menciona un sensor que falta o no responde", siguiente: c_sensor }
+      - { texto: "Menciona otro componente / no lo entiendo", siguiente: n4 }
+      - { texto: "No puedo leerlo", siguiente: n4 }
+  n4:
+    tipo: pregunta
+    titulo: Configuración mínima
+    instruccion: >-
+      Desconecta todos los flexores excepto pantalla y batería (o fuente). Si deja de reiniciar,
+      conéctalos de uno en uno hasta que vuelva el fallo.
+    herramienta: visual
+    seguridad: [esd, litio]
+    verificado: false
+    opciones:
+      - { texto: "Al conectar un flex vuelve el bucle", siguiente: c_flex }
+      - { texto: "Sigue en bucle con lo mínimo", siguiente: n5 }
+  n5:
+    tipo: pregunta
+    titulo: Restaurar en DFU
+    instruccion: Restaura en modo DFU y anota el código de error si aparece.
+    herramienta: pc
+    verificado: false
+    opciones:
+      - { texto: "Restauró y ya no reinicia", siguiente: c_software }
+      - { texto: "Error en la restauración", arbol: no-enciende, nodo: n6 }
+  c_bateria:
+    tipo: conclusion
+    titulo: Batería
+    causas: [Batería degradada que no sostiene picos de consumo.]
+    acciones: [Reemplaza la batería y revisa su salud tras la reparación.]
+  c_sensor:
+    tipo: conclusion
+    titulo: Sensor o flex que no responde
+    causas:
+      - "Flex con sensores dañado (carga, botones, cámara, proximidad, según modelo)."
+      - Conector de ese flex dañado en la placa.
+      - Línea de alimentación o datos del sensor abierta.
+    acciones:
+      - Identifica en tu esquemático a qué flex pertenece el sensor del registro.
+      - Prueba un flex conocido bueno; si sigue, mide las líneas del conector.
+  c_flex:
+    tipo: conclusion
+    titulo: Flex dañado
+    causas: [El último flex conectado provoca el bucle.]
+    acciones: [Reemplaza ese flex o revisa su conector en la placa.]
+  c_software:
+    tipo: conclusion
+    titulo: Software
+    causas: [Sistema dañado o actualización fallida.]
+    acciones: [Prueba completa con el checklist de salida.]

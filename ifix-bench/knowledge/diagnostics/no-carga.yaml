@@ -1,0 +1,146 @@
+id: no-carga
+titulo: No carga
+descripcion: No reconoce el cargador, no sube el porcentaje o carga de forma intermitente.
+estado: verificar
+inicio: n1
+nodos:
+  n1:
+    tipo: pregunta
+    titulo: ¿Qué hace exactamente?
+    instruccion: Conecta un cable y cargador conocidos buenos y observa.
+    herramienta: visual
+    verificado: false
+    opciones:
+      - { texto: "No reconoce el cable (no aparece el rayo)", siguiente: n2 }
+      - { texto: "Aparece el rayo pero no sube el porcentaje", siguiente: n7 }
+      - { texto: "Carga intermitente o solo en cierta posición", siguiente: n2 }
+      - { texto: "'Accesorio no compatible' o 'Líquido detectado'", siguiente: c_liquido_puerto }
+      - { texto: "No enciende para probar", arbol: no-enciende }
+  n2:
+    tipo: pregunta
+    titulo: Inspección del puerto
+    instruccion: >-
+      Revisa el puerto de carga con microscopio y linterna. Busca pelusa compactada,
+      pines doblados o quemados, y corrosión.
+    herramienta: microscopio
+    verificado: false
+    opciones:
+      - { texto: "Suciedad o pelusa", siguiente: c_limpieza }
+      - { texto: "Pines dañados o corrosión", siguiente: c_flex_carga }
+      - { texto: "El puerto se ve bien", siguiente: n3 }
+  n3:
+    tipo: medicion
+    titulo: Medidor USB
+    instruccion: >-
+      Conecta un medidor USB entre el cargador y el cable. Observa el voltaje y la corriente.
+    herramienta: medidor_usb
+    medir: Corriente de carga con el equipo encendido
+    valor_esperado: ""
+    verificado: false
+    opciones:
+      - { texto: "0 A, no consume nada", siguiente: n4 }
+      - { texto: "Consume poco y no sube", siguiente: n7 }
+      - { texto: "Consume normal pero el equipo no lo indica", siguiente: c_ic_carga }
+  n4:
+    tipo: pregunta
+    titulo: Flex de carga conocido bueno
+    instruccion: Prueba con un flex o puerto de carga conocido bueno.
+    herramienta: visual
+    seguridad: [esd, litio]
+    verificado: false
+    opciones:
+      - { texto: "Con el flex bueno carga", siguiente: c_flex_carga }
+      - { texto: "Sigue sin cargar", siguiente: n5 }
+  n5:
+    tipo: medicion
+    titulo: Líneas del conector de carga en la placa
+    instruccion: >-
+      Mide en modo diodo las líneas del conector del flex de carga en la placa (VBUS, líneas
+      de datos e identificación) y compáralas con tu placa buena del mismo modelo.
+    herramienta: multimetro
+    medir: Modo diodo en VBUS, datos e ID del conector de carga
+    valor_esperado: ""
+    verificado: false
+    opciones:
+      - { texto: "VBUS en corto o muy bajo", siguiente: c_vbus_corto }
+      - { texto: "Datos o ID fuera de valor", siguiente: c_ic_carga }
+      - { texto: "Todo similar a la placa buena", siguiente: n6 }
+  n6:
+    tipo: medicion
+    titulo: Voltaje de entrada con cargador
+    instruccion: Con el cargador conectado, mide el voltaje de VBUS en la placa.
+    herramienta: multimetro
+    medir: Voltaje en VBUS con el cargador conectado
+    valor_esperado: ""
+    verificado: false
+    opciones:
+      - { texto: "Hay voltaje en VBUS", siguiente: c_ic_cargador }
+      - { texto: "No hay voltaje en VBUS", siguiente: c_ic_carga }
+  n7:
+    tipo: pregunta
+    titulo: Batería
+    instruccion: >-
+      Revisa la salud de la batería y prueba con una batería conocida buena. Revisa también
+      el conector de batería en la placa.
+    herramienta: visual
+    seguridad: [litio]
+    verificado: false
+    opciones:
+      - { texto: "Con batería buena carga normal", siguiente: c_bateria }
+      - { texto: "Sigue igual", siguiente: c_ic_cargador }
+  c_limpieza:
+    tipo: conclusion
+    titulo: Puerto sucio
+    causas: [Pelusa o suciedad impide el contacto.]
+    acciones:
+      - Limpia el puerto con herramienta no conductora y alcohol isopropílico.
+      - Vuelve a probar la carga.
+  c_liquido_puerto:
+    tipo: conclusion
+    titulo: Humedad o corrosión en el puerto
+    causas:
+      - Humedad o corrosión en el puerto o en el flex de carga.
+      - Línea de identificación del accesorio dañada.
+    acciones:
+      - Seca y limpia el puerto. Revisa el flex con microscopio.
+      - Si persiste, reemplaza el flex/puerto de carga y mide las líneas del conector en placa.
+  c_flex_carga:
+    tipo: conclusion
+    titulo: Flex o puerto de carga dañado
+    causas: [Puerto o flex de carga con pines dañados o corrosión.]
+    acciones:
+      - Reemplaza el flex/puerto de carga.
+      - Revisa que los micrófonos y el resto de funciones del flex funcionen después.
+  c_vbus_corto:
+    tipo: conclusion
+    titulo: VBUS en corto
+    causas:
+      - Condensador de filtro de VBUS en corto.
+      - Componente de protección o IC de carga dañado.
+    acciones:
+      - Usa el flujo de cortocircuitos sobre VBUS (respeta su voltaje nominal).
+    ir_a: { modulo: cortos }
+  c_ic_carga:
+    tipo: conclusion
+    titulo: IC de gestión del puerto
+    causas:
+      - "Lightning (8 a 14): IC del puerto (Tristar/Hydra, por ejemplo U2 según el modelo)."
+      - "USB-C (15 en adelante): controlador del puerto USB-C."
+      - Filtros o componentes de las líneas de datos dañados.
+    acciones:
+      - Consulta tu boardview para ubicar el IC en tu modelo.
+      - Revisa en el historial qué encontraste en casos parecidos.
+  c_ic_cargador:
+    tipo: conclusion
+    titulo: IC cargador
+    causas:
+      - IC cargador de batería dañado.
+      - Línea entre el cargador y la batería abierta.
+    acciones:
+      - Mide las alimentaciones del IC cargador con el esquemático.
+  c_bateria:
+    tipo: conclusion
+    titulo: Batería
+    causas: [Batería degradada o dañada.]
+    acciones:
+      - Reemplaza la batería y revisa la sección de programación para mantener la salud visible.

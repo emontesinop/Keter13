@@ -1,0 +1,209 @@
+id: no-enciende
+titulo: No enciende
+descripcion: El equipo no muestra ninguna señal de vida (sin imagen, sin vibración, sin sonido).
+estado: verificar
+inicio: n1
+nodos:
+  n1:
+    tipo: pregunta
+    titulo: Inspección visual
+    instruccion: >-
+      Abre el equipo (desconecta la batería primero) y revisa con microscopio la placa,
+      los conectores y los flexores. Busca corrosión, componentes quemados o faltantes,
+      placa doblada o golpes.
+    herramienta: microscopio
+    seguridad: [esd, litio]
+    verificado: false
+    opciones:
+      - { texto: "Hay líquido o corrosión", siguiente: c_liquido }
+      - { texto: "Hay daño físico visible (golpe, componente faltante)", siguiente: c_danio_fisico }
+      - { texto: "Todo se ve bien", siguiente: n2 }
+  n2:
+    tipo: pregunta
+    titulo: Batería conocida buena y PC
+    instruccion: >-
+      Conecta una batería conocida buena y cargada. Luego conecta el equipo a la PC
+      (Finder / iTunes / 3uTools) y observa si lo detecta.
+    herramienta: pc
+    verificado: false
+    opciones:
+      - { texto: "Ahora enciende con la batería buena", siguiente: c_bateria }
+      - { texto: "La PC lo detecta (normal, recuperación o DFU)", siguiente: c_detectado_pc }
+      - { texto: "Ninguna reacción", siguiente: n3 }
+  n3:
+    tipo: medicion
+    titulo: Consumo en fuente DC
+    instruccion: >-
+      Retira la batería y alimenta la placa por el conector de batería con la fuente DC.
+      Observa el amperaje primero sin pulsar encendido y luego al pulsar encendido.
+      Registra el comportamiento con el botón "Registrar consumo DC".
+    herramienta: fuente_dc
+    medir: Amperaje en reposo y al pulsar encendido
+    valor_esperado: ""
+    seguridad: [inyeccion]
+    abrir_consumo: true
+    verificado: false
+    opciones:
+      - { texto: "0 mA siempre", siguiente: n4 }
+      - { texto: "Consumo fijo sin pulsar nada", siguiente: n5 }
+      - { texto: "Corto directo (llega al límite)", siguiente: c_corto }
+      - { texto: "Sube y se cae al pulsar", siguiente: n6 }
+      - { texto: "Sube y se queda fijo, sin imagen", arbol: sin-imagen }
+  n4:
+    tipo: medicion
+    titulo: Línea principal en modo diodo
+    instruccion: >-
+      Sin alimentación, mide en modo diodo la línea principal de batería (VDD_MAIN o el
+      nombre que use tu esquemático) en el conector de batería. Compara con tu placa buena.
+    herramienta: multimetro
+    medir: Modo diodo, punta roja a tierra y punta negra en la línea principal
+    valor_esperado: ""
+    verificado: false
+    opciones:
+      - { texto: "Abierto (OL) o muy distinto de la placa buena", siguiente: c_linea_abierta }
+      - { texto: "Similar a la placa buena", siguiente: n4b }
+  n4b:
+    tipo: medicion
+    titulo: Señal del botón de encendido
+    instruccion: >-
+      Revisa el flex del botón de encendido y su conector. Con la placa alimentada, mide
+      la línea del botón en el conector: debe cambiar al pulsar.
+    herramienta: multimetro
+    medir: Voltaje en la línea del botón de encendido, en reposo y al pulsar
+    valor_esperado: ""
+    verificado: false
+    opciones:
+      - { texto: "No hay voltaje o no cambia al pulsar", siguiente: c_flex_boton }
+      - { texto: "La línea responde bien", siguiente: c_pmu }
+  n5:
+    tipo: medicion
+    titulo: Localizar la fuga
+    instruccion: >-
+      Hay consumo sin pulsar: algo conectado a la línea principal tiene fuga. Inyecta en
+      la línea principal con la corriente limitada y busca el componente que calienta con
+      cámara térmica, colofonia o alcohol isopropílico.
+    herramienta: camara_termica
+    medir: Punto caliente en la línea principal
+    seguridad: [inyeccion]
+    verificado: false
+    opciones:
+      - { texto: "Encontré el componente que calienta", siguiente: c_fuga }
+      - { texto: "No se ve punto caliente", siguiente: c_fuga_no_visible }
+  n6:
+    tipo: pregunta
+    titulo: Restaurar antes de tocar la placa
+    instruccion: >-
+      Un consumo que sube y se cae puede ser software. Intenta restaurar en modo DFU antes
+      de seguir con la placa. Anota cualquier código de error de la restauración.
+    herramienta: pc
+    verificado: false
+    opciones:
+      - { texto: "Restauró y enciende", siguiente: c_software }
+      - { texto: "Error en la restauración (anota el código)", siguiente: c_arranque }
+      - { texto: "No entra en DFU / no se detecta", siguiente: c_arranque }
+  c_liquido:
+    tipo: conclusion
+    titulo: Daño por líquido
+    causas:
+      - Corrosión en conectores, filtros o pistas.
+      - Componentes con fuga o en corto por residuos.
+    acciones:
+      - Limpia con alcohol isopropílico de alta pureza y cepillo suave (ultrasonido si lo tienes).
+      - Revisa conectores de batería, pantalla y carga con microscopio.
+      - Vuelve a medir el consumo DC después de limpiar.
+  c_danio_fisico:
+    tipo: conclusion
+    titulo: Daño físico en placa
+    causas:
+      - Componente arrancado o fisurado por golpe.
+      - En placas sándwich, separación de capas por flexión.
+    acciones:
+      - Identifica el componente faltante en tu boardview y reemplázalo.
+      - Si la placa está doblada, evalúa la reparación de la unión entre capas.
+  c_bateria:
+    tipo: conclusion
+    titulo: Falla de batería
+    causas:
+      - Batería agotada a fondo, dañada o con conector defectuoso.
+    acciones:
+      - Reemplaza la batería. Revisa la sección de programación de piezas para mantener la salud visible.
+  c_detectado_pc:
+    tipo: conclusion
+    titulo: Enciende pero no muestra imagen
+    causas:
+      - "La placa arranca: el problema está en la pantalla o en la imagen."
+    acciones:
+      - Sigue el árbol "Sin imagen".
+    ir_a: { arbol: sin-imagen }
+  c_corto:
+    tipo: conclusion
+    titulo: Corto en línea principal
+    causas:
+      - Condensador o IC en corto en la línea principal.
+    acciones:
+      - Mide la resistencia a tierra de la línea principal.
+      - Usa el flujo de localización de cortocircuitos (inyección con límite, térmica, colofonia).
+    ir_a: { modulo: cortos }
+  c_linea_abierta:
+    tipo: conclusion
+    titulo: Línea principal abierta
+    causas:
+      - Conector de batería dañado o con pines levantados.
+      - Filtro o fusible de la línea abierto.
+      - Pista cortada o vía dañada.
+      - Mala unión entre capas de la placa sándwich.
+    acciones:
+      - Revisa la continuidad desde el conector de batería hasta la PMU con tu boardview.
+      - Repara la pista o reemplaza el filtro/conector dañado.
+  c_flex_boton:
+    tipo: conclusion
+    titulo: Botón de encendido / flex
+    causas:
+      - Flex del botón roto o conector dañado.
+      - Línea del botón abierta en la placa.
+    acciones:
+      - Prueba un flex conocido bueno.
+      - Revisa continuidad de la línea del botón hasta la PMU.
+  c_pmu:
+    tipo: conclusion
+    titulo: PMU no arranca
+    causas:
+      - Falta alguna alimentación o señal de arranque de la PMU.
+      - Cristal o reloj del sistema dañado.
+      - PMU dañada.
+    acciones:
+      - Revisa con el esquemático las alimentaciones de entrada y las señales de arranque de la PMU.
+      - Registra tus mediciones para compararlas con casos futuros.
+  c_fuga:
+    tipo: conclusion
+    titulo: Componente con fuga localizado
+    causas:
+      - El componente que calienta tiene fuga o está en corto.
+    acciones:
+      - Retira el componente y vuelve a medir. Si es un condensador de filtro, verifica antes si el equipo funciona sin él.
+      - Reemplaza por uno del mismo valor.
+  c_fuga_no_visible:
+    tipo: conclusion
+    titulo: Fuga sin punto caliente visible
+    causas:
+      - La fuga es pequeña o está bajo un componente o blindaje.
+    acciones:
+      - Sube la corriente de a poco respetando el límite de voltaje.
+      - Revisa debajo de blindajes y en la otra capa de la placa.
+      - Aísla secciones de la línea levantando filtros o bobinas.
+  c_software:
+    tipo: conclusion
+    titulo: Problema de software
+    causas:
+      - Sistema operativo dañado.
+    acciones:
+      - Entrega tras las pruebas completas del checklist de salida.
+  c_arranque:
+    tipo: conclusion
+    titulo: Arranque detenido
+    causas:
+      - Falla en NAND, RAM o CPU.
+      - Línea secundaria de la PMU en corto o ausente.
+    acciones:
+      - Mide en modo diodo las líneas secundarias principales y compáralas con tu placa buena.
+      - "Anota el código de error de restauración: ayuda a localizar la sección."

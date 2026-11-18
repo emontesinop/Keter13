@@ -1,0 +1,77 @@
+id: sin-audio
+titulo: Sin audio
+descripcion: Falla de altavoz, auricular, micrófonos o de todo el audio.
+estado: verificar
+inicio: n1
+nodos:
+  n1:
+    tipo: pregunta
+    titulo: ¿Qué falla?
+    instruccion: Prueba nota de voz, llamada con y sin altavoz, y video con cámara frontal y trasera.
+    herramienta: visual
+    verificado: false
+    opciones:
+      - { texto: "Solo el altavoz inferior", siguiente: n2 }
+      - { texto: "Solo el auricular", siguiente: n2 }
+      - { texto: "Un micrófono (graba mal en un modo)", siguiente: n3 }
+      - { texto: "Todo el audio / botón de altavoz gris en llamadas", siguiente: c_codec }
+  n2:
+    tipo: pregunta
+    titulo: Pieza conocida buena
+    instruccion: Prueba un altavoz/auricular conocido bueno. Revisa rejillas sucias y humedad.
+    herramienta: visual
+    seguridad: [esd]
+    verificado: false
+    opciones:
+      - { texto: "Con la pieza buena funciona", siguiente: c_pieza }
+      - { texto: "Rejilla sucia / humedad", siguiente: c_limpieza }
+      - { texto: "Sigue sin sonido", siguiente: n4 }
+  n3:
+    tipo: pregunta
+    titulo: Identificar el micrófono
+    instruccion: >-
+      Nota de voz = micrófono inferior; video con cámara frontal = micrófono superior/frontal; video
+      con cámara trasera = micrófono trasero. Verifica en tu modelo en qué flex está cada uno.
+    herramienta: visual
+    verificado: false
+    opciones:
+      - { texto: "Falla el micrófono inferior", siguiente: c_mic_flex }
+      - { texto: "Falla otro micrófono", siguiente: c_mic_flex }
+  n4:
+    tipo: medicion
+    titulo: Líneas del altavoz
+    instruccion: Mide en modo diodo las líneas del altavoz en su conector o puntos de contacto y compáralas con tu placa buena.
+    herramienta: multimetro
+    medir: Modo diodo en las líneas del altavoz
+    valor_esperado: ""
+    verificado: false
+    opciones:
+      - { texto: "Fuera de valor", siguiente: c_amp }
+      - { texto: "Normal", siguiente: c_amp }
+  c_pieza:
+    tipo: conclusion
+    titulo: Altavoz o auricular dañado
+    causas: [La pieza está dañada.]
+    acciones: [Reemplaza la pieza.]
+  c_limpieza:
+    tipo: conclusion
+    titulo: Rejilla sucia o humedad
+    causas: [Suciedad o líquido en la rejilla o membrana.]
+    acciones: [Limpia con cepillo suave y alcohol isopropílico sin mojar la membrana.]
+  c_mic_flex:
+    tipo: conclusion
+    titulo: Micrófono o su flex
+    causas: [Micrófono sucio o dañado; flex que lo contiene dañado.]
+    acciones: [Limpia la entrada; reemplaza el flex que contiene ese micrófono en tu modelo.]
+  c_amp:
+    tipo: conclusion
+    titulo: Amplificador de audio
+    causas: [IC amplificador del altavoz o sus componentes dañados.]
+    acciones: [Revisa alimentaciones y salidas del amplificador con tu esquemático.]
+  c_codec:
+    tipo: conclusion
+    titulo: Códec de audio / sistema de audio
+    causas: [Falla del IC de audio o de su comunicación con el procesador.]
+    acciones:
+      - Restaura en DFU para descartar software.
+      - Revisa el IC de audio y sus líneas según tu esquemático.

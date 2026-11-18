@@ -1,0 +1,85 @@
+id: calienta
+titulo: Se calienta
+descripcion: Calentamiento anormal en reposo, en uso o cargando.
+estado: verificar
+inicio: n1
+nodos:
+  n1:
+    tipo: pregunta
+    titulo: ¿Cuándo calienta?
+    instruccion: Pregunta al cliente y comprueba con el equipo apagado, encendido en reposo y cargando.
+    herramienta: visual
+    seguridad: [litio]
+    verificado: false
+    opciones:
+      - { texto: "Incluso apagado", siguiente: n2 }
+      - { texto: "Encendido en reposo", siguiente: n3 }
+      - { texto: "Solo cargando", siguiente: n4 }
+      - { texto: "Solo en uso intenso", siguiente: c_normal }
+  n2:
+    tipo: medicion
+    titulo: Consumo apagado
+    instruccion: Alimenta con fuente DC sin pulsar encendido. Debe haber muy poco o ningún consumo.
+    herramienta: fuente_dc
+    medir: Amperaje apagado
+    valor_esperado: ""
+    seguridad: [inyeccion]
+    abrir_consumo: true
+    verificado: false
+    opciones:
+      - { texto: "Consumo fijo apagado", arbol: no-enciende, nodo: n5 }
+      - { texto: "Sin consumo", siguiente: c_bateria }
+  n3:
+    tipo: medicion
+    titulo: Zona caliente
+    instruccion: Con cámara térmica, localiza la zona que más calienta en reposo.
+    herramienta: camara_termica
+    medir: Zona y componente que calienta
+    valor_esperado: ""
+    verificado: false
+    opciones:
+      - { texto: "Calienta la batería", siguiente: c_bateria }
+      - { texto: "Calienta un componente concreto", siguiente: c_componente }
+      - { texto: "Calienta el procesador en reposo", siguiente: c_software }
+  n4:
+    tipo: pregunta
+    titulo: Cargando
+    instruccion: Prueba con cargador y cable originales. Observa con cámara térmica la zona del cargador y la batería.
+    herramienta: camara_termica
+    seguridad: [litio]
+    verificado: false
+    opciones:
+      - { texto: "Calienta la batería", siguiente: c_bateria }
+      - { texto: "Calienta la zona del IC cargador", siguiente: c_cargador }
+      - { texto: "Solo con cierto cargador", siguiente: c_accesorio }
+  c_normal:
+    tipo: conclusion
+    titulo: Calentamiento normal
+    causas: [Uso intenso (juegos, video, GPS).]
+    acciones: [Informa al cliente; revisa salud de batería.]
+  c_bateria:
+    tipo: conclusion
+    titulo: Batería
+    causas: [Batería degradada o dañada.]
+    acciones: [Reemplaza la batería con precauciones de litio. Si está hinchada, guárdala en recipiente ignífugo.]
+  c_componente:
+    tipo: conclusion
+    titulo: Componente con fuga
+    causas: [Componente en corto parcial o con fuga en una línea.]
+    acciones: [Usa el flujo de cortocircuitos sobre la línea de ese componente.]
+    ir_a: { modulo: cortos }
+  c_software:
+    tipo: conclusion
+    titulo: Software o proceso
+    causas: [Proceso en segundo plano o sistema dañado.]
+    acciones: [Revisa uso de batería por app; restaura si persiste.]
+  c_cargador:
+    tipo: conclusion
+    titulo: IC cargador
+    causas: [IC cargador dañado o con fuga.]
+    acciones: [Revisa el IC cargador y sus componentes con tu esquemático.]
+  c_accesorio:
+    tipo: conclusion
+    titulo: Accesorio
+    causas: [Cargador o cable defectuoso.]
+    acciones: [Recomienda al cliente un cargador certificado.]

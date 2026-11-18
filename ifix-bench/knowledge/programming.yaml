@@ -1,0 +1,89 @@
+# Programación / transferencia de datos de piezas.
+# Contenido inicial orientativo: VERIFICA cada fila con tu experiencia y tu programador.
+# "modelos" acepta ids de models.yaml o rangos por familia en "familias".
+#
+# Fuera de alcance (no se incluye ni se incluirá): cualquier método para saltar el
+# bloqueo de activación de iCloud, eliminar bloqueos de operador o de cuenta, o
+# modificar IMEI/números de serie del equipo.
+estado: verificar
+aviso_legal: >-
+  Usa solo piezas de procedencia legítima. No instales piezas de equipos robados o bloqueados:
+  en versiones recientes de iOS, las piezas de un equipo con bloqueo de activación pueden quedar
+  restringidas. Para piezas originales nuevas, Apple ofrece emparejamiento oficial a través de su
+  programa de reparación (Self Service Repair / configuración del sistema), cuando aplique.
+herramientas:
+  - { id: programador, label: "Programador multifunción (tipo JC, i2C, etc.)" }
+  - { id: adaptador_bateria, label: "Adaptador / placa de batería del programador" }
+  - { id: adaptador_pantalla, label: "Adaptador de True Tone / pantalla" }
+  - { id: adaptador_faceid, label: "Adaptador de Face ID / proyector de puntos" }
+  - { id: microsoldadura, label: "Estación de aire caliente y microscopio" }
+piezas:
+  - id: bateria
+    nombre: Batería
+    familias: ["xs", "11", "se", "12", "13", "14", "15", "16", "17"]
+    requiere: Recomendado para mantener la salud visible
+    mensaje: >-
+      "Mensaje importante sobre la batería" / "No se puede verificar que esta batería sea original"
+      o "Pieza desconocida" en Ajustes → Batería; la salud deja de mostrarse.
+    pasos:
+      - Antes de desmontar, anota la salud y los ciclos de la batería original.
+      - Lee los datos de la batería original con el programador (adaptador de batería).
+      - Escribe esos datos en la batería nueva, o usa una placa/tag compatible según tu programador.
+      - Instala, reinicia y comprueba Ajustes → Batería.
+    herramientas: [programador, adaptador_bateria]
+    notas: En algunos modelos el mensaje persiste aunque la batería funcione bien; informa al cliente.
+    verificado: false
+  - id: truetone
+    nombre: Pantalla (True Tone)
+    familias: ["8", "x", "xs", "11", "se", "12", "13", "14", "15", "16", "17"]
+    requiere: Sí, para conservar True Tone
+    mensaje: >-
+      True Tone desaparece del Centro de control. En modelos recientes aparece además
+      "No se puede verificar que este iPhone tenga una pantalla original de Apple".
+    pasos:
+      - Con la pantalla original aún conectada (si da señal), lee sus datos con el programador.
+      - Instala la pantalla nueva y escribe los datos leídos.
+      - Reinicia y comprueba que aparezca el botón de True Tone.
+    herramientas: [programador, adaptador_pantalla]
+    notas: Si la pantalla original está muerta y no se pueden leer sus datos, True Tone puede no recuperarse.
+    verificado: false
+  - id: faceid
+    nombre: Face ID
+    familias: ["x", "xs", "11", "12", "13", "14", "15", "16", "17"]
+    requiere: Sí — los componentes están emparejados con la placa
+    mensaje: >-
+      "Face ID no está disponible. Intenta configurar Face ID más tarde" o "Se detectó un problema
+      con la cámara TrueDepth".
+    pasos:
+      - Diagnostica primero con el árbol "Face ID no disponible" (flex, conectores, cámara frontal).
+      - Si el daño está en el proyector de puntos, la reparación consiste en conservar o transferir los datos/chip del original a un componente de reemplazo con el programador.
+      - Manipula el flex de sensores frontal con cuidado extremo; un desgarro puede ser irreparable.
+      - Comprueba la configuración de Face ID en Ajustes.
+    herramientas: [programador, adaptador_faceid, microsoldadura]
+    notas: No siempre es reparable. Informa al cliente antes de empezar y deja constancia en el checklist de entrada.
+    verificado: false
+  - id: camara_trasera
+    nombre: Cámara trasera
+    familias: ["12", "13", "14", "15", "16", "17"]
+    requiere: Según modelo y versión de iOS
+    mensaje: >-
+      "Pieza desconocida" en Ajustes → General → Información; algunas funciones pueden no
+      estar disponibles.
+    pasos:
+      - Prueba la cámara nueva antes de cerrar.
+      - Si tu programador soporta el modelo, consulta su procedimiento para cámaras.
+      - Para cámaras originales nuevas, valora el emparejamiento oficial de Apple.
+    herramientas: [programador]
+    notas: Las cámaras usadas de otro equipo suelen mostrar el mensaje.
+    verificado: false
+  - id: touchid
+    nombre: Touch ID (botón de inicio)
+    familias: ["8", "se"]
+    requiere: El sensor está emparejado con la placa
+    mensaje: El botón funciona como inicio (según modelo) pero Touch ID no.
+    pasos:
+      - Conserva SIEMPRE el sensor/botón original del cliente.
+      - Si se daña el flex del botón original, Touch ID no se recupera con un reemplazo genérico.
+    herramientas: []
+    notas: Advierte al cliente en la recepción si el botón ya viene dañado.
+    verificado: false

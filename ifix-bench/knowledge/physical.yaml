@@ -1,0 +1,13 @@
+# Opciones de "estado físico" en la recepción. "aviso" muestra un aviso de safety.yaml.
+estado: verificar
+opciones:
+  - { key: pantalla_rota, label: Pantalla rota / astillada }
+  - { key: tapa_rota, label: Tapa trasera rota }
+  - { key: carcasa_doblada, label: Carcasa doblada }
+  - { key: golpes, label: Golpes / abolladuras en marco }
+  - { key: liquido, label: Contacto con líquido (indicador o relato) }
+  - { key: bateria_hinchada, label: Batería hinchada (pantalla levantada), aviso: litio }
+  - { key: abierto_antes, label: Abierto previamente / tornillos faltantes }
+  - { key: lente_camara_rota, label: Lente de cámara roto }
+  - { key: sin_bandeja_sim, label: Sin bandeja SIM }
+  - { key: pantalla_no_original, label: Posible pantalla no original }

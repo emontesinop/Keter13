@@ -1,0 +1,35 @@
+# Avisos de seguridad. "nivel": peligro (rojo) | precaucion (ámbar) | info (azul)
+estado: verificar
+avisos:
+  esd:
+    nivel: precaucion
+    titulo: Protección ESD
+    texto: >-
+      Usa pulsera antiestática conectada a tierra y tapete ESD antes de tocar la placa.
+      Evita ropa sintética y no apoyes la placa sobre superficies no disipativas.
+  litio:
+    nivel: peligro
+    titulo: Batería de litio
+    texto: >-
+      Si la batería está hinchada, perforada, doblada o caliente: NO la perfores, NO la dobles
+      y NO apliques calor. Desconéctala lo antes posible, retírala con herramientas plásticas y
+      guárdala en un recipiente o bolsa ignífuga lejos de material inflamable. Ten a mano un
+      extintor adecuado o arena. Desconecta siempre la batería antes de trabajar en la placa.
+  inyeccion:
+    nivel: peligro
+    titulo: Límites al inyectar voltaje
+    texto: >-
+      Nunca inyectes más voltaje que el nominal de la línea que estás probando (consulta TU
+      esquemático). Empieza con la corriente limitada al mínimo y súbela de a poco. Respeta la
+      polaridad. En líneas de bajo voltaje (núcleo de CPU, RAM) un exceso destruye componentes al
+      instante. Retira la batería y desconecta los flexores antes de inyectar.
+    campos_usuario:
+      - "Tu límite de voltaje para VDD_MAIN: ______ (verificar en esquemático)"
+      - "Tu límite de corriente inicial: ______"
+  calor:
+    nivel: precaucion
+    titulo: Calor y aire caliente
+    texto: >-
+      Protege con cinta Kapton o escudos los componentes cercanos (plásticos, conectores,
+      cámaras, cristales). Aleja la batería de cualquier fuente de calor. Anota la temperatura
+      y el flujo que usas: los valores de las guías son orientativos y deben verificarse.
