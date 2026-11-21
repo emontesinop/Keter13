@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sensores del Tren Motriz</title>
+<meta name="description" content="Guía interactiva de estudio: 10 sensores del tren motriz de un sedán, flujo de señales de la ECU, diagnóstico por síntomas y quiz.">
+<meta name="theme-color" content="#0b1220">
+<!-- PWA / Añadir a pantalla de inicio -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sensores">
+<meta name="application-name" content="Sensores">
+<link id="favicon" rel="icon" type="image/svg+xml" href="data:,">
+<link id="touch-icon" rel="apple-touch-icon" href="data:,">
+<link id="manifest" rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Sensores%20del%20Tren%20Motriz%22%2C%22short_name%22%3A%22Sensores%22%2C%22display%22%3A%22standalone%22%7D">
+
+<style>
+/* =========================================================
+   1. TOKENS DE DISEÑO (tema oscuro por defecto / claro)
+   ========================================================= */
+:root {
+  --nav-h: 64px;
+  --radius: 14px;
+  --gap: 16px;
+  --ease: cubic-bezier(.2,.8,.2,1);
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b1220;
+  --bg-grid: rgba(78,161,255,.06);
+  --surface: #121b2e;
+  --surface-2: #19243b;
+  --surface-3: #22304c;
+  --border: #2a3854;
+  --text: #e8eef8;
+  --muted: #a3b3cc;
+  --accent: #5aa9ff;
+  --accent-ink: #04101f;
+  --ok: #43d98a;
+  --bad: #ff7a7a;
+  --warn-bg: #2c2410;
+  --warn-text: #f5d98a;
+  --header-bg: rgba(11,18,32,.88);
+  --car-fill: rgba(140,170,215,.10);
+  --car-line: #8fa6c8;
+  --car-glass: rgba(120,170,230,.18);
+  --part: #5d6f8e;
+  --part-2: #3d4c66;
+  --tire: #0d131f;
+  --scrim: rgba(3,7,15,.6);
+}
+html[data-theme="light"] {
+  color-scheme: light;
+  --bg: #eef2f8;
+  --bg-grid: rgba(11,99,206,.06);
+  --surface: #ffffff;
+  --surface-2: #f2f5fa;
+  --surface-3: #e4eaf3;
+  --border: #cdd6e4;
+  --text: #0f1b2d;
+  --muted: #475670;
+  --accent: #0b5fc7;
+  --accent-ink: #ffffff;
+  --ok: #157a3d;
+  --bad: #b3261e;
+  --warn-bg: #fff4d6;
+  --warn-text: #5b4300;
+  --header-bg: rgba(255,255,255,.9);
+  --car-fill: rgba(60,90,140,.08);
+  --car-line: #4a5f80;
+  --car-glass: rgba(60,120,200,.16);
+  --part: #8796ad;
+  --part-2: #b3bfd0;
+  --tire: #2a3242;
+  --scrim: rgba(10,20,40,.45);
+}
+
+/* =========================================================
+   2. BASE
+   ========================================================= */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background:
+    linear-gradient(var(--bg-grid) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px) 0 0 / 24px 24px,
+    var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+h1, h2, h3 { line-height: 1.25; margin: 0; }
+h2 { font-size: 1.3rem; }
+h3 { font-size: 1.05rem; }
+p { margin: 0 0 .75em; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.sr-only {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.muted { color: var(--muted); }
+.small { font-size: .875rem; }
+
+/* =========================================================
+   3. CABECERA Y NAVEGACIÓN INFERIOR
+   ========================================================= */
+.app-header {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 12px;
+  padding: calc(8px + env(safe-area-inset-top)) 16px 8px;
+  background: var(--header-bg);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.brand-icon { width: 36px; height: 36px; flex: none; }
+.brand { flex: 1; min-width: 0; }
+.brand h1 { font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.brand p { margin: 0; font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.icon-btn {
+  min-width: 44px; min-height: 44px; display: inline-grid; place-items: center;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;
+}
+.icon-btn svg { width: 22px; height: 22px; }
+
+main {
+  max-width: 1100px; margin: 0 auto;
+  padding: 16px 16px calc(var(--nav-h) + 28px + env(safe-area-inset-bottom));
+}
+.view { animation: viewIn .28s var(--ease); }
+.view[hidden] { display: none; }
+@keyframes viewIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.view-head { margin-bottom: 12px; }
+.view-head p { color: var(--muted); margin: 4px 0 0; }
+
+.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 4px max(4px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(4px, env(safe-area-inset-left));
+  box-shadow: 0 -6px 20px rgba(0,0,0,.18);
+}
+.tab {
+  min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  background: none; border: 0; border-radius: 12px; color: var(--muted);
+  font-size: .75rem; font-weight: 600; padding: 4px 2px;
+  transition: color .2s, background-color .2s;
+}
+.tab svg { width: 24px; height: 24px; }
+.tab[aria-selected="true"] { color: var(--accent); background: var(--surface-2); }
+@media (min-width: 700px) {
+  .tabs { left: 50%; right: auto; transform: translateX(-50%); width: 640px; bottom: 12px; border: 1px solid var(--border); border-radius: 18px; padding: 4px; }
+  .tab { font-size: .85rem; }
+}
+
+/* =========================================================
+   4. COMPONENTES COMUNES
+   ========================================================= */
+.panel {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px;
+}
+.badge {
+  display: inline-grid; place-items: center; flex: none;
+  width: 32px; height: 32px; border-radius: 50%;
+  font-weight: 800; font-size: 1rem; line-height: 1;
+  background: var(--c); color: var(--ink);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--c);
+}
+.badge.lg { width: 44px; height: 44px; font-size: 1.25rem; }
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: 999px; font-size: .85rem; font-weight: 600;
+  background: var(--surface-3); border: 1px solid var(--border);
+}
+.pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--accent)); }
+.btn {
+  min-height: 44px; padding: 10px 16px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--surface-2); font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background-color .2s, transform .1s;
+}
+.btn:active { transform: scale(.98); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chip {
+  min-height: 44px; padding: 8px 14px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface); font-weight: 600; font-size: .95rem;
+}
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.note {
+  background: var(--warn-bg); color: var(--warn-text); border-radius: 10px;
+  padding: 10px 12px; font-size: .9rem; margin-top: 12px;
+}
+.note strong { font-weight: 700; }
+dl.facts { margin: 0; display: grid; gap: 10px; }
+dl.facts dt { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 700; }
+dl.facts dd { margin: 2px 0 0; }
+ul.clean { margin: 4px 0 0; padding-left: 1.2em; }
+ul.clean li { margin: 2px 0; }
+.codes { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 6px; }
+.codes li { display: flex; gap: 10px; align-items: baseline; }
+.code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 700;
+  background: var(--surface-3); border: 1px solid var(--border); padding: 1px 7px; border-radius: 6px; flex: none;
+}
+
+/* =========================================================
+   5. VISTA VEHÍCULO (SVG + zoom)
+   ========================================================= */
+.car-wrap {
+  position: relative; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+}
+#car-svg {
+  display: block; width: 100%; height: auto; aspect-ratio: 640 / 340;
+  touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab;
+}
+#car-svg.dragging { cursor: grabbing; }
+.zoom-ctrl { display: flex; gap: 6px; }
+.car-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin: 10px 0 14px; }
+.car-toolbar .hint { color: var(--muted); font-size: .9rem; margin: 0; }
+.car-body { fill: var(--car-fill); stroke: var(--car-line); stroke-width: 2; }
+.car-glass { fill: var(--car-glass); stroke: var(--car-line); stroke-width: 1.2; }
+.car-line { fill: none; stroke: var(--car-line); stroke-width: 1.2; opacity: .7; }
+.part { fill: var(--part-2); stroke: var(--part); stroke-width: 1.5; }
+.part-line { fill: none; stroke: var(--part); stroke-width: 3; stroke-linecap: round; }
+.tire { fill: var(--tire); stroke: var(--car-line); stroke-width: 1.5; }
+.rim { fill: none; stroke: var(--car-line); stroke-width: 2; }
+.disc { fill: var(--part-2); stroke: var(--part); stroke-width: 1.5; }
+.caliper { fill: #c0392b; }
+.bay { fill: rgba(90,169,255,.05); stroke: var(--accent); stroke-width: 1; stroke-dasharray: 4 4; opacity: .7; }
+.comp-label { font-size: 12px; font-weight: 700; fill: var(--text); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; pointer-events: none; }
+.comp-labels { transition: opacity .25s; }
+.comp-labels.off { opacity: 0; }
+.pin { cursor: pointer; }
+.pin .hit { fill: transparent; }
+.pin .ring { stroke: #fff; stroke-width: 2.5; transition: r .2s var(--ease); }
+.pin .halo { fill: none; stroke-width: 2; opacity: .55; transform-box: fill-box; transform-origin: center; animation: halo 2.4s ease-out infinite; }
+.pin text { font-size: 18px; font-weight: 800; pointer-events: none; }
+.pin:hover .ring, .pin.active .ring { r: 21; }
+.pin:focus { outline: none; }
+.pin:focus-visible .hit { stroke: var(--accent); stroke-width: 3; }
+.leader { stroke-width: 1.6; opacity: .9; }
+.spot { stroke: #fff; stroke-width: 1.5; }
+@keyframes halo { 0% { transform: scale(1); opacity: .6; } 80%,100% { transform: scale(1.9); opacity: 0; } }
+.pin-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.pin-btn {
+  min-height: 52px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 6px 2px;
+  font-size: .75rem; font-weight: 700; color: var(--muted);
+}
+.pin-btn .badge { width: 28px; height: 28px; font-size: .9rem; }
+details.components { margin-top: 14px; }
+details.components summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; cursor: pointer; }
+.comp-list { display: grid; gap: 8px; margin-top: 8px; }
+.comp-list div { padding: 10px 12px; border-radius: 10px; background: var(--surface-2); }
+
+/* =========================================================
+   6. BOTTOM SHEET (ficha del sensor)
+   ========================================================= */
+.scrim {
+  position: fixed; inset: 0; background: var(--scrim); z-index: 40;
+  opacity: 0; pointer-events: none; transition: opacity .25s;
+}
+.scrim.open { opacity: 1; pointer-events: auto; }
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+  max-height: 82vh; max-height: 82dvh; overflow: auto; overscroll-behavior: contain;
+  background: var(--surface); border-top: 1px solid var(--border);
+  border-radius: 20px 20px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,.35);
+  padding: 0 16px calc(20px + env(safe-area-inset-bottom));
+  transform: translateY(105%); transition: transform .32s var(--ease); visibility: hidden;
+}
+.sheet.open { transform: translateY(0); visibility: visible; }
+@media (min-width: 700px) { .sheet { left: 50%; right: auto; width: 620px; margin-left: -310px; } }
+.sheet-grab {
+  position: sticky; top: 0; z-index: 1; background: var(--surface);
+  display: flex; align-items: center; gap: 12px; padding: 10px 0 12px; touch-action: none;
+}
+.sheet-grab::before {
+  content: ""; position: absolute; top: 6px; left: 50%; width: 40px; height: 5px; margin-left: -20px;
+  border-radius: 3px; background: var(--border);
+}
+.sheet-title { flex: 1; min-width: 0; padding-top: 10px; }
+.sheet-title h2 { font-size: 1.15rem; }
+.sheet-title p { margin: 0; color: var(--muted); font-size: .9rem; }
+.sheet .badge.lg { margin-top: 10px; }
+.sheet .icon-btn { margin-top: 10px; }
+.out-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+
+/* =========================================================
+   7. VISTA SENSORES (tarjetas)
+   ========================================================= */
+.search-box { position: relative; margin-bottom: 10px; }
+.search-box input {
+  width: 100%; min-height: 48px; padding: 10px 14px 10px 44px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--surface); font-size: 1rem;
+}
+.search-box svg { position: absolute; left: 14px; top: 50%; width: 20px; height: 20px; margin-top: -10px; color: var(--muted); pointer-events: none; }
+.filter-label { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 10px 0 6px; }
+.result-count { margin: 12px 0 8px; color: var(--muted); font-size: .9rem; }
+.cards { display: grid; gap: 12px; grid-template-columns: 1fr; }
+@media (min-width: 640px) { .cards { grid-template-columns: 1fr 1fr; align-items: start; } }
+@media (min-width: 1000px) { .cards { grid-template-columns: 1fr 1fr 1fr; } }
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-left: 5px solid var(--c);
+  border-radius: var(--radius); overflow: hidden; transition: box-shadow .2s;
+}
+.card.flash { animation: flash 1.2s ease; }
+@keyframes flash { 0%,100% { box-shadow: none; } 30% { box-shadow: 0 0 0 4px var(--c); } }
+.card-head {
+  width: 100%; text-align: left; background: none; border: 0; padding: 14px;
+  display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; min-height: 64px;
+}
+.card-head h3 { font-size: 1rem; }
+.card-head .en { display: block; color: var(--muted); font-size: .85rem; font-weight: 500; }
+.card-head .chev { width: 24px; height: 24px; transition: transform .25s var(--ease); color: var(--muted); }
+.card-head[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.card-summary { padding: 0 14px 12px; margin: -4px 0 0; color: var(--muted); }
+.card-body { padding: 0 14px 16px; border-top: 1px solid var(--border); padding-top: 14px; }
+.sig-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 14px 12px; }
+
+/* =========================================================
+   8. VISTA FLUJO ECU
+   ========================================================= */
+.flow-wrap { display: grid; gap: 14px; }
+@media (min-width: 900px) { .flow-wrap { grid-template-columns: minmax(0, 560px) 1fr; align-items: start; } }
+.flow-svg-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px; }
+#flow-svg { display: block; width: 100%; height: auto; }
+.fl { fill: none; stroke: var(--muted); stroke-width: 1.6; opacity: .45; stroke-dasharray: 5 6; animation: dash 1.4s linear infinite; transition: opacity .25s, stroke-width .25s; }
+@keyframes dash { to { stroke-dashoffset: -22; } }
+.flow.has-sel .fl { opacity: .12; }
+.flow .fl.on { opacity: 1; stroke: var(--c); stroke-width: 3.2; animation-duration: .6s; }
+.node { cursor: pointer; transition: opacity .25s; }
+.node rect { fill: var(--surface-2); stroke: var(--border); stroke-width: 1.2; transition: stroke .2s; }
+.node .lbl { font-size: 12px; fill: var(--text); font-weight: 600; }
+.node .sub { font-size: 11px; fill: var(--muted); }
+.node .ttl { font-size: 13px; fill: var(--text); font-weight: 800; }
+.node .num { font-size: 13px; font-weight: 800; }
+.node:focus { outline: none; }
+.node:focus-visible rect { stroke: var(--accent); stroke-width: 3; }
+.flow.has-sel .node:not(.on) { opacity: .35; }
+.node.on rect { stroke: var(--c, var(--accent)); stroke-width: 2.5; }
+.ecu rect { fill: var(--surface-3); stroke: var(--accent); stroke-width: 1.5; }
+.ecu text { font-size: 12.5px; font-weight: 800; fill: var(--text); letter-spacing: .08em; }
+.ecu .chip-line { stroke: var(--accent); stroke-width: 2; opacity: .5; }
+.flow.has-sel .ecu rect { animation: ecuPulse 1.2s ease-in-out infinite; }
+@keyframes ecuPulse { 50% { stroke-width: 3.5; } }
+.flow-info h3 { display: flex; align-items: center; gap: 10px; }
+
+/* =========================================================
+   9. DIAGNÓSTICO
+   ========================================================= */
+.sym-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (min-width: 700px) { .sym-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.sym {
+  min-height: 64px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface);
+  padding: 10px; text-align: left; font-weight: 700; display: flex; gap: 10px; align-items: center;
+  overflow-wrap: anywhere; hyphens: auto; -webkit-hyphens: auto;
+}
+.sym svg { width: 26px; height: 26px; flex: none; color: var(--accent); }
+.sym[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); background: var(--surface-2); }
+.diag-result { margin-top: 16px; }
+.rank { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 10px; }
+.rank li {
+  display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start;
+  padding: 12px; border-radius: 12px; background: var(--surface-2); border-left: 4px solid var(--c);
+}
+.rank .prio { font-size: .8rem; font-weight: 700; color: var(--muted); }
+.rank h4 { margin: 0 0 2px; font-size: 1rem; }
+.rank p { margin: 0; }
+.rank .btn { margin-top: 8px; min-height: 44px; padding: 6px 12px; font-size: .9rem; }
+
+/* =========================================================
+   10. QUIZ
+   ========================================================= */
+.quiz-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.progress { height: 8px; border-radius: 4px; background: var(--surface-3); overflow: hidden; margin-bottom: 14px; }
+.progress span { display: block; height: 100%; background: var(--accent); transition: width .3s var(--ease); }
+.q-kind { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--accent); }
+.q-text { font-size: 1.15rem; font-weight: 700; margin: 6px 0 14px; }
+.opts { display: grid; gap: 8px; }
+.opt {
+  min-height: 52px; text-align: left; padding: 12px 14px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--surface-2); font-weight: 600;
+  display: flex; align-items: center; gap: 10px;
+}
+.opt .mark { margin-left: auto; font-weight: 800; }
+.opt.correct { border-color: var(--ok); box-shadow: inset 0 0 0 2px var(--ok); }
+.opt.wrong { border-color: var(--bad); box-shadow: inset 0 0 0 2px var(--bad); }
+.opt:disabled { cursor: default; color: var(--text); }
+.feedback { margin-top: 14px; padding: 12px; border-radius: 12px; background: var(--surface-2); }
+.feedback .verdict { font-weight: 800; }
+.feedback .verdict.ok { color: var(--ok); }
+.feedback .verdict.bad { color: var(--bad); }
+.score-big { font-size: 2.6rem; font-weight: 800; line-height: 1; }
+
+/* =========================================================
+   11. MOVIMIENTO REDUCIDO
+   ========================================================= */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ CABECERA ============ -->
+<header class="app-header">
+  <svg class="brand-icon" id="brand-icon" viewBox="0 0 64 64" aria-hidden="true"></svg>
+  <div class="brand">
+    <h1>Sensores del Tren Motriz</h1>
+    <p>Guía de estudio · sedán tipo Camry</p>
+  </div>
+  <button class="icon-btn" id="theme-btn" type="button" aria-label="Cambiar a modo claro">
+    <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg>
+  </button>
+</header>
+
+<main id="main">
+  <!-- ============ VISTA 1: VEHÍCULO ============ -->
+  <section class="view" id="view-vehicle" role="tabpanel" aria-labelledby="tab-vehicle" tabindex="-1">
+    <div class="view-head">
+      <h2>Vista del vehículo</h2>
+      <p>Toca un punto numerado para ver la ficha del sensor. Pellizca para hacer zoom y arrastra para desplazarte.</p>
+    </div>
+    <div class="car-wrap">
+      <svg id="car-svg" viewBox="0 0 640 340" role="group" aria-label="Diagrama lateral de un sedán con 10 sensores numerados"></svg>
+    </div>
+    <div class="car-toolbar">
+      <div class="zoom-ctrl" role="group" aria-label="Zoom">
+          <button class="icon-btn" type="button" id="zoom-in" aria-label="Acercar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+          <button class="icon-btn" type="button" id="zoom-out" aria-label="Alejar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+          </button>
+          <button class="icon-btn" type="button" id="zoom-reset" aria-label="Restablecer zoom">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+          </button>
+        </div>
+      <p class="hint" id="zoom-status" aria-live="polite">Zoom 100 %</p>
+      <button class="chip" type="button" id="labels-btn" aria-pressed="false">Mostrar componentes</button>
+    </div>
+    <h3 class="filter-label" id="pin-grid-label">Acceso rápido a los sensores</h3>
+    <div class="pin-grid" id="pin-grid" role="group" aria-labelledby="pin-grid-label"></div>
+    <details class="components panel">
+      <summary>Componentes del vehículo (Components)</summary>
+      <div class="comp-list" id="comp-list"></div>
+    </details>
+  </section>
+
+  <!-- ============ VISTA 2: SENSORES ============ -->
+  <section class="view" id="view-sensors" role="tabpanel" aria-labelledby="tab-sensors" tabindex="-1" hidden>
+    <div class="view-head">
+      <h2>Sensores</h2>
+      <p>Busca por nombre, función o código OBD-II (ej. P0335). Toca una tarjeta para expandirla.</p>
+    </div>
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="search" id="search" placeholder="Buscar sensor, función o código…" aria-label="Buscar sensores" autocomplete="off">
+    </div>
+    <div class="filter-label" id="f-sys-label">Sistema</div>
+    <div class="chip-row" id="f-system" role="group" aria-labelledby="f-sys-label"></div>
+    <div class="filter-label" id="f-sig-label">Tipo de señal</div>
+    <div class="chip-row" id="f-signal" role="group" aria-labelledby="f-sig-label"></div>
+    <p class="result-count" id="result-count" aria-live="polite"></p>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <!-- ============ VISTA 3: FLUJO ECU ============ -->
+  <section class="view" id="view-flow" role="tabpanel" aria-labelledby="tab-flow" tabindex="-1" hidden>
+    <div class="view-head">
+      <h2>Flujo de señales ECU</h2>
+      <p>Entradas (sensores) → ECU (Engine Control Module) → salidas (actuadores). Toca un sensor o una salida.</p>
+    </div>
+    <div class="flow-wrap">
+      <div class="flow-svg-box"><svg id="flow-svg" class="flow" viewBox="0 0 360 500" role="group" aria-label="Diagrama de flujo de señales de la ECU"></svg></div>
+      <div class="panel flow-info" id="flow-info" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- ============ VISTA 4: DIAGNÓSTICO ============ -->
+  <section class="view" id="view-diag" role="tabpanel" aria-labelledby="tab-diag" tabindex="-1" hidden>
+    <div class="view-head">
+      <h2>Modo diagnóstico</h2>
+      <p>Elige un síntoma y te sugerimos qué sensores revisar primero.</p>
+    </div>
+    <div class="sym-grid" id="sym-grid" role="group" aria-label="Síntomas"></div>
+    <div class="diag-result" id="diag-result" aria-live="polite"></div>
+  </section>
+
+  <!-- ============ VISTA 5: QUIZ ============ -->
+  <section class="view" id="view-quiz" role="tabpanel" aria-labelledby="tab-quiz" tabindex="-1" hidden>
+    <div class="view-head">
+      <h2>Quiz</h2>
+      <p>Identifica el sensor por su función, ubicación o código OBD-II.</p>
+    </div>
+    <div class="panel" id="quiz"></div>
+  </section>
+</main>
+
+<!-- ============ NAVEGACIÓN INFERIOR ============ -->
+<nav class="tabs" role="tablist" aria-label="Secciones">
+  <button class="tab" role="tab" id="tab-vehicle" data-view="vehicle" aria-controls="view-vehicle" aria-selected="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15v-3l2-4h9l4 4h2a1 1 0 0 1 1 1v2"/><circle cx="7" cy="16" r="2"/><circle cx="17" cy="16" r="2"/><path d="M9 16h6"/></svg>
+    Vehículo
+  </button>
+  <button class="tab" role="tab" id="tab-sensors" data-view="sensors" aria-controls="view-sensors" aria-selected="false" tabindex="-1">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    Sensores
+  </button>
+  <button class="tab" role="tab" id="tab-flow" data-view="flow" aria-controls="view-flow" aria-selected="false" tabindex="-1">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="7" width="6" height="10" rx="1"/><path d="M2 8h4l3 2M2 16h4l3-2M22 8h-4l-3 2M22 16h-4l-3-2"/></svg>
+    Flujo ECU
+  </button>
+  <button class="tab" role="tab" id="tab-diag" data-view="diag" aria-controls="view-diag" aria-selected="false" tabindex="-1">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3v6a5 5 0 0 0 10 0V3"/><path d="M10 14v2a5 5 0 0 0 10 0v-3"/><circle cx="20" cy="11" r="2"/></svg>
+    Diagnóstico
+  </button>
+  <button class="tab" role="tab" id="tab-quiz" data-view="quiz" aria-controls="view-quiz" aria-selected="false" tabindex="-1">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14"/><circle cx="12" cy="17.5" r=".6" fill="currentColor"/></svg>
+    Quiz
+  </button>
+</nav>
+
+<!-- ============ BOTTOM SHEET ============ -->
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" aria-hidden="true">
+  <div class="sheet-grab" id="sheet-grab">
+    <span class="badge lg" id="sheet-badge" aria-hidden="true"></span>
+    <div class="sheet-title"><h2 id="sheet-title"></h2><p id="sheet-sub"></p></div>
+    <button class="icon-btn" id="sheet-close" type="button" aria-label="Cerrar ficha">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div id="sheet-body"></div>
+</div>
+
+<script>
+'use strict';
+/* =========================================================
+   1. DATOS — edita aquí el contenido de la app
+   ---------------------------------------------------------
+   Cada sensor:
+   id, color (de la infografía), ink (color del número sobre el color),
+   abbr, en, es, system, func, location, ecuSignal, signalType,
+   signalDetail, symptoms[], codes[[código, descripción]],
+   outputs[] (ids de OUTPUTS que afecta), flow (etiqueta corta),
+   quizFunc / quizLoc (frases para el quiz),
+   pos [x,y] (punto real en el auto), pin [x,y] (marcador numerado)
+   ========================================================= */
+const SENSORS = [
+  {
+    id: 1, color: '#E53935', ink: '#ffffff', abbr: 'CKP',
+    en: 'Crankshaft Position Sensor', es: 'Sensor de posición del cigüeñal',
+    system: 'Motor', flow: 'CKP · Cigüeñal',
+    func: 'Detecta la posición angular del cigüeñal y la velocidad del motor (RPM). Es la referencia principal para sincronizar la inyección y el encendido.',
+    location: 'Parte baja-frontal del bloque del motor, frente a la rueda fónica (reluctor) junto a la polea del cigüeñal o en la carcasa de la transmisión.',
+    ecuSignal: 'Tren de pulsos cuya frecuencia indica las RPM; el hueco de dientes faltantes marca la referencia del punto muerto superior (PMS).',
+    signalType: 'Frecuencia', signalDetail: 'Reluctancia variable (onda AC) o efecto Hall (onda cuadrada), según el motor.',
+    symptoms: ['El motor gira pero no arranca', 'Se apaga en caliente o de forma intermitente', 'Tacómetro errático o en cero', 'Fallas de encendido / tirones'],
+    codes: [['P0335', 'Circuito del sensor CKP "A"'], ['P0336', 'Rango / desempeño del sensor CKP'], ['P0339', 'Circuito CKP intermitente'], ['P0016', 'Correlación cigüeñal–árbol de levas (banco 1, sensor A)']],
+    outputs: ['inj', 'ign', 'emi'],
+    quizFunc: 'Detecta la posición del cigüeñal y la velocidad del motor (RPM).',
+    quizLoc: 'Parte baja del bloque, frente a la rueda fónica del cigüeñal.',
+    pos: [100, 254], pin: [44, 304]
+  },
+  {
+    id: 2, color: '#1E5FD8', ink: '#ffffff', abbr: 'CMP',
+    en: 'Camshaft Position Sensor', es: 'Sensor de posición del árbol de levas',
+    system: 'Motor', flow: 'CMP · Levas',
+    func: 'Detecta la posición del árbol de levas para identificar qué cilindro está en compresión. Permite la inyección secuencial y el control de la distribución variable (VVT-i).',
+    location: 'En la culata o tapa de válvulas, al extremo del árbol de levas de admisión y/o escape.',
+    ecuSignal: 'Pulsos por cada vuelta del árbol de levas (que gira a la mitad de las RPM del cigüeñal).',
+    signalType: 'Digital', signalDetail: 'Efecto Hall o MRE: onda cuadrada 0–5 V.',
+    symptoms: ['Arranque prolongado o difícil', 'Testigo check engine', 'Pérdida de potencia (VVT deshabilitado)', 'Mayor consumo de combustible'],
+    codes: [['P0340', 'Circuito del sensor CMP "A"'], ['P0341', 'Rango / desempeño del sensor CMP'], ['P0016', 'Correlación cigüeñal–árbol de levas (banco 1, sensor A)'], ['P0011', 'Distribución de levas "A" demasiado avanzada (VVT)']],
+    outputs: ['inj', 'ign', 'emi'],
+    quizFunc: 'Identifica la posición del árbol de levas para sincronizar las válvulas y el VVT.',
+    quizLoc: 'En la culata, al extremo del árbol de levas.',
+    pos: [140, 198], pin: [136, 88]
+  },
+  {
+    id: 3, color: '#2E9E44', ink: '#ffffff', abbr: 'MAF',
+    en: 'Mass Airflow Sensor', es: 'Sensor de flujo másico de aire',
+    system: 'Admisión', flow: 'MAF · Aire',
+    func: 'Mide la masa de aire que entra al motor. La ECU la usa para calcular cuánto combustible inyectar.',
+    location: 'En el ducto de admisión, entre la caja del filtro de aire y el cuerpo de aceleración.',
+    ecuSignal: 'Voltaje proporcional al flujo de aire (aprox. 0.5–4.5 V; algunos modelos usan frecuencia). Suele integrar el sensor de temperatura del aire (IAT).',
+    signalType: 'Analógica', signalDetail: 'Hilo o película caliente.',
+    symptoms: ['Ralentí inestable', 'Titubeo o tirones al acelerar', 'Mezcla pobre o rica, alto consumo', 'Pérdida de potencia'],
+    codes: [['P0100', 'Circuito del sensor MAF'], ['P0101', 'Rango / desempeño del MAF'], ['P0102', 'Entrada baja del MAF'], ['P0103', 'Entrada alta del MAF'], ['P0171', 'Sistema demasiado pobre (banco 1)']],
+    outputs: ['inj', 'ign', 'emi'],
+    quizFunc: 'Mide la masa de aire que entra al motor.',
+    quizLoc: 'Ducto de admisión, entre el filtro de aire y el cuerpo de aceleración.',
+    pos: [78, 206], pin: [34, 138]
+  },
+  {
+    id: 4, color: '#F2C80F', ink: '#1a1400', abbr: 'MAP',
+    en: 'Manifold Absolute Pressure Sensor', es: 'Sensor de presión absoluta del múltiple',
+    system: 'Admisión', flow: 'MAP · Vacío',
+    func: 'Mide la presión absoluta (vacío) en el múltiple de admisión para estimar la carga del motor.',
+    location: 'Sobre el múltiple de admisión, o conectado a él mediante una manguera de vacío.',
+    ecuSignal: 'Voltaje analógico: bajo con mucho vacío (ralentí), alto a plena carga (aprox. 1–4.5 V).',
+    signalType: 'Analógica', signalDetail: 'Elemento piezorresistivo.',
+    symptoms: ['Ralentí irregular', 'Consumo excesivo / mezcla rica', 'Falta de potencia', 'Arranque difícil'],
+    codes: [['P0105', 'Circuito del sensor MAP'], ['P0106', 'Rango / desempeño del MAP'], ['P0107', 'Entrada baja del MAP'], ['P0108', 'Entrada alta del MAP']],
+    outputs: ['inj', 'ign', 'emi'],
+    quizFunc: 'Mide la presión (vacío) del múltiple de admisión.',
+    quizLoc: 'Sobre el múltiple de admisión o conectado por una manguera de vacío.',
+    pos: [160, 200], pin: [188, 74]
+  },
+  {
+    id: 5, color: '#8E3FD1', ink: '#ffffff', abbr: 'ECT',
+    en: 'Engine Coolant Temperature Sensor', es: 'Sensor de temperatura del refrigerante',
+    system: 'Motor', flow: 'ECT · Refrig.',
+    func: 'Mide la temperatura del refrigerante. La ECU ajusta la mezcla en frío, el ralentí y el avance, y activa el ventilador del radiador.',
+    location: 'En la carcasa del termostato o en la culata, en contacto con el refrigerante.',
+    ecuSignal: 'Termistor NTC: el voltaje de la señal baja a medida que sube la temperatura.',
+    signalType: 'Analógica', signalDetail: 'Termistor NTC (coeficiente negativo).',
+    symptoms: ['Ventilador siempre encendido o nunca enciende', 'Sobrecalentamiento', 'Arranque difícil en frío', 'Alto consumo / humo negro', 'Indicador de temperatura errático'],
+    codes: [['P0115', 'Circuito del sensor ECT'], ['P0116', 'Rango / desempeño del ECT'], ['P0117', 'Entrada baja del ECT'], ['P0118', 'Entrada alta del ECT'], ['P0128', 'Refrigerante bajo la temperatura del termostato']],
+    outputs: ['inj', 'ign', 'emi', 'fan'],
+    quizFunc: 'Monitorea la temperatura del refrigerante del motor.',
+    quizLoc: 'En la carcasa del termostato o la culata, en contacto con el refrigerante.',
+    pos: [112, 210], pin: [84, 108]
+  },
+  {
+    id: 6, color: '#19B8D6', ink: '#04161b', abbr: 'TPS',
+    en: 'Throttle Position Sensor', es: 'Sensor de posición de la mariposa',
+    system: 'Admisión', flow: 'TPS · Mariposa',
+    func: 'Detecta la apertura de la válvula de mariposa del cuerpo de aceleración (electrónico, ETCS-i) para conocer la demanda de potencia.',
+    location: 'En el cuerpo de aceleración, sobre el eje de la mariposa.',
+    ecuSignal: 'Dos señales analógicas redundantes (pistas A y B), aprox. 0.5–4.5 V.',
+    signalType: 'Analógica', signalDetail: 'Potenciómetro o efecto Hall sin contacto.',
+    symptoms: ['Ralentí alto o inestable', 'Tirones o aceleración errática', 'Modo de emergencia (limp mode)', 'Cambios bruscos de la transmisión'],
+    codes: [['P0120', 'Circuito del sensor TPS "A"'], ['P0121', 'Rango / desempeño del TPS'], ['P0122', 'Entrada baja del TPS'], ['P0123', 'Entrada alta del TPS'], ['P2135', 'Correlación de voltaje TPS A/B']],
+    outputs: ['inj', 'ign', 'emi'],
+    quizFunc: 'Detecta la apertura de la mariposa de aceleración.',
+    quizLoc: 'En el eje de la mariposa del cuerpo de aceleración.',
+    pos: [180, 212], pin: [240, 64]
+  },
+  {
+    id: 7, color: '#D81B87', ink: '#ffffff', abbr: 'O2 S1',
+    en: 'Upstream Oxygen Sensor', es: 'Sensor de oxígeno anterior (pre-catalizador)',
+    system: 'Escape', flow: 'O2 · Pre-cat.',
+    func: 'Mide el oxígeno de los gases de escape antes del catalizador para corregir la mezcla aire-combustible en lazo cerrado.',
+    location: 'En el múltiple de escape o tubo de bajada, antes del convertidor catalítico (banco 1, sensor 1).',
+    ecuSignal: 'Sensor O2 convencional: 0.1–0.9 V oscilando. En muchos Toyota es un sensor de relación aire-combustible (A/F) de banda ancha que entrega una corriente proporcional a la mezcla.',
+    signalType: 'Analógica', signalDetail: 'Zirconio (O2) o banda ancha (A/F), con calefactor.',
+    symptoms: ['Alto consumo de combustible', 'Ralentí irregular', 'Falla en la verificación de emisiones', 'Olor fuerte a combustible'],
+    codes: [['P0130', 'Circuito del sensor O2 (B1S1)'], ['P0131', 'Voltaje bajo O2 (B1S1)'], ['P0133', 'Respuesta lenta O2 (B1S1)'], ['P0134', 'Sin actividad O2 (B1S1)'], ['P2195', 'Sensor A/F atascado en pobre (B1S1)'], ['P2196', 'Sensor A/F atascado en rico (B1S1)']],
+    outputs: ['inj', 'emi'],
+    quizFunc: 'Mide el oxígeno en el escape antes del catalizador.',
+    quizLoc: 'Múltiple de escape, antes del convertidor catalítico (B1S1).',
+    pos: [214, 276], pin: [240, 318]
+  },
+  {
+    id: 8, color: '#0F8073', ink: '#ffffff', abbr: 'O2 S2',
+    en: 'Downstream Oxygen Sensor', es: 'Sensor de oxígeno posterior (post-catalizador)',
+    system: 'Escape', flow: 'O2 · Post-cat.',
+    func: 'Mide el oxígeno después del catalizador para vigilar su eficiencia y afinar la corrección de mezcla.',
+    location: 'En el tubo de escape, después del convertidor catalítico (banco 1, sensor 2).',
+    ecuSignal: 'Voltaje 0.1–0.9 V, relativamente estable cuando el catalizador funciona bien.',
+    signalType: 'Analógica', signalDetail: 'Zirconio con calefactor.',
+    symptoms: ['Check engine encendido', 'Falla en la verificación de emisiones', 'Diagnóstico de catalizador incorrecto'],
+    codes: [['P0136', 'Circuito del sensor O2 (B1S2)'], ['P0137', 'Voltaje bajo O2 (B1S2)'], ['P0138', 'Voltaje alto O2 (B1S2)'], ['P0139', 'Respuesta lenta O2 (B1S2)'], ['P0420', 'Eficiencia del catalizador bajo el umbral (banco 1)']],
+    outputs: ['emi'],
+    quizFunc: 'Vigila la eficiencia del catalizador midiendo el oxígeno después de él.',
+    quizLoc: 'Tubo de escape, después del convertidor catalítico (B1S2).',
+    pos: [284, 276], pin: [300, 318]
+  },
+  {
+    id: 9, color: '#F07A1A', ink: '#1a0b00', abbr: 'KS',
+    en: 'Knock Sensor', es: 'Sensor de detonación',
+    system: 'Motor', flow: 'KS · Detonación',
+    func: 'Detecta las vibraciones de la detonación (cascabeleo). La ECU retrasa el tiempo de encendido para proteger el motor.',
+    location: 'Atornillado al bloque del motor, normalmente debajo del múltiple de admisión, entre los cilindros.',
+    ecuSignal: 'Señal de voltaje AC cuya amplitud aumenta con la detonación.',
+    signalType: 'Analógica', signalDetail: 'Cristal piezoeléctrico.',
+    symptoms: ['Cascabeleo audible al acelerar', 'Pérdida de potencia (encendido retrasado)', 'Mayor consumo', 'Check engine'],
+    codes: [['P0325', 'Circuito del sensor de detonación 1'], ['P0326', 'Rango / desempeño del sensor de detonación'], ['P0327', 'Entrada baja del sensor de detonación'], ['P0328', 'Entrada alta del sensor de detonación']],
+    outputs: ['ign'],
+    quizFunc: 'Detecta la detonación (cascabeleo) para ajustar el encendido.',
+    quizLoc: 'Atornillado al bloque, debajo del múltiple de admisión.',
+    pos: [150, 238], pin: [180, 318]
+  },
+  {
+    id: 10, color: '#9BC91E', ink: '#121a00', abbr: 'WSS',
+    en: 'Wheel-Speed Sensor', es: 'Sensor de velocidad de rueda',
+    system: 'Chasis', flow: 'WSS · Rueda',
+    func: 'Mide la velocidad de cada rueda para el ABS, el control de tracción (TRAC) y el control de estabilidad (VSC).',
+    location: 'En cada rueda, junto al cubo o rodamiento, frente a un anillo dentado o magnético.',
+    ecuSignal: 'Pulsos con frecuencia proporcional a la velocidad de la rueda. Normalmente lo lee el módulo ABS/VSC, que comparte el dato con la ECU del motor por la red CAN.',
+    signalType: 'Frecuencia', signalDetail: 'Activo (MRE/Hall) en modelos recientes; pasivo inductivo en antiguos.',
+    symptoms: ['Testigo ABS / VSC / TRAC encendido', 'ABS se activa a baja velocidad sin motivo', 'Velocímetro errático (según modelo)', 'El control crucero se desactiva'],
+    codes: [['C0035', 'Sensor de velocidad, rueda delantera izquierda (genérico)'], ['C0040', 'Sensor de velocidad, rueda delantera derecha (genérico)'], ['C0045', 'Sensor de velocidad, rueda trasera izquierda (genérico)'], ['C0050', 'Sensor de velocidad, rueda trasera derecha (genérico)'], ['C0200', 'Sensor de velocidad delantero derecho (Toyota)'], ['C0205', 'Sensor de velocidad delantero izquierdo (Toyota)']],
+    outputs: ['abs'],
+    quizFunc: 'Mide la velocidad de rueda para el ABS y el control de estabilidad.',
+    quizLoc: 'Junto al cubo o rodamiento de cada rueda.',
+    pos: [512, 258], pin: [566, 316]
+  }
+];
+
+/* Salidas de la ECU (actuadores) */
+const OUTPUTS = [
+  { id: 'inj', es: 'Inyección', en: 'Fuel Injection Control', sub: 'Inyectores', desc: 'La ECU calcula el tiempo de apertura (ancho de pulso) y la sincronización de cada inyector.' },
+  { id: 'ign', es: 'Encendido', en: 'Ignition Timing Control', sub: 'Bobinas', desc: 'Avance o retardo de la chispa en cada bobina de encendido.' },
+  { id: 'emi', es: 'Emisiones', en: 'Emissions Control', sub: 'EGR · EVAP · VVT', desc: 'Recirculación de gases (EGR), purga del canister (EVAP) y distribución variable (VVT).' },
+  { id: 'fan', es: 'Ventilador', en: 'Cooling Fan Control', sub: 'Radiador', desc: 'Encendido y velocidad del ventilador del radiador.' },
+  { id: 'abs', es: 'ABS', en: 'ABS Control', sub: 'Frenos', desc: 'Modulación de presión de frenado, control de tracción y estabilidad.' }
+];
+
+/* Componentes del vehículo (etiquetas del diagrama, coords del auto + 40 en Y) */
+const COMPONENTS = [
+  { es: 'Motor', en: 'Engine', desc: 'Motor de combustión de 4 cilindros en línea; aloja la mayoría de los sensores.', at: [128, 236] },
+  { es: 'Riel de inyectores', en: 'Fuel Rail & Injectors', desc: 'Distribuye el combustible a presión a cada inyector.', at: [130, 182] },
+  { es: 'Radiador y ventilador', en: 'Radiator & Cooling Fan', desc: 'Disipa el calor del refrigerante; el ventilador lo controla la ECU según el ECT.', at: [40, 280] },
+  { es: 'Transmisión automática', en: 'Automatic Transmission', desc: 'Usa datos de carga, TPS y velocidad para decidir los cambios.', at: [200, 286] },
+  { es: 'Sistema de escape', en: 'Exhaust System', desc: 'Conduce los gases; incluye el catalizador y los sensores de oxígeno.', at: [420, 296] },
+  { es: 'Catalizador', en: 'Catalytic Converter', desc: 'Reduce emisiones contaminantes (CO, HC, NOx).', at: [250, 262] },
+  { es: 'Eje motriz', en: 'Drive Axle', desc: 'Semiejes que llevan el par de la transmisión a las ruedas delanteras (tracción delantera).', at: [150, 330] },
+  { es: 'Suspensión', en: 'Suspension', desc: 'Resortes y amortiguadores; el sensor de rueda está montado junto al cubo.', at: [500, 182] },
+  { es: 'Frenos', en: 'Brake System', desc: 'Discos y calipers controlados por el módulo ABS.', at: [500, 334] }
+];
+
+/* Síntomas → sensores a revisar (orden = prioridad) */
+const SYMPTOMS = [
+  { id: 'idle', label: 'Ralentí inestable', icon: 'wave',
+    checks: [[3, 'MAF sucio o defectuoso: mide mal el aire y desajusta la mezcla.'], [6, 'TPS o cuerpo de aceleración sucio altera el control del ralentí.'], [4, 'MAP con lectura errónea o una fuga de vacío.'], [7, 'Corrección de mezcla incorrecta en lazo cerrado.'], [5, 'Si indica motor frío, enriquece la mezcla y sube el ralentí.'], [2, 'Desfase de levas o VVT afecta la estabilidad.']],
+    tips: 'Revisa también fugas de vacío, bujías y bobinas, y la limpieza del cuerpo de aceleración.' },
+  { id: 'cel', label: 'Check engine', icon: 'engine',
+    checks: [[8, 'P0420 / P0137 están entre los códigos más frecuentes.'], [7, 'Fallas de calefactor o respuesta lenta (P0133, P2195).'], [3, 'Lecturas fuera de rango (P0101, P0171).'], [1, 'P0335: puede causar apagones.'], [2, 'P0340 / P0016: correlación de distribución.'], [9, 'P0325: circuito del sensor de detonación.']],
+    tips: 'Lee los códigos con un escáner OBD-II antes de cambiar piezas. Una tapa de gasolina floja puede generar códigos EVAP.' },
+  { id: 'fuel', label: 'Alto consumo', icon: 'drop',
+    checks: [[7, 'Si no corrige la mezcla, el motor trabaja rico.'], [5, 'Si siempre lee "frío", la ECU enriquece la mezcla.'], [3, 'Sobreestima el aire → inyecta de más.'], [4, 'Lectura de carga alta → más combustible.'], [6, 'Lectura errónea de apertura → enriquecimiento.'], [2, 'VVT fuera de fase reduce la eficiencia.']],
+    tips: 'Comprueba presión de llantas, filtro de aire, termostato abierto y hábitos de manejo.' },
+  { id: 'abs', label: 'Testigo ABS', icon: 'abs',
+    checks: [[10, 'Causa más común: sensor sucio o dañado, cable roto o anillo dentado deteriorado.']],
+    tips: 'Revisa el cableado y los conectores en cada rueda, el rodamiento, fusibles y el nivel de líquido de frenos. El escáner indica qué rueda falla (códigos C).' },
+  { id: 'heat', label: 'Sobre\u00adcalentamiento', icon: 'temp',
+    checks: [[5, 'Si informa una temperatura más baja de la real, el ventilador no se activa a tiempo.']],
+    tips: 'Lo más común no es un sensor: nivel de refrigerante, termostato, bomba de agua, ventilador o relé, radiador obstruido o junta de culata. Nunca abras el radiador en caliente.' },
+  { id: 'knock', label: 'Cascabeleo', icon: 'bolt',
+    checks: [[9, 'Si falla, la ECU no detecta la detonación y no retrasa el encendido.'], [5, 'Una lectura de motor frío aplica más avance del debido.'], [3, 'Mezcla pobre por un MAF que lee de menos favorece la detonación.'], [4, 'Carga mal estimada → avance incorrecto.']],
+    tips: 'Considera gasolina de bajo octanaje, depósitos de carbón o bujías incorrectas.' },
+  { id: 'nostart', label: 'No arranca', icon: 'key',
+    checks: [[1, 'Sin señal CKP la ECU no sabe cuándo inyectar ni dar chispa.'], [2, 'Sin CMP algunos motores no sincronizan o tardan en arrancar.'], [5, 'Lectura errónea dificulta el arranque en frío.'], [3, 'Una lectura absurda puede ahogar o empobrecer el arranque.']],
+    tips: 'Antes, descarta batería, motor de arranque, inmovilizador, bomba de combustible y fusibles.' },
+  { id: 'power', label: 'Pérdida de potencia', icon: 'gauge',
+    checks: [[6, 'Falla del TPS puede activar el modo de emergencia.'], [3, 'Mide menos aire del real → poco combustible.'], [9, 'Señal falsa de detonación retrasa el encendido.'], [2, 'VVT deshabilitado por falla del CMP.'], [7, 'Mezcla mal corregida.']],
+    tips: 'Revisa también filtro de aire, catalizador obstruido y presión de combustible.' }
+];
+
+/* Preguntas fijas adicionales para el quiz */
+const QUIZ_EXTRA = [
+  { kind: 'Concepto', q: 'Si el sensor de oxígeno posterior oscila igual que el anterior, ¿qué suele indicar?',
+    options: ['Catalizador con baja eficiencia (P0420)', 'Mezcla perfecta', 'Motor todavía frío', 'Falla del sensor de rueda'],
+    exp: 'Un catalizador sano almacena oxígeno y "aplana" la señal posterior. Si ambas señales oscilan igual, la ECU registra baja eficiencia (P0420).' },
+  { kind: 'Salidas ECU', q: '¿Qué salida de la ECU se ajusta principalmente con la señal del sensor de detonación?',
+    options: ['Tiempo de encendido (bobinas)', 'Ventilador del radiador', 'Control ABS', 'Purga EVAP'],
+    exp: 'Al detectar detonación, la ECU retrasa la chispa en las bobinas de encendido para proteger el motor.' },
+  { kind: 'Salidas ECU', q: '¿Qué salida activa la ECU con el sensor de temperatura del refrigerante cuando el motor se calienta?',
+    options: ['Ventilador del radiador (Cooling Fan)', 'Control ABS', 'Bomba de combustible', 'Luces de freno'],
+    exp: 'Con el dato del ECT, la ECU enciende el ventilador del radiador para mantener la temperatura de operación.' },
+  { kind: 'Concepto', q: '¿Qué elemento usa típicamente el sensor de temperatura del refrigerante (ECT)?',
+    options: ['Termistor NTC', 'Cristal piezoeléctrico', 'Hilo caliente', 'Potenciómetro'],
+    exp: 'El ECT es un termistor NTC: su resistencia (y el voltaje de señal) baja al subir la temperatura.' },
+  { kind: 'Concepto', q: '¿Qué elemento usa el sensor de detonación (Knock Sensor)?',
+    options: ['Cristal piezoeléctrico', 'Termistor NTC', 'Hilo caliente', 'Elemento de zirconio'],
+    exp: 'Es piezoeléctrico: convierte la vibración de la detonación en una señal de voltaje.' },
+  { kind: 'Códigos', q: 'Un código OBD-II que empieza con "C" (como C0035) pertenece al sistema de…',
+    options: ['Chasis (ABS, frenos, suspensión)', 'Carrocería (Body)', 'Tren motriz (Powertrain)', 'Red de comunicación'],
+    exp: 'P = Powertrain (tren motriz), C = Chassis (chasis), B = Body (carrocería), U = Network (red).' },
+  { kind: 'Concepto', q: 'Sin la señal de este sensor, la mayoría de los motores no arrancan porque la ECU no sabe cuándo inyectar ni dar chispa:',
+    options: ['Sensor de posición del cigüeñal (CKP)', 'Sensor de oxígeno posterior (O2 S2)', 'Sensor de velocidad de rueda (WSS)', 'Sensor de detonación (KS)'],
+    exp: 'El CKP es la referencia principal de posición y RPM; sin él no hay inyección ni chispa sincronizadas.' },
+  { kind: 'Concepto', q: 'El árbol de levas gira a… respecto al cigüeñal.',
+    options: ['La mitad de velocidad', 'El doble de velocidad', 'La misma velocidad', 'Un cuarto de velocidad'],
+    exp: 'En un motor de 4 tiempos el árbol de levas da una vuelta por cada dos del cigüeñal.' }
+];
+
+/* =========================================================
+   2. UTILIDADES Y ALMACENAMIENTO
+   ========================================================= */
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+const byId = id => SENSORS.find(s => s.id === id);
+const outById = id => OUTPUTS.find(o => o.id === id);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const norm = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const cssVars = s => `--c:${s.color};--ink:${s.ink}`;
+const badge = (s, cls = '') => `<span class="badge ${cls}" style="${cssVars(s)}" aria-hidden="true">${s.id}</span>`;
+const DISCLAIMER = '<div class="note" role="note"><strong>Referencia general:</strong> los rangos, síntomas y códigos son genéricos. Verifica siempre con el manual de servicio de tu modelo y año.</div>';
+
+const store = {
+  get(key, fallback) { try { const v = localStorage.getItem('sensores.' + key); return v === null ? fallback : JSON.parse(v); } catch (e) { return fallback; } },
+  set(key, value) { try { localStorage.setItem('sensores.' + key, JSON.stringify(value)); } catch (e) { /* almacenamiento no disponible */ } }
+};
+
+/* =========================================================
+   3. TEMA (oscuro / claro)
+   ========================================================= */
+const ICON_SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+const ICON_MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  const dark = theme === 'dark';
+  $('#theme-icon').innerHTML = dark ? ICON_SUN : ICON_MOON;
+  $('#theme-btn').setAttribute('aria-label', dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+  $('meta[name="theme-color"]').setAttribute('content', dark ? '#0b1220' : '#ffffff');
+}
+$('#theme-btn').addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(next); store.set('theme', next);
+});
+
+/* =========================================================
+   4. NAVEGACIÓN POR PESTAÑAS
+   ========================================================= */
+const TABS = $$('.tab');
+function showView(name, opts = {}) {
+  TABS.forEach(t => {
+    const on = t.dataset.view === name;
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
+    t.tabIndex = on ? 0 : -1;
+    $('#view-' + t.dataset.view).hidden = !on;
+  });
+  store.set('tab', name);
+  if (!opts.keepScroll) window.scrollTo({ top: 0, behavior: 'auto' });
+  if (name === 'quiz' && !quiz.questions.length) startQuiz();
+}
+TABS.forEach((t, i) => {
+  t.addEventListener('click', () => showView(t.dataset.view));
+  t.addEventListener('keydown', e => {
+    let j = null;
+    if (e.key === 'ArrowRight') j = (i + 1) % TABS.length;
+    if (e.key === 'ArrowLeft') j = (i - 1 + TABS.length) % TABS.length;
+    if (e.key === 'Home') j = 0;
+    if (e.key === 'End') j = TABS.length - 1;
+    if (j !== null) { e.preventDefault(); TABS[j].focus(); showView(TABS[j].dataset.view); }
+  });
+});
+
+/* =========================================================
+   5. VISTA VEHÍCULO — diagrama SVG original + zoom/pan
+   ========================================================= */
+function carSVG() {
+  // El auto se dibuja en coordenadas propias y se desplaza 40 px hacia abajo
+  // para dejar espacio a los marcadores numerados en la parte superior.
+  const wheel = (cx, cy) => `
+    <circle class="tire" cx="${cx}" cy="${cy}" r="34"/>
+    <circle class="rim" cx="${cx}" cy="${cy}" r="23"/>
+    <circle class="disc" cx="${cx}" cy="${cy}" r="16"/>
+    <path class="caliper" d="M${cx + 9} ${cy - 16} a18 18 0 0 1 9 12 l-5 1 a13 13 0 0 0 -6 -9 z"/>
+    <circle cx="${cx}" cy="${cy}" r="4" fill="var(--car-line)"/>`;
+  return `
+  <ellipse cx="320" cy="306" rx="300" ry="6" fill="var(--car-line)" opacity=".15"/>
+  <g transform="translate(0 40)">
+    <!-- escape (detrás de las ruedas) -->
+    <path class="part-line" d="M118 214 Q128 236 160 236 L600 236 L616 232"/>
+    <rect class="part" x="222" y="229" width="52" height="14" rx="6"/>
+    <rect class="part" x="540" y="228" width="52" height="16" rx="7"/>
+    <!-- carrocería -->
+    <path class="car-body" d="M20 215 L22 182 Q26 162 60 154 L190 138 Q236 96 292 80 L400 76 Q452 78 502 120 L586 130 Q616 134 620 162 L622 212 Q620 228 600 228 L542 228 A42 42 0 0 0 458 228 L172 228 A42 42 0 0 0 88 228 L38 228 Q20 226 20 215 Z"/>
+    <path class="car-glass" d="M206 136 Q244 100 294 88 L344 86 L344 134 Z"/>
+    <path class="car-glass" d="M352 86 L398 84 Q440 88 474 124 L352 130 Z"/>
+    <path class="car-line" d="M198 142 L196 224 M348 86 L348 224 M478 126 L476 224 M360 160 h16 M220 162 h16"/>
+    <ellipse cx="32" cy="170" rx="9" ry="5" fill="#ffe9a8" opacity=".85"/>
+    <rect x="606" y="140" width="12" height="10" rx="2" fill="#e0453a" opacity=".85"/>
+    <!-- vano motor (corte) -->
+    <path class="bay" d="M40 160 L190 142 L196 222 L44 224 Z"/>
+    <!-- radiador y ventilador -->
+    <rect class="part" x="28" y="166" width="10" height="48" rx="2"/>
+    <path class="car-line" d="M28 174 h10 M28 182 h10 M28 190 h10 M28 198 h10 M28 206 h10"/>
+    <circle class="part" cx="52" cy="194" r="12"/>
+    <path class="car-line" d="M52 184 v20 M42 194 h20 M45 187 l14 14 M59 187 l-14 14"/>
+    <!-- admisión: caja de filtro, ducto, cuerpo de aceleración -->
+    <rect class="part" x="48" y="160" width="24" height="14" rx="3"/>
+    <path class="part-line" d="M72 166 L180 168"/>
+    <!-- motor: bloque y culata -->
+    <rect class="part" x="86" y="168" width="84" height="50" rx="6"/>
+    <rect class="part" x="90" y="154" width="76" height="16" rx="4"/>
+    <path class="car-line" d="M100 180 v28 M118 180 v28 M136 180 v28 M154 180 v28"/>
+    <!-- riel de inyectores -->
+    <path class="part-line" d="M100 152 L160 152" style="stroke:#d99a2b"/>
+    <path class="car-line" d="M106 152 v6 M122 152 v6 M138 152 v6 M154 152 v6" style="stroke:#d99a2b;opacity:1"/>
+    <!-- polea del cigüeñal -->
+    <circle class="part" cx="92" cy="206" r="9"/>
+    <!-- cuerpo de aceleración -->
+    <circle class="part" cx="180" cy="172" r="7"/>
+    <!-- transmisión y semieje -->
+    <path class="part" d="M170 188 L214 196 L212 222 L172 222 Z"/>
+    <path class="part-line" d="M190 216 L130 228"/>
+    <!-- suspensión trasera -->
+    <path class="part-line" style="stroke-width:2.2" d="M500 146 l-8 4 l16 6 l-16 6 l16 6 l-16 6 l16 6 l-8 4"/>
+    <rect class="part" x="496" y="182" width="8" height="10" rx="2"/>
+    <!-- ruedas con frenos de disco -->
+    ${wheel(130, 228)}
+    ${wheel(500, 228)}
+  </g>`;
+}
+
+function buildCar() {
+  const svg = $('#car-svg');
+  let html = carSVG();
+  // Etiquetas de componentes (se muestran con el botón)
+  html += `<g class="comp-labels off" id="comp-labels" aria-hidden="true">` +
+    COMPONENTS.map(c => `<text class="comp-label" x="${c.at[0]}" y="${c.at[1]}" text-anchor="middle">${esc(c.es)}</text>`).join('') + `</g>`;
+  // Líneas guía + punto real
+  html += SENSORS.map(s => `
+    <line class="leader" x1="${s.pos[0]}" y1="${s.pos[1]}" x2="${s.pin[0]}" y2="${s.pin[1]}" stroke="${s.color}"/>
+    <circle class="spot" cx="${s.pos[0]}" cy="${s.pos[1]}" r="4.5" fill="${s.color}"/>`).join('');
+  // Marcadores numerados (interactivos)
+  html += SENSORS.map(s => `
+    <g class="pin" data-id="${s.id}" role="button" tabindex="0" aria-label="Sensor ${s.id}: ${esc(s.es)} (${esc(s.en)})">
+      <circle class="hit" cx="${s.pin[0]}" cy="${s.pin[1]}" r="26"/>
+      <circle class="halo" cx="${s.pin[0]}" cy="${s.pin[1]}" r="18" stroke="${s.color}"/>
+      <circle class="ring" cx="${s.pin[0]}" cy="${s.pin[1]}" r="18" fill="${s.color}"/>
+      <text x="${s.pin[0]}" y="${s.pin[1]}" dy="6.2" text-anchor="middle" fill="${s.ink}">${s.id}</text>
+    </g>`).join('');
+  svg.innerHTML = html;
+
+  // Accesos rápidos (objetivos táctiles grandes)
+  $('#pin-grid').innerHTML = SENSORS.map(s =>
+    `<button type="button" class="pin-btn" data-id="${s.id}" aria-label="Abrir ficha: ${esc(s.es)}">${badge(s)}<span>${esc(s.abbr)}</span></button>`).join('');
+  $('#pin-grid').addEventListener('click', e => { const b = e.target.closest('.pin-btn'); if (b) openSheet(+b.dataset.id, b); });
+
+  $('#comp-list').innerHTML = COMPONENTS.map(c => `<div><strong>${esc(c.es)}</strong> <span class="muted">(${esc(c.en)})</span><br><span class="small">${esc(c.desc)}</span></div>`).join('');
+
+  $('#labels-btn').addEventListener('click', e => {
+    const on = e.currentTarget.getAttribute('aria-pressed') !== 'true';
+    e.currentTarget.setAttribute('aria-pressed', on);
+    e.currentTarget.textContent = on ? 'Ocultar componentes' : 'Mostrar componentes';
+    $('#comp-labels').classList.toggle('off', !on);
+  });
+
+  // Teclado sobre los marcadores
+  svg.addEventListener('keydown', e => {
+    const pin = e.target.closest && e.target.closest('.pin');
+    if (pin && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openSheet(+pin.dataset.id, pin); }
+  });
+  initZoom(svg);
+}
+
+/* ---- Zoom con pellizco, rueda y botones (manipulando el viewBox) ---- */
+function initZoom(svg) {
+  const BASE = { w: 640, h: 340 };
+  const MAX = 4;
+  const view = { x: 0, y: 0, w: BASE.w, h: BASE.h };
+  const apply = () => {
+    svg.setAttribute('viewBox', `${view.x.toFixed(2)} ${view.y.toFixed(2)} ${view.w.toFixed(2)} ${view.h.toFixed(2)}`);
+    $('#zoom-status').textContent = `Zoom ${Math.round(BASE.w / view.w * 100)} %`;
+  };
+  const clampView = () => {
+    view.w = clamp(view.w, BASE.w / MAX, BASE.w);
+    view.h = view.w * BASE.h / BASE.w;
+    view.x = clamp(view.x, 0, BASE.w - view.w);
+    view.y = clamp(view.y, 0, BASE.h - view.h);
+  };
+  const toSvg = (cx, cy) => {
+    const r = svg.getBoundingClientRect();
+    return { x: view.x + (cx - r.left) / r.width * view.w, y: view.y + (cy - r.top) / r.height * view.h };
+  };
+  const zoomAt = (factor, px, py) => {
+    const nw = clamp(view.w / factor, BASE.w / MAX, BASE.w);
+    const k = nw / view.w;
+    view.x = px - (px - view.x) * k;
+    view.y = py - (py - view.y) * k;
+    view.w = nw; clampView(); apply();
+  };
+  const center = () => ({ x: view.x + view.w / 2, y: view.y + view.h / 2 });
+
+  $('#zoom-in').addEventListener('click', () => { const c = center(); zoomAt(1.5, c.x, c.y); });
+  $('#zoom-out').addEventListener('click', () => { const c = center(); zoomAt(1 / 1.5, c.x, c.y); });
+  $('#zoom-reset').addEventListener('click', () => { Object.assign(view, { x: 0, y: 0, w: BASE.w, h: BASE.h }); apply(); });
+
+  svg.addEventListener('wheel', e => {
+    e.preventDefault();
+    const p = toSvg(e.clientX, e.clientY);
+    zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, p.x, p.y);
+  }, { passive: false });
+
+  // Gestos con Pointer Events (1 dedo = desplazar / tocar, 2 dedos = pellizcar)
+  const pts = new Map();
+  let downPin = null, tapPin = null, startPt = null, moved = false, lastDist = 0, lastMid = null;
+  const midDist = () => {
+    const [a, b] = [...pts.values()];
+    return { mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, dist: Math.hypot(a.x - b.x, a.y - b.y) };
+  };
+  svg.addEventListener('pointerdown', e => {
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    try { svg.setPointerCapture(e.pointerId); } catch (err) { /* ignorar */ }
+    if (pts.size === 1) {
+      downPin = e.target.closest ? e.target.closest('.pin') : null;
+      startPt = { x: e.clientX, y: e.clientY }; moved = false;
+    } else if (pts.size === 2) {
+      downPin = null; moved = true;
+      const md = midDist(); lastDist = md.dist; lastMid = md.mid;
+    }
+  });
+  svg.addEventListener('pointermove', e => {
+    if (!pts.has(e.pointerId)) return;
+    const prev = pts.get(e.pointerId);
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const r = svg.getBoundingClientRect();
+    if (pts.size === 2) {
+      const md = midDist();
+      if (lastDist > 0) {
+        const p = toSvg(md.mid.x, md.mid.y);
+        zoomAt(md.dist / lastDist, p.x, p.y);
+        view.x -= (md.mid.x - lastMid.x) / r.width * view.w;
+        view.y -= (md.mid.y - lastMid.y) / r.height * view.h;
+        clampView(); apply();
+      }
+      lastDist = md.dist; lastMid = md.mid;
+    } else if (pts.size === 1) {
+      if (Math.hypot(e.clientX - startPt.x, e.clientY - startPt.y) > 8) moved = true;
+      if (moved && view.w < BASE.w) {
+        svg.classList.add('dragging');
+        view.x -= (e.clientX - prev.x) / r.width * view.w;
+        view.y -= (e.clientY - prev.y) / r.height * view.h;
+        clampView(); apply();
+      }
+    }
+  });
+  const end = e => {
+    if (!pts.has(e.pointerId)) return;
+    // El toque se confirma en 'click' (evita que el click sintético cierre el panel)
+    tapPin = (e.type === 'pointerup' && pts.size === 1 && !moved) ? downPin : null;
+    pts.delete(e.pointerId);
+    if (pts.size < 2) lastDist = 0;
+      if (pts.size === 0) { svg.classList.remove('dragging'); downPin = null; }
+  };
+  svg.addEventListener('pointerup', end);
+  svg.addEventListener('pointercancel', end);
+  svg.addEventListener('click', () => { if (tapPin) { const p = tapPin; tapPin = null; openSheet(+p.dataset.id, p); } });
+  // Evita el zoom de página de Safari iOS al pellizcar sobre el diagrama
+  svg.addEventListener('gesturestart', e => e.preventDefault());
+  apply();
+}
+
+/* =========================================================
+   6. BOTTOM SHEET — ficha rápida del sensor
+   ========================================================= */
+const sheet = $('#sheet'), scrim = $('#scrim');
+let sheetReturnFocus = null, sheetOpenedAt = 0;
+
+function outputPills(s) {
+  return `<div class="out-pills">${s.outputs.map(o => `<span class="pill" style="--c:${s.color}"><span class="dot"></span>${esc(outById(o).es)}</span>`).join('')}</div>`;
+}
+function openSheet(id, returnEl) {
+  const s = byId(id);
+  sheetReturnFocus = returnEl || document.activeElement;
+  $$('.pin').forEach(p => p.classList.toggle('active', +p.dataset.id === id));
+  const b = $('#sheet-badge');
+  b.textContent = s.id; b.style.cssText = cssVars(s);
+  $('#sheet-title').textContent = s.es;
+  $('#sheet-sub').textContent = `${s.en} · ${s.abbr}`;
+  $('#sheet-body').innerHTML = `
+    <dl class="facts">
+      <div><dt>Función</dt><dd>${esc(s.func)}</dd></div>
+      <div><dt>Ubicación</dt><dd>${esc(s.location)}</dd></div>
+      <div><dt>Señal a la ECU</dt><dd>${esc(s.ecuSignal)}</dd></div>
+      <div><dt>Tipo de señal</dt><dd><span class="pill">${esc(s.signalType)}</span> <span class="small muted">${esc(s.signalDetail)}</span></dd></div>
+      <div><dt>Salidas de la ECU que afecta</dt><dd>${outputPills(s)}</dd></div>
+    </dl>
+    <div class="btn-row">
+      <button type="button" class="btn primary" data-go="card" data-id="${s.id}">Ficha completa</button>
+      <button type="button" class="btn" data-go="flow" data-id="${s.id}">Ver en flujo ECU</button>
+    </div>`;
+  sheet.style.transform = '';
+  sheetOpenedAt = Date.now();
+  sheet.classList.add('open'); scrim.classList.add('open');
+  sheet.setAttribute('aria-hidden', 'false');
+  sheet.scrollTop = 0;
+  setTimeout(() => $('#sheet-close').focus({ preventScroll: true }), 50);
+}
+function closeSheet() {
+  if (!sheet.classList.contains('open')) return;
+  sheet.classList.remove('open'); scrim.classList.remove('open');
+  sheet.setAttribute('aria-hidden', 'true');
+  sheet.style.transform = '';
+  $$('.pin').forEach(p => p.classList.remove('active'));
+  if (sheetReturnFocus && document.contains(sheetReturnFocus) && !sheetReturnFocus.closest('[hidden]')) sheetReturnFocus.focus({ preventScroll: true });
+}
+$('#sheet-close').addEventListener('click', closeSheet);
+scrim.addEventListener('click', () => { if (Date.now() - sheetOpenedAt > 350) closeSheet(); });
+document.addEventListener('keydown', e => {
+  if (!sheet.classList.contains('open')) return;
+  if (e.key === 'Escape') { e.preventDefault(); closeSheet(); }
+  if (e.key === 'Tab') { // trampa de foco dentro del panel
+    const f = $$('button, [href], input, [tabindex]:not([tabindex="-1"])', sheet);
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+});
+sheet.addEventListener('click', e => {
+  const b = e.target.closest('[data-go]'); if (!b) return;
+  const id = +b.dataset.id;
+  sheetReturnFocus = null; closeSheet();
+  if (b.dataset.go === 'card') goToCard(id);
+  if (b.dataset.go === 'flow') { showView('flow'); selectFlow({ type: 's', id }); }
+});
+// Deslizar hacia abajo desde la cabecera para cerrar
+(() => {
+  const grab = $('#sheet-grab'); let y0 = null, dy = 0;
+  grab.addEventListener('pointerdown', e => { if (e.target.closest('button')) return; y0 = e.clientY; dy = 0; sheet.style.transition = 'none'; try { grab.setPointerCapture(e.pointerId); } catch (err) {} });
+  grab.addEventListener('pointermove', e => { if (y0 === null) return; dy = Math.max(0, e.clientY - y0); sheet.style.transform = `translateY(${dy}px)`; });
+  const up = () => { if (y0 === null) return; sheet.style.transition = ''; y0 = null; if (dy > 90) closeSheet(); else sheet.style.transform = ''; };
+  grab.addEventListener('pointerup', up); grab.addEventListener('pointercancel', up);
+})();
+
+/* =========================================================
+   7. VISTA SENSORES — tarjetas filtrables
+   ========================================================= */
+const filters = { q: '', system: 'Todos', signal: 'Todas' };
+const SYSTEMS = ['Todos', 'Motor', 'Admisión', 'Escape', 'Chasis'];
+const SIGNALS = ['Todas', 'Analógica', 'Digital', 'Frecuencia'];
+
+function cardHTML(s) {
+  return `
+  <article class="card" id="card-${s.id}" style="${cssVars(s)}" data-id="${s.id}">
+    <button type="button" class="card-head" aria-expanded="false" aria-controls="card-body-${s.id}">
+      ${badge(s)}
+      <h3>${esc(s.es)} <span class="en">(${esc(s.en)} · ${esc(s.abbr)})</span></h3>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <p class="card-summary">${esc(s.quizFunc)}</p>
+    <div class="sig-tags"><span class="pill">${esc(s.system)}</span><span class="pill">Señal ${esc(s.signalType.toLowerCase())}</span></div>
+    <div class="card-body" id="card-body-${s.id}" hidden>
+      <dl class="facts">
+        <div><dt>Función</dt><dd>${esc(s.func)}</dd></div>
+        <div><dt>Ubicación</dt><dd>${esc(s.location)}</dd></div>
+        <div><dt>Señal a la ECU</dt><dd>${esc(s.ecuSignal)}</dd></div>
+        <div><dt>Tipo de señal</dt><dd><span class="pill">${esc(s.signalType)}</span> <span class="small muted">${esc(s.signalDetail)}</span></dd></div>
+        <div><dt>Salidas de la ECU que afecta</dt><dd>${outputPills(s)}</dd></div>
+        <div><dt>Síntomas comunes de falla</dt><dd><ul class="clean">${s.symptoms.map(x => `<li>${esc(x)}</li>`).join('')}</ul></dd></div>
+        <div><dt>Códigos OBD-II típicos</dt><dd><ul class="codes">${s.codes.map(([c, d]) => `<li><span class="code">${c}</span><span>${esc(d)}</span></li>`).join('')}</ul></dd></div>
+      </dl>
+      ${DISCLAIMER}
+      <div class="btn-row">
+        <button type="button" class="btn" data-act="car" data-id="${s.id}">Ver en el vehículo</button>
+        <button type="button" class="btn" data-act="flow" data-id="${s.id}">Ver en flujo ECU</button>
+      </div>
+    </div>
+  </article>`;
+}
+
+function buildSensors() {
+  $('#cards').innerHTML = SENSORS.map(cardHTML).join('');
+  const chips = (list, key, el) => {
+    el.innerHTML = list.map(v => `<button type="button" class="chip" aria-pressed="${filters[key] === v}" data-v="${esc(v)}">${esc(v)}</button>`).join('');
+    el.addEventListener('click', e => {
+      const b = e.target.closest('.chip'); if (!b) return;
+      filters[key] = b.dataset.v;
+      $$('.chip', el).forEach(c => c.setAttribute('aria-pressed', c === b));
+      applyFilters();
+    });
+  };
+  chips(SYSTEMS, 'system', $('#f-system'));
+  chips(SIGNALS, 'signal', $('#f-signal'));
+  $('#search').addEventListener('input', e => { filters.q = e.target.value; applyFilters(); });
+
+  $('#cards').addEventListener('click', e => {
+    const head = e.target.closest('.card-head');
+    if (head) { toggleCard(head.closest('.card'), head.getAttribute('aria-expanded') !== 'true'); return; }
+    const act = e.target.closest('[data-act]');
+    if (act) {
+      const id = +act.dataset.id;
+      if (act.dataset.act === 'flow') { showView('flow'); selectFlow({ type: 's', id }); }
+      if (act.dataset.act === 'car') { showView('vehicle'); openSheet(id, act); }
+    }
+  });
+  applyFilters();
+}
+function toggleCard(card, open) {
+  const head = $('.card-head', card);
+  head.setAttribute('aria-expanded', open);
+  $('.card-body', card).hidden = !open;
+}
+function applyFilters() {
+  const q = norm(filters.q.trim());
+  let n = 0;
+  SENSORS.forEach(s => {
+    const hay = norm([s.es, s.en, s.abbr, s.func, s.location, s.system, s.signalType, ...s.symptoms, ...s.codes.flat()].join(' '));
+    const ok = (!q || hay.includes(q)) &&
+      (filters.system === 'Todos' || s.system === filters.system) &&
+      (filters.signal === 'Todas' || s.signalType === filters.signal);
+    $('#card-' + s.id).hidden = !ok;
+    if (ok) n++;
+    // Si la búsqueda es un código exacto, abre la tarjeta
+    if (ok && q && /^[pcbu]\d{4}$/.test(q)) toggleCard($('#card-' + s.id), true);
+  });
+  $('#result-count').textContent = n === 0 ? 'Sin resultados. Prueba otro término o quita filtros.' : `${n} sensor${n === 1 ? '' : 'es'}`;
+}
+function goToCard(id) {
+  filters.q = ''; filters.system = 'Todos'; filters.signal = 'Todas';
+  $('#search').value = '';
+  $$('#f-system .chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.v === 'Todos'));
+  $$('#f-signal .chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.v === 'Todas'));
+  applyFilters();
+  showView('sensors');
+  const card = $('#card-' + id);
+  toggleCard(card, true);
+  card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+  requestAnimationFrame(() => {
+    const top = card.getBoundingClientRect().top + window.scrollY - 72;
+    window.scrollTo({ top, behavior: reduceMotion() ? 'auto' : 'smooth' });
+    $('.card-head', card).focus({ preventScroll: true });
+  });
+}
+
+/* =========================================================
+   8. VISTA FLUJO ECU — entradas → ECU → salidas
+   ========================================================= */
+let flowSel = null;
+function buildFlow() {
+  const W = 360, H = 500, top = 10, rowH = 48;
+  const inY = i => top + rowH * i + rowH / 2;
+  const outH = (H - top * 2) / 5;
+  const outY = j => top + outH * j + outH / 2;
+  const mid = H / 2, e1 = 176, e2 = 214, squeeze = y => mid + (y - mid) * 0.78;
+  let s = '';
+  SENSORS.forEach((x, i) => {
+    const y = inY(i), ey = squeeze(y);
+    s += `<path class="fl" data-s="${x.id}" d="M140 ${y} C 160 ${y}, 158 ${ey}, ${e1} ${ey}"/>`;
+  });
+  OUTPUTS.forEach((o, j) => {
+    const y = outY(j), ey = squeeze(y);
+    s += `<path class="fl" data-o="${o.id}" d="M${e2} ${ey} C 232 ${ey}, 232 ${y}, 250 ${y}"/>`;
+  });
+  s += `<g class="ecu" aria-hidden="true">
+      <rect x="${e1}" y="${top + 20}" width="${e2 - e1}" height="${H - 2 * top - 40}" rx="8"/>
+      ${[0, 1, 2, 3, 4, 5, 6, 7].map(k => `<line class="chip-line" x1="${e1 + 6}" x2="${e2 - 6}" y1="${top + 40 + k * 8}" y2="${top + 40 + k * 8}"/>`).join('')}
+      <text transform="translate(${(e1 + e2) / 2} ${mid}) rotate(-90)" text-anchor="middle" dy="4.5">ECU · ENGINE CONTROL MODULE</text>
+    </g>`;
+  SENSORS.forEach((x, i) => {
+    const y = inY(i);
+    s += `<g class="node" role="button" tabindex="0" data-s="${x.id}" style="--c:${x.color}" aria-label="Entrada ${x.id}: ${esc(x.es)}">
+      <rect x="2" y="${y - 20}" width="138" height="40" rx="9"/>
+      <circle cx="21" cy="${y}" r="12" fill="${x.color}"/>
+      <text class="num" x="21" y="${y}" dy="4.6" text-anchor="middle" fill="${x.ink}">${x.id}</text>
+      <text class="lbl" x="39" y="${y}" dy="4.3">${esc(x.flow)}</text>
+    </g>`;
+  });
+  OUTPUTS.forEach((o, j) => {
+    const y = outY(j);
+    s += `<g class="node" role="button" tabindex="0" data-o="${o.id}" aria-label="Salida: ${esc(o.es)} (${esc(o.en)})">
+      <rect x="250" y="${y - 34}" width="108" height="68" rx="10"/>
+      <text class="ttl" x="304" y="${y - 4}" text-anchor="middle">${esc(o.es)}</text>
+      <text class="sub" x="304" y="${y + 14}" text-anchor="middle">${esc(o.sub)}</text>
+    </g>`;
+  });
+  const svg = $('#flow-svg');
+  svg.innerHTML = s;
+  const pick = n => {
+    if (!n) return;
+    const sel = n.dataset.s ? { type: 's', id: +n.dataset.s } : { type: 'o', id: n.dataset.o };
+    const same = flowSel && flowSel.type === sel.type && flowSel.id === sel.id;
+    selectFlow(same ? null : sel);
+  };
+  svg.addEventListener('click', e => pick(e.target.closest('.node')));
+  svg.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { const n = e.target.closest('.node'); if (n) { e.preventDefault(); pick(n); } }
+  });
+  $('#flow-info').addEventListener('click', e => {
+    const b = e.target.closest('[data-act]'); if (!b) return;
+    if (b.dataset.act === 'clear') selectFlow(null);
+    if (b.dataset.act === 'sheet') openSheet(+b.dataset.id, b);
+  });
+  selectFlow(null);
+}
+function selectFlow(sel) {
+  flowSel = sel;
+  const svg = $('#flow-svg'), info = $('#flow-info');
+  svg.classList.toggle('has-sel', !!sel);
+  $$('.fl, .node', svg).forEach(el => { el.classList.remove('on'); el.style.removeProperty('--c'); });
+  $$('.node[data-s]', svg).forEach(n => n.style.setProperty('--c', byId(+n.dataset.s).color));
+  if (!sel) {
+    info.innerHTML = `<h3>¿Cómo funciona?</h3>
+      <p>La ECU (Engine Control Module) lee continuamente las señales de los sensores, las compara con sus mapas internos y controla los actuadores.</p>
+      <p class="muted">Toca un <strong>sensor</strong> para iluminar las salidas que afecta, o una <strong>salida</strong> para ver qué sensores la influyen.</p>`;
+    return;
+  }
+  const on = el => el && el.classList.add('on');
+  if (sel.type === 's') {
+    const s = byId(sel.id);
+    on($(`.node[data-s="${s.id}"]`, svg));
+    const inL = $(`.fl[data-s="${s.id}"]`, svg); on(inL); inL.style.setProperty('--c', s.color);
+    s.outputs.forEach(o => {
+      const l = $(`.fl[data-o="${o}"]`, svg); on(l); l.style.setProperty('--c', s.color);
+      const n = $(`.node[data-o="${o}"]`, svg); on(n); n.style.setProperty('--c', s.color);
+    });
+    info.innerHTML = `<h3>${badge(s)} ${esc(s.es)}</h3>
+      <p class="muted">${esc(s.en)} · señal ${esc(s.signalType.toLowerCase())}</p>
+      <p>${esc(s.ecuSignal)}</p>
+      <p><strong>Afecta a:</strong></p>
+      <ul class="clean">${s.outputs.map(o => `<li><strong>${esc(outById(o).es)}</strong> (${esc(outById(o).en)}): ${esc(outById(o).desc)}</li>`).join('')}</ul>
+      <div class="btn-row"><button type="button" class="btn" data-act="sheet" data-id="${s.id}">Ficha del sensor</button><button type="button" class="btn" data-act="clear">Ver todo</button></div>`;
+  } else {
+    const o = outById(sel.id);
+    const srcs = SENSORS.filter(s => s.outputs.includes(o.id));
+    on($(`.node[data-o="${o.id}"]`, svg)); on($(`.fl[data-o="${o.id}"]`, svg));
+    $(`.fl[data-o="${o.id}"]`, svg).style.setProperty('--c', 'var(--accent)');
+    srcs.forEach(s => { on($(`.node[data-s="${s.id}"]`, svg)); const l = $(`.fl[data-s="${s.id}"]`, svg); on(l); l.style.setProperty('--c', s.color); });
+    info.innerHTML = `<h3>${esc(o.es)} <span class="muted small">(${esc(o.en)})</span></h3>
+      <p>${esc(o.desc)}</p>
+      <p><strong>Sensores que la influyen (${srcs.length}):</strong></p>
+      <ul class="clean">${srcs.map(s => `<li>${s.id}. ${esc(s.es)} (${esc(s.abbr)})</li>`).join('')}</ul>
+      ${o.id === 'abs' ? '<p class="small muted">Nota: el ABS lo gestiona su propio módulo (Skid Control ECU), que comparte datos con la ECU del motor por la red CAN.</p>' : ''}
+      <div class="btn-row"><button type="button" class="btn" data-act="clear">Ver todo</button></div>`;
+  }
+}
+
+/* =========================================================
+   9. MODO DIAGNÓSTICO
+   ========================================================= */
+const SYM_ICONS = {
+  wave: '<path d="M2 12h3l2-5 3 10 3-8 2 3h7"/>',
+  engine: '<path d="M4 10h3l2-2h5l2 2h2v3h2v-2h1v6h-1v-2h-2v3h-3l-2 2H8l-2-2H4z"/>',
+  drop: '<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+  abs: '<circle cx="12" cy="12" r="6"/><path d="M4 7a10 10 0 0 0 0 10M20 7a10 10 0 0 1 0 10"/>',
+  temp: '<path d="M10 4a2 2 0 1 1 4 0v10a4 4 0 1 1-4 0z"/><path d="M12 9v7"/>',
+  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  key: '<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3M14 9l2 2"/>',
+  gauge: '<path d="M4 18a9 9 0 1 1 16 0"/><path d="m12 14 4-5"/>'
+};
+function buildDiag() {
+  const grid = $('#sym-grid');
+  grid.innerHTML = SYMPTOMS.map(s => `<button type="button" class="sym" aria-pressed="false" data-id="${s.id}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${SYM_ICONS[s.icon]}</svg>${esc(s.label)}</button>`).join('');
+  grid.addEventListener('click', e => {
+    const b = e.target.closest('.sym'); if (!b) return;
+    $$('.sym', grid).forEach(x => x.setAttribute('aria-pressed', x === b));
+    renderDiag(SYMPTOMS.find(s => s.id === b.dataset.id));
+  });
+  $('#diag-result').addEventListener('click', e => {
+    const b = e.target.closest('[data-id]'); if (b) openSheet(+b.dataset.id, b);
+  });
+  $('#diag-result').innerHTML = `<div class="panel"><p class="muted" style="margin:0">Selecciona un síntoma para ver la lista priorizada de sensores.</p></div>`;
+}
+function renderDiag(sym) {
+  const prio = i => i === 0 ? 'Prioridad alta' : i < 3 ? 'Prioridad media' : 'Revisar después';
+  $('#diag-result').innerHTML = `<div class="panel">
+    <h3>Síntoma: ${esc(sym.label)}</h3>
+    <ol class="rank">${sym.checks.map(([id, why], i) => {
+      const s = byId(id);
+      return `<li style="${cssVars(s)}">${badge(s)}<div>
+        <div class="prio">${i + 1}º · ${prio(i)}</div>
+        <h4>${esc(s.es)} <span class="muted small">(${esc(s.abbr)})</span></h4>
+        <p>${esc(why)}</p>
+        <p class="small muted">Códigos típicos: ${s.codes.slice(0, 3).map(c => c[0]).join(', ')}</p>
+        <button type="button" class="btn" data-id="${s.id}">Ver ficha</button>
+      </div></li>`;
+    }).join('')}</ol>
+    <p style="margin-top:14px"><strong>Otras causas a revisar:</strong> ${esc(sym.tips)}</p>
+    ${DISCLAIMER}
+  </div>`;
+}
+
+/* =========================================================
+   10. MODO QUIZ
+   ========================================================= */
+const QUIZ_LEN = 10;
+const quiz = { questions: [], i: 0, score: 0, answered: false };
+const sensorLabel = s => `${s.es} (${s.abbr})`;
+
+function makeSensorQ(kind, prompt, s, exp) {
+  const others = shuffle(SENSORS.filter(x => x.id !== s.id)).slice(0, 3);
+  const opts = shuffle([s, ...others]).map(sensorLabel);
+  return { kind, q: prompt, options: opts, answer: sensorLabel(s), exp };
+}
+function buildPool() {
+  // códigos repetidos en varios sensores (p. ej. P0016) no se usan en el quiz
+  const count = {};
+  SENSORS.forEach(s => s.codes.forEach(([c]) => count[c] = (count[c] || 0) + 1));
+  const byFunc = SENSORS.map(s => makeSensorQ('Por función', `¿Qué sensor… ${s.quizFunc.charAt(0).toLowerCase() + s.quizFunc.slice(1)}`, s,
+    `${s.es} (${s.en}): ${s.func}`));
+  const byLoc = SENSORS.map(s => makeSensorQ('Por ubicación', `¿Qué sensor se encuentra aquí? “${s.quizLoc}”`, s,
+    `${s.es}: ${s.location}`));
+  const byCode = [];
+  SENSORS.forEach(s => s.codes.forEach(([c, d]) => {
+    if (count[c] === 1) byCode.push(makeSensorQ('Por código OBD-II', `¿Con qué sensor se relaciona el código ${c}?`, s, `${c}: ${d}. Corresponde al ${s.es.charAt(0).toLowerCase() + s.es.slice(1)} (${s.abbr}).`));
+  }));
+  const extra = QUIZ_EXTRA.map(x => ({ kind: x.kind, q: x.q, options: shuffle(x.options), answer: x.options[0], exp: x.exp }));
+  // Mezcla equilibrada: 3 función, 3 ubicación, 2 código, 2 conceptos
+  const pick = (arr, n) => shuffle(arr).slice(0, n);
+  return shuffle([...pick(byFunc, 3), ...pick(byLoc, 3), ...pick(byCode, 2), ...pick(extra, 2)]).slice(0, QUIZ_LEN);
+}
+function startQuiz() {
+  Object.assign(quiz, { questions: buildPool(), i: 0, score: 0, answered: false });
+  renderQuestion();
+}
+function bestText() {
+  const best = store.get('best', null);
+  return best ? `Mejor puntaje: ${best.score}/${best.total}` : 'Mejor puntaje: —';
+}
+function renderQuestion(focus) {
+  const q = quiz.questions[quiz.i];
+  const el = $('#quiz');
+  el.innerHTML = `
+    <div class="quiz-top"><strong>Pregunta ${quiz.i + 1} de ${quiz.questions.length}</strong><span class="muted small">Puntos: ${quiz.score} · ${bestText()}</span></div>
+    <div class="progress" role="progressbar" aria-label="Progreso del quiz" aria-valuemin="0" aria-valuemax="${quiz.questions.length}" aria-valuenow="${quiz.i}"><span style="width:${quiz.i / quiz.questions.length * 100}%"></span></div>
+    <div class="q-kind">${esc(q.kind)}</div>
+    <p class="q-text" id="q-text" tabindex="-1">${esc(q.q)}</p>
+    <div class="opts" role="group" aria-labelledby="q-text">${q.options.map((o, k) => `<button type="button" class="opt" data-k="${k}">${esc(o)}<span class="mark" aria-hidden="true"></span></button>`).join('')}</div>
+    <div id="feedback" aria-live="polite"></div>`;
+  quiz.answered = false;
+  if (focus) $('#q-text').focus({ preventScroll: true });
+}
+function answer(k) {
+  if (quiz.answered) return;
+  quiz.answered = true;
+  const q = quiz.questions[quiz.i];
+  const chosen = q.options[k];
+  const ok = chosen === q.answer;
+  if (ok) quiz.score++;
+  $$('#quiz .opt').forEach((b, j) => {
+    b.disabled = true;
+    if (q.options[j] === q.answer) { b.classList.add('correct'); $('.mark', b).textContent = '✓'; b.setAttribute('aria-label', q.options[j] + ' — respuesta correcta'); }
+    else if (j === k) { b.classList.add('wrong'); $('.mark', b).textContent = '✗'; b.setAttribute('aria-label', q.options[j] + ' — tu respuesta, incorrecta'); }
+  });
+  const last = quiz.i === quiz.questions.length - 1;
+  $('#feedback').innerHTML = `<div class="feedback">
+    <p class="verdict ${ok ? 'ok' : 'bad'}">${ok ? '✓ ¡Correcto!' : '✗ Incorrecto. Respuesta: ' + esc(q.answer)}</p>
+    <p style="margin:0">${esc(q.exp)}</p>
+    <div class="btn-row"><button type="button" class="btn primary" id="next-q">${last ? 'Ver resultado' : 'Siguiente pregunta'}</button></div></div>`;
+  $('#next-q').focus({ preventScroll: true });
+  $('#quiz .quiz-top .muted').textContent = `Puntos: ${quiz.score} · ${bestText()}`;
+}
+function finishQuiz() {
+  const total = quiz.questions.length;
+  const prev = store.get('best', null);
+  const isBest = !prev || quiz.score > prev.score;
+  if (isBest) store.set('best', { score: quiz.score, total });
+  const pct = Math.round(quiz.score / total * 100);
+  const msg = pct === 100 ? '¡Perfecto! Dominas el sistema.' : pct >= 70 ? 'Muy bien. Repasa las fichas de los que fallaste.' : 'Sigue practicando: revisa la vista Sensores y vuelve a intentarlo.';
+  $('#quiz').innerHTML = `
+    <div class="q-kind">Resultado</div>
+    <p class="score-big" tabindex="-1" id="final-score">${quiz.score}/${total}</p>
+    <p>${pct} % · ${msg}</p>
+    <p class="muted">${isBest ? '¡Nuevo mejor puntaje!' : bestText()}</p>
+    <div class="btn-row"><button type="button" class="btn primary" id="restart-q">Jugar de nuevo</button></div>`;
+  $('#final-score').focus({ preventScroll: true });
+}
+$('#quiz').addEventListener('click', e => {
+  const opt = e.target.closest('.opt'); if (opt) return answer(+opt.dataset.k);
+  if (e.target.closest('#next-q')) { if (quiz.i < quiz.questions.length - 1) { quiz.i++; renderQuestion(true); } else finishQuiz(); return; }
+  if (e.target.closest('#restart-q')) { startQuiz(); $('#q-text').focus({ preventScroll: true }); }
+});
+
+/* =========================================================
+   11. PWA — ícono generado + manifest en línea
+   ========================================================= */
+const ICON_COLORS = SENSORS.map(s => s.color);
+function iconSVG() {
+  // Anillo de 10 segmentos con los colores de los sensores + "ECU" al centro
+  const seg = ICON_COLORS.map((c, i) => {
+    const a0 = (i / 10) * Math.PI * 2 - Math.PI / 2 + 0.06, a1 = ((i + 1) / 10) * Math.PI * 2 - Math.PI / 2 - 0.06;
+    const p = a => `${(32 + 21 * Math.cos(a)).toFixed(2)} ${(32 + 21 * Math.sin(a)).toFixed(2)}`;
+    return `<path d="M${p(a0)} A21 21 0 0 1 ${p(a1)}" stroke="${c}" stroke-width="7" fill="none" stroke-linecap="round"/>`;
+  }).join('');
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#0b1220"/>${seg}<rect x="22" y="24" width="20" height="16" rx="3" fill="#22304c" stroke="#5aa9ff" stroke-width="1.5"/><text x="32" y="35.5" font-family="Arial,Helvetica,sans-serif" font-size="8" font-weight="700" fill="#e8eef8" text-anchor="middle">ECU</text></svg>`;
+}
+function iconPNG(size) {
+  // Dibuja el mismo ícono en canvas (para apple-touch-icon y manifest)
+  try {
+    const c = document.createElement('canvas'); c.width = c.height = size;
+    const g = c.getContext('2d'); const k = size / 64;
+    g.scale(k, k);
+    g.fillStyle = '#0b1220'; g.beginPath();
+    if (g.roundRect) g.roundRect(0, 0, 64, 64, 14); else g.rect(0, 0, 64, 64);
+    g.fill();
+    g.lineWidth = 7; g.lineCap = 'round';
+    ICON_COLORS.forEach((col, i) => {
+      g.strokeStyle = col; g.beginPath();
+      g.arc(32, 32, 21, (i / 10) * Math.PI * 2 - Math.PI / 2 + 0.06, ((i + 1) / 10) * Math.PI * 2 - Math.PI / 2 - 0.06);
+      g.stroke();
+    });
+    g.fillStyle = '#22304c'; g.strokeStyle = '#5aa9ff'; g.lineWidth = 1.5;
+    g.beginPath(); if (g.roundRect) g.roundRect(22, 24, 20, 16, 3); else g.rect(22, 24, 20, 16); g.fill(); g.stroke();
+    g.fillStyle = '#e8eef8'; g.font = 'bold 8px Arial, Helvetica, sans-serif'; g.textAlign = 'center';
+    g.fillText('ECU', 32, 35.5);
+    return c.toDataURL('image/png');
+  } catch (e) { return null; }
+}
+function setupPWA() {
+  const svg = iconSVG();
+  const svgUrl = 'data:image/svg+xml,' + encodeURIComponent(svg);
+  $('#favicon').href = svgUrl;
+  $('#brand-icon').innerHTML = svg.replace(/^<svg[^>]*>|<\/svg>$/g, '');
+  const p180 = iconPNG(180), p192 = iconPNG(192), p512 = iconPNG(512);
+  if (p180) $('#touch-icon').href = p180;
+  try {
+    const manifest = {
+      name: 'Sensores del Tren Motriz', short_name: 'Sensores',
+      description: 'Guía de estudio de sensores automotrices',
+      lang: 'es', start_url: location.href.split('#')[0], scope: location.href.replace(/[^/]*$/, ''),
+      display: 'standalone', orientation: 'portrait',
+      background_color: '#0b1220', theme_color: '#0b1220',
+      icons: [
+        ...(p192 ? [{ src: p192, sizes: '192x192', type: 'image/png' }] : []),
+        ...(p512 ? [{ src: p512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }] : []),
+        { src: svgUrl, sizes: 'any', type: 'image/svg+xml' }
+      ]
+    };
+    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+    $('#manifest').href = URL.createObjectURL(blob);
+  } catch (e) { /* el manifest estático queda como respaldo */ }
+}
+
+/* =========================================================
+   12. INICIO
+   ========================================================= */
+applyTheme(store.get('theme', 'dark'));
+setupPWA();
+buildCar();
+buildSensors();
+buildFlow();
+buildDiag();
+const savedTab = store.get('tab', 'vehicle');
+showView(['vehicle', 'sensors', 'flow', 'diag', 'quiz'].includes(savedTab) ? savedTab : 'vehicle', { keepScroll: true });
+</script>
+</body>
+</html>
