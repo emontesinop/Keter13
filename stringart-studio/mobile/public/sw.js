@@ -10,6 +10,7 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET" || new URL(req.url).origin !== location.origin) return;
+  if (new URL(req.url).pathname.includes("/maljut/")) return;   // Maljut (same Pages site) has its own service worker
   if (req.destination === "worker" || req.destination === "sharedworker") return;   // let the browser load workers directly
   if (req.mode === "navigate") {
     e.respondWith(fetch(req).then((r) => { const copy = r.clone(); caches.open(CACHE).then((c) => c.put("./index.html", copy)); return r; })
