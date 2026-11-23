@@ -1,0 +1,66 @@
+# Publishes the GitHub Pages site for this repo:
+#   /         -> StringArt Studio iPhone app (offline PWA)
+#   /maljut/  -> Maljut (offline PWA)
+# One-time setup: repository Settings -> Pages -> Source: "GitHub Actions".
+name: Pages (StringArt + Maljut)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "stringart-studio/mobile/**"
+      - "maljut/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            stringart-studio/mobile/package-lock.json
+            maljut/package-lock.json
+
+      - name: Build StringArt
+        working-directory: stringart-studio/mobile
+        run: npm ci && npm run build
+
+      - name: Test and build Maljut
+        working-directory: maljut
+        run: npm ci && npm test && npm run build
+
+      - name: Assemble site
+        run: |
+          mkdir -p site
+          cp -r stringart-studio/mobile/dist/. site/
+          mkdir -p site/maljut
+          cp -r maljut/dist/. site/maljut/
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
